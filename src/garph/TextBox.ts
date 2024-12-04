@@ -2,52 +2,57 @@ import { Svg } from "@svgdotjs/svg.js";
 import NormalRect from "./NormalReact";
 import TextEditor from "./TextEditor";
 import { Box } from "./box";
+import Graph from "./graph";
 
 const padding = 5;
 
-export default class TextBox implements Box {
-  text: TextEditor;
-  box: NormalRect;
-  constructor(
-    protected draw: Svg,
-    { x, y, text }: { x: number; y: number; text: string }
-  ) {
-    this.text = new TextEditor(draw, text, x + padding, y + padding);
+const textPosition = (x: number, y: number) => {
+  return {
+    x: x + padding,
+    y: y + padding,
+  };
+};
 
-    this.box = new NormalRect(draw, { ...this.bbox, x, y });
+interface Props {
+  x: number;
+  y: number;
+  text: string;
+}
+
+export default class TextBox extends TextEditor implements Box {
+  box: NormalRect;
+  constructor(protected draw: Svg, { x, y, text }: Props, graph: Graph) {
+    const position = textPosition(x, y);
+    super(draw, text, position.x, position.y);
+    this.box = new NormalRect(draw, { ...this.boxAttrs, x, y }, graph);
   }
 
   get boundary() {
     return this.box.boundary;
   }
 
-  get value() {
-    return this.text.value;
-  }
-
-  get bbox() {
-    const { x, y, width, height } = this.text.bbox;
+  get boxAttrs() {
+    const { width, height } = super.boundary;
     return {
-      x: x - padding,
-      y: y - padding,
       width: width + padding * 2,
       height: height + padding * 2,
     };
   }
 
   updateText(newText: string) {
-    this.text.updateText(newText);
-    this.box.rect.width(this.bbox.width);
-    this.box.rect.height(this.bbox.height);
+    super.updateText(newText);
+    this.box.rect.width(this.boxAttrs.width);
+    this.box.rect.height(this.boxAttrs.height);
   }
 
   move = (x: number, y: number) => {
-    this.text.move(x + 5, y + 5);
+    const position = textPosition(x, y);
+    this.text.move(position.x, position.y);
     this.box.move(x, y);
   };
 
   dblclick(callback: () => void) {
-    this.text.text.dblclick(() => {
+    this.text.dblclick(() => {
       const v = window.prompt("dblclick");
       if (!v) return;
       this.updateText(v);

@@ -1,18 +1,25 @@
 import { Svg } from "@svgdotjs/svg.js";
 import { Rect } from "@svgdotjs/svg.js";
 import { Box } from "./box";
+import Graph from "./graph";
+
+interface Props {
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+}
 
 export default class NormalRect implements Box {
   rect: Rect;
+  parent: NormalRect | null = null;
+  graph: Graph;
   constructor(
     protected draw: Svg,
-    {
-      x,
-      y,
-      width,
-      height,
-    }: { x: number; y: number; width: number; height: number }
+    { x, y, width, height }: Props,
+    graph: Graph
   ) {
+    this.graph = graph;
     this.rect = draw
       .rect(width, height)
       .move(x, y)
@@ -34,5 +41,13 @@ export default class NormalRect implements Box {
 
   show = () => {
     this.rect.show();
+  };
+
+  setWidth = () => {};
+
+  setHeight = () => {};
+
+  setParent = (parent: NormalRect) => {
+    this.parent = parent;
   };
 }

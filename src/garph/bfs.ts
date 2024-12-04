@@ -13,9 +13,7 @@ export const bfs = (node: ObjectBox) => {
       const current = queue.shift();
       if (!current) continue;
       current.children.forEach(({ child, showChild, updateLine }) => {
-        console.log(showChild);
         if (child && showChild) {
-          console.log(child);
           child.move(current.boundary.x + maxWidth + 30, accY);
           accY += child.boundary.height + 30;
           temp = Math.max(temp, child.boundary.width);

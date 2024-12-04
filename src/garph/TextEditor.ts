@@ -1,15 +1,13 @@
 import { Svg, Text } from "@svgdotjs/svg.js";
+import { Box } from "./box";
 
 const size = 16;
 const maxWidth = 100;
 
-export default class TextEditor {
+export default class TextEditor implements Box {
   text: Text;
   constructor(protected draw: Svg, text: string, x: number, y: number) {
     this.text = draw.text(text).move(x, y).font({ size: size });
-    // this.text = draw.text((add) => {
-    //   add.tspan(text).newLine;
-    // });
   }
 
   updateText(newText: string) {
@@ -20,12 +18,13 @@ export default class TextEditor {
     this.text.move(x, y);
   }
 
-  get value() {
-    return this.text.text();
+  get boundary() {
+    const { width, height, x, y } = this.text.bbox();
+    return { x, y, width, height };
   }
 
-  get bbox() {
-    return this.text.bbox();
+  get value() {
+    return this.text.text();
   }
 
   click(callback: () => void) {
