@@ -1,5 +1,8 @@
 import { Path } from "@svgdotjs/svg.js";
 import { Svg } from "@svgdotjs/svg.js";
+import { Box } from "./box";
+import KeyValueBox from "./KeyValueBox";
+import ObjectBox from "./ObjectBox";
 
 export default class LinkLine {
   path: Path;
@@ -9,12 +12,7 @@ export default class LinkLine {
     strokeWidth: number;
     showControlPoints: boolean;
   };
-  constructor(
-    svg: Svg,
-    start: { x: number; y: number },
-    end: { x: number; y: number },
-    options = {}
-  ) {
+  constructor(svg: Svg, start: KeyValueBox, end: ObjectBox, options = {}) {
     const defaultOptions = {
       curveHeight: 0,
       strokeColor: "green",
@@ -32,29 +30,36 @@ export default class LinkLine {
     this.path.plot(this.getControlPoints(start, end));
   }
 
-  getControlPoints = (
-    start: { x: number; y: number },
-    end: { x: number; y: number }
-  ) => {
+  getControlPoints = (start: Box, end: Box) => {
     const { curveHeight } = this.settings;
+    const { x, y, width, height } = start.boundary;
+    const { x: ex, y: ey, width: ewidth, height: eheight } = end.boundary;
     const controlPoint1 = {
-      x: start.x + (end.x - start.x) / 3,
-      y: start.y - curveHeight,
+      x: x + (ex - x) / 3,
+      y: y + height / 2 - curveHeight,
     };
     const controlPoint2 = {
-      x: start.x + (2 * (end.x - start.x)) / 3,
-      y: end.y - curveHeight,
+      x: x + (2 * (ex - x)) / 3,
+      y: ey + eheight / 2 - curveHeight,
     };
 
     return `
-              M${start.x},${start.y} 
+              M${x + width},${y + height / 2} 
               C${controlPoint1.x},${controlPoint1.y} 
               ${controlPoint2.x},${controlPoint2.y} 
-              ${end.x},${end.y}
+              ${ex},${ey + eheight / 2}
           `;
   };
 
-  update = (start: { x: number; y: number }, end: { x: number; y: number }) => {
+  update = (start: Box, end: Box) => {
     this.path.plot(this.getControlPoints(start, end));
+  };
+
+  hide = () => {
+    this.path.hide();
+  };
+
+  show = () => {
+    this.path.show();
   };
 }
