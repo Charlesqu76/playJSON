@@ -1,17 +1,60 @@
 import { Svg, Text } from "@svgdotjs/svg.js";
 import { Box } from "./box";
+import { Tspan } from "@svgdotjs/svg.js";
 
 const size = 16;
-const maxWidth = 100;
+const DEFAULT_MAX_WIDTH = 100;
 
 export default class TextEditor implements Box {
   text: Text;
-  constructor(protected draw: Svg, text: string, x: number, y: number) {
-    this.text = draw.text(text).move(x, y).font({ size: size });
+  private maxWidth: number;
+
+  constructor(
+    protected draw: Svg,
+    text: string,
+    x: number,
+    y: number,
+    maxWidth?: number
+  ) {
+    this.maxWidth = maxWidth ?? DEFAULT_MAX_WIDTH;
+    this.text = this.draw
+      .text((add) => this.addLine(add, String(text)))
+      .move(x, y)
+      .font({ size: size });
   }
 
+  addLine = (add: Tspan | Text, text: string) => {
+    const words = String(text)?.split(" ");
+    let currentLine = "";
+
+    words.forEach((word, index) => {
+      const testLine = currentLine ? currentLine + " " + word : word;
+      const tempText = this.draw.text(testLine).font({ size: 16 });
+      const lineWidth = tempText.length();
+      tempText.remove();
+      if (lineWidth > this.maxWidth) {
+        if (currentLine) {
+          add.tspan(currentLine).newLine();
+        }
+        currentLine = word;
+      } else {
+        currentLine = testLine;
+      }
+      if (index === words.length - 1) {
+        add.tspan(currentLine).newLine();
+      }
+    });
+  };
+
   updateText(newText: string) {
-    this.text.text(newText);
+    this.text.clear();
+    this.text.build(true);
+    this.addLine(this.text, newText);
+    this.text.build(false);
+    console.log("asdfasdf", this.boundary);
+    setTimeout(() => {
+      console.log(this.boundary);
+    });
   }
 
   move(x: number, y: number) {

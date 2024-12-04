@@ -15,7 +15,10 @@ interface Props {
   };
 }
 
-export default class ChildrenBox<T extends NormalRect> extends DraggableRect implements Box {
+export default class ChildrenBox<T extends NormalRect>
+  extends DraggableRect
+  implements Box
+{
   children: Set<T> = new Set([]);
   constructor(draw: Svg, props: Props, graph: Graph) {
     super(draw, props, graph);
@@ -41,6 +44,7 @@ export default class ChildrenBox<T extends NormalRect> extends DraggableRect imp
 
   removeChildren(child: T) {
     this.children.delete(child);
+    child.setParent(null);
     this.move(this.boundary.x, this.boundary.y);
     this.setWidth();
     this.setHeight();
@@ -60,6 +64,7 @@ export default class ChildrenBox<T extends NormalRect> extends DraggableRect imp
   };
 
   setHeight = () => {
+    console.log("setHeight");
     if (this.children.size === 0) {
       this.rect.height(30);
       return;
@@ -68,13 +73,20 @@ export default class ChildrenBox<T extends NormalRect> extends DraggableRect imp
     this.children.forEach((child) => {
       height += child.boundary.height;
     });
+    console.log(height);
     this.rect.height(height + 2);
   };
 
   move = (x: number, y: number) => {
     this.rect.move(x, y);
+    let previous = null as T | null;
+
     Array.from(this.children).forEach((child, index) => {
-      child.move(x, y + child.boundary.height * index);
+      child.move(
+        x,
+        (previous?.boundary.y ?? y) + (previous?.boundary.height ?? 0)
+      );
+      previous = child;
     });
   };
 

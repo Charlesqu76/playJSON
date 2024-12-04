@@ -14,7 +14,11 @@ export class Graph {
   constructor() {}
 
   initCanvas = (id: string) => {
-    this.canvas = SVG().addTo(id).size("100%", "100%").viewbox("0 0 1000 1000");
+    this.canvas = SVG()
+      .addTo(id)
+      .size("100%", "100%")
+      .viewbox("0 0 1000 1000")
+      .panZoom({ zoomMin: 0.1, zoomMax: 5 });
   };
 
   initData = (data: Object) => {

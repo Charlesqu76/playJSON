@@ -47,7 +47,7 @@ export default class NormalRect implements Box {
 
   setHeight = () => {};
 
-  setParent = (parent: NormalRect) => {
+  setParent = (parent: NormalRect | null) => {
     this.parent = parent;
   };
 }

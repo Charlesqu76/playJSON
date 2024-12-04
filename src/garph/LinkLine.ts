@@ -15,7 +15,7 @@ export default class LinkLine {
   constructor(svg: Svg, start: KeyValueBox, end: ObjectBox, options = {}) {
     const defaultOptions = {
       curveHeight: 0,
-      strokeColor: "green",
+      strokeColor: "black",
       strokeWidth: 4,
       showControlPoints: false,
     };

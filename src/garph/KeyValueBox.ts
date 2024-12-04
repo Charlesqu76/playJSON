@@ -22,7 +22,7 @@ export default class KeyValueBox extends DraggableRect implements Box {
   showChild = true;
   constructor(protected draw: Svg, { x, y, key, value }: Props, graph: Graph) {
     super(draw, { x, y, width: 0, height: 0 }, graph);
-
+    this.rect.fill("white");
     this.rect.on("dragmove", (event) => {
       const { box } = (event as CustomEvent).detail;
       if (this instanceof ObjectBox) return;
@@ -55,21 +55,6 @@ export default class KeyValueBox extends DraggableRect implements Box {
           break;
         }
       }
-
-      // this.graph.objectBoxes.forEach((child) => {
-      //   if (
-      //     child === this.parent &&
-      //     !this.isOverlapping(box, child.rect.bbox())
-      //   ) {
-      //     this.parent?.removeChildren(this);
-      //   }
-
-      //   if (this.isOverlapping(box, child.rect.bbox())) {
-      //     child.addChildren(this);
-      //     // @ts-ignore
-      //     child.rect.css({ "stroke-width": 1, stroke: "black" });
-      //   }
-      // });
     });
 
     // key
@@ -78,6 +63,7 @@ export default class KeyValueBox extends DraggableRect implements Box {
       const { width, x, y } = this.keyBox.boundary;
       this.valueBox.move(x + width, y);
       this.parent?.setWidth();
+      this.parent?.setHeight();
     });
     const { width } = this.keyBox.boundary;
     if (typeof value === "object") {
@@ -93,7 +79,7 @@ export default class KeyValueBox extends DraggableRect implements Box {
 
       this.valueBox.click(() => {
         this.toggleChildVisibility();
-        // this.graph.layout();
+        this.graph.layout();
       });
 
       this.child = new ObjectBox(
@@ -124,18 +110,19 @@ export default class KeyValueBox extends DraggableRect implements Box {
         this.graph
       );
       this.valueBox.dblclick(() => {
+        console.log("dblclick");
         this.parent?.setWidth();
+        this.parent?.setHeight();
       });
     }
 
     this.setHeight();
     this.setWidth();
+
     this.rect.on("dragmove", (event) => {
       const { box } = (event as CustomEvent).detail;
       this.move(box.x, box.y);
     });
-
-    // console.log(this.value);
   }
 
   move = (x: number, y: number) => {
@@ -152,7 +139,12 @@ export default class KeyValueBox extends DraggableRect implements Box {
   };
 
   setHeight = () => {
-    this.rect.height(this.keyBox.boundary.height + 2);
+    this.rect.height(
+      Math.max(
+        this.keyBox.boundary.height + 2,
+        this.valueBox.boundary.height + 2
+      )
+    );
   };
 
   updateLine = () => {
@@ -187,6 +179,10 @@ export default class KeyValueBox extends DraggableRect implements Box {
 
   // just show this box and the line
   show = () => {
+    this.showChild = true;
+    if (this.child) {
+      this.valueBox.updateText("-");
+    }
     this.rect.show();
     this.keyBox.show();
     this.valueBox.show();
@@ -194,6 +190,10 @@ export default class KeyValueBox extends DraggableRect implements Box {
 
   // hide all the children and the line
   hide = () => {
+    this.showChild = false;
+    if (this.child) {
+      this.valueBox.updateText("+");
+    }
     this.rect.hide();
     this.keyBox.hide();
     this.line?.hide();

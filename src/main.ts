@@ -1,4 +1,6 @@
+import { text } from "stream/consumers";
 import Graph from "./garph/graph";
+import TextBox from "./garph/TextBox";
 
 const data1 = {
   title: "Hi! I'm Charles",
@@ -79,10 +81,10 @@ const data1 = {
 };
 
 const data = {
-  name: "charles",
+  name: "charles charles charles charles charles",
   age: 18,
-  hobbies: [{ name: "bed" }, { name: "basketball", level: 3 }],
-  address: { city: "shanghai", street: "nanjing road" },
+  // hobbies: [{ name: "bed" }, { name: "basketball", level: 3 }],
+  // address: { city: "shanghai", street: "nanjing road" },
 };
 
 const main = () => {
@@ -94,8 +96,22 @@ const main = () => {
 
   if (graph.canvas === null) return;
 
+  // const text = graph.canvas
+  //   .text(function (add) {
+  //     add.tspan("Lorem ipsum dolor sit amet ").newLine();
+  //     add.tspan("Cras sodales imperdiet auctor.").newLine();
+  //     add.tspan("Nunc ultrices lectus at erat").newLine();
+  //     add.tspan("dictum pharetra elementum ante").newLine();
+  //   })
+  //   .move(100, 100)
+  //   .fill("red");
+
   document.querySelector("#button")?.addEventListener("click", () => {
     console.log(graph.allChildrenBox().map((box) => box.value));
+  });
+
+  document.querySelector("#layout")?.addEventListener("click", () => {
+    console.log(graph.layout());
   });
 
   // new TextBox(graph.canvas, { x: 100, y: 100, text: "charles" }, graph);

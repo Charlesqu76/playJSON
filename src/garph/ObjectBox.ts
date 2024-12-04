@@ -19,6 +19,7 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
       { x, y, width: 0, height: 0, config: { ActiveStrokeColor: "red" } },
       graph
     );
+    this.rect.fill("red");
     if (Array.isArray(value)) {
       this.isArray = true;
     }
@@ -31,17 +32,20 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
     });
     graph.addChildBox(this);
     const entries = Object.entries(value);
+    let previous = null as KeyValueBox | null;
     const children = entries.map(([key, value], index) => {
-      return new KeyValueBox(
+      const box = new KeyValueBox(
         draw,
         {
           x: x,
-          y: y + lineHeight * index,
+          y: (previous?.boundary.y ?? y) + (previous?.boundary.height ?? 0),
           key: key,
           value: value,
         },
         graph
       );
+      previous = box;
+      return box;
     });
 
     this.addChildren(children);
