@@ -1,6 +1,6 @@
 import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./KeyValueBox";
-import { Graph } from "./graph";
+import Graph from "./graph";
 import ChildrenBox from "./ChildrenBox";
 
 const lineHeight = 30;
@@ -13,6 +13,8 @@ interface Props {
 
 export default class ObjectBox extends ChildrenBox<KeyValueBox> {
   isArray = false;
+  private isHovered = false;
+
   constructor(draw: Svg, { x, y, value }: Props, graph: Graph) {
     super(
       draw,
@@ -23,14 +25,29 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
     if (Array.isArray(value)) {
       this.isArray = true;
     }
+
     this.rect.on("mouseover", () => {
+      this.isHovered = true;
       this.rect.attr({
         cursor: "grab",
         "stroke-width": 5,
         stroke: "red",
       });
     });
-    graph.addChildBox(this);
+
+    this.rect.on("mouseout", () => {
+      this.isHovered = false;
+    });
+
+    // Add keyboard event listeners
+    document.addEventListener("keydown", (e) => {
+      if (!this.isHovered) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === "c") {
+        this.handleCopy();
+      }
+    });
+
+    graph.addObjectBox(this);
     const entries = Object.entries(value);
     let previous = null as KeyValueBox | null;
     const children = entries.map(([key, value], index) => {
@@ -51,6 +68,13 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
     this.addChildren(children);
 
     this.graph.layout();
+  }
+
+  private handleCopy() {
+    const jsonStr = JSON.stringify(this.value);
+    navigator.clipboard.writeText(jsonStr).catch((err) => {
+      console.error("Failed to copy:", err);
+    });
   }
 
   get value() {

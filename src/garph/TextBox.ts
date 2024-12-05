@@ -23,7 +23,7 @@ export default class TextBox extends TextEditor implements Box {
   box: NormalRect;
   constructor(protected draw: Svg, { x, y, text }: Props, graph: Graph) {
     const position = textPosition(x, y);
-    super(draw, text, position.x, position.y);
+    super(draw, text, position.x, position.y, graph);
     this.box = new NormalRect(draw, { ...this.boxAttrs, x, y }, graph);
   }
 

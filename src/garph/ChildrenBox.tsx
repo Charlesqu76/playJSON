@@ -64,7 +64,6 @@ export default class ChildrenBox<T extends NormalRect>
   };
 
   setHeight = () => {
-    console.log("setHeight");
     if (this.children.size === 0) {
       this.rect.height(30);
       return;
@@ -73,13 +72,13 @@ export default class ChildrenBox<T extends NormalRect>
     this.children.forEach((child) => {
       height += child.boundary.height;
     });
-    console.log(height);
     this.rect.height(height + 2);
   };
 
   move = (x: number, y: number) => {
     this.rect.move(x, y);
     let previous = null as T | null;
+    console.log('asdfasdfasdf')
 
     Array.from(this.children).forEach((child, index) => {
       child.move(

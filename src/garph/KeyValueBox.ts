@@ -4,8 +4,10 @@ import ObjectBox from "./ObjectBox";
 import TextBox from "./TextBox";
 import ObjectSign from "./ObjectSign";
 import { Box } from "./box";
-import { Graph } from "./graph";
+import Graph from "./graph";
 import DraggableRect from "./DraggableRect";
+import { getRightMid, isPointInBox } from "./utils";
+import { Line } from "@svgdotjs/svg.js";
 
 interface Props {
   x: number;
@@ -18,10 +20,11 @@ export default class KeyValueBox extends DraggableRect implements Box {
   protected keyBox: TextBox;
   protected valueBox: TextBox | ObjectSign;
   child: ObjectBox | null = null;
-  protected line: LinkLine | null = null;
+  line: LinkLine | null = null;
   showChild = true;
   constructor(protected draw: Svg, { x, y, key, value }: Props, graph: Graph) {
     super(draw, { x, y, width: 0, height: 0 }, graph);
+    this.graph.addKeyValueBox(this);
     this.rect.fill("white");
     this.rect.on("dragmove", (event) => {
       const { box } = (event as CustomEvent).detail;
@@ -77,6 +80,50 @@ export default class KeyValueBox extends DraggableRect implements Box {
         graph
       );
 
+      this.valueBox.text.on("mousedown", (event) => {
+        event = event as MouseEvent;
+        event.stopPropagation();
+
+        let tempLine: Line | null = null;
+        const svgPoint = (this.draw.node as SVGSVGElement).createSVGPoint();
+        const startPos = getRightMid(this.valueBox.boundary);
+
+        tempLine = this.draw
+          .line(startPos.x, startPos.y, startPos.x, startPos.y)
+          .stroke({ width: 2, color: "#000" });
+
+        const mousemove = (e: MouseEvent) => {
+          e.preventDefault();
+          svgPoint.x = e.clientX;
+          svgPoint.y = e.clientY;
+          const cursor = svgPoint.matrixTransform(
+            (this.draw.node as SVGSVGElement).getScreenCTM()?.inverse()
+          );
+          tempLine?.plot(startPos.x, startPos.y, cursor.x, cursor.y);
+        };
+
+        const mouseup = (e: MouseEvent) => {
+          const cursor = svgPoint.matrixTransform(
+            (this.draw.node as SVGSVGElement).getScreenCTM()?.inverse()
+          );
+          const objectBox = this.graph.objectBoxes.find((box) =>
+            isPointInBox({ x: cursor.x, y: cursor.y }, box.boundary)
+          );
+
+          if (objectBox && this.child !== objectBox) {
+            this.linkToObject(objectBox);
+          }
+
+          tempLine?.remove();
+          tempLine = null;
+          document.removeEventListener("mousemove", mousemove);
+          document.removeEventListener("mouseup", mouseup);
+        };
+
+        document.addEventListener("mousemove", mousemove);
+        document.addEventListener("mouseup", mouseup);
+      });
+
       this.valueBox.click(() => {
         this.toggleChildVisibility();
         this.graph.layout();
@@ -92,6 +139,8 @@ export default class KeyValueBox extends DraggableRect implements Box {
         graph
       );
       this.line = new LinkLine(draw, this, this.child);
+      this.graph.addLinkLine(this.line);
+      this.child.parent = this;
       if (!this.showChild) {
         this.child.hide();
         this.line.hide();
@@ -110,9 +159,10 @@ export default class KeyValueBox extends DraggableRect implements Box {
         this.graph
       );
       this.valueBox.dblclick(() => {
-        console.log("dblclick");
-        this.parent?.setWidth();
-        this.parent?.setHeight();
+        setTimeout(() => {
+          this.parent?.setWidth();
+          this.parent?.setHeight();
+        });
       });
     }
 
@@ -165,6 +215,29 @@ export default class KeyValueBox extends DraggableRect implements Box {
       this.child.hide();
       this.valueBox.updateText("+");
     }
+  };
+
+  linkToObject = (targetObjectBox: ObjectBox) => {
+    console.log(targetObjectBox);
+    if (targetObjectBox.parent) {
+      window.alert("This object is already linked to another object");
+      return;
+    }
+    if (this.child && this.line) {
+      this.line.remove();
+      this.child = null;
+      this.line = null;
+    }
+
+    this.child = targetObjectBox;
+    this.child.rect.on("dragmove", () => {
+      this.updateLine();
+    });
+    this.line = new LinkLine(this.draw, this, targetObjectBox);
+    this.graph.addLinkLine(this.line);
+    this.showChild = true;
+    this.valueBox.updateText("-");
+    this.updateLine();
   };
 
   get value() {

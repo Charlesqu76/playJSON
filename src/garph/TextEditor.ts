@@ -1,12 +1,14 @@
 import { Svg, Text } from "@svgdotjs/svg.js";
 import { Box } from "./box";
 import { Tspan } from "@svgdotjs/svg.js";
+import { Graph } from "./graph";
 
 const size = 16;
 const DEFAULT_MAX_WIDTH = 100;
 
 export default class TextEditor implements Box {
   text: Text;
+  graph: Graph;
   private maxWidth: number;
 
   constructor(
@@ -14,9 +16,11 @@ export default class TextEditor implements Box {
     text: string,
     x: number,
     y: number,
+    graph: Graph,
     maxWidth?: number
   ) {
     this.maxWidth = maxWidth ?? DEFAULT_MAX_WIDTH;
+    this.graph = graph;
     this.text = this.draw
       .text((add) => this.addLine(add, String(text)))
       .move(x, y)
@@ -51,10 +55,6 @@ export default class TextEditor implements Box {
     this.text.build(true);
     this.addLine(this.text, newText);
     this.text.build(false);
-    console.log("asdfasdf", this.boundary);
-    setTimeout(() => {
-      console.log(this.boundary);
-    });
   }
 
   move(x: number, y: number) {

@@ -1,6 +1,4 @@
-import { text } from "stream/consumers";
 import Graph from "./garph/graph";
-import TextBox from "./garph/TextBox";
 
 const data1 = {
   title: "Hi! I'm Charles",
@@ -83,8 +81,8 @@ const data1 = {
 const data = {
   name: "charles charles charles charles charles",
   age: 18,
-  // hobbies: [{ name: "bed" }, { name: "basketball", level: 3 }],
-  // address: { city: "shanghai", street: "nanjing road" },
+  hobbies: [{ name: "bed" }, { name: "basketball", level: 3 }],
+  address: { city: "shanghai", street: "nanjing road" },
 };
 
 const main = () => {
@@ -93,6 +91,12 @@ const main = () => {
   graph.initCanvas("#app");
   graph.initData(data);
   graph.layout();
+  document.querySelector("#zoom")!.textContent = graph.getZoom().toFixed(2);
+
+  graph.setZoomCallback((zoom) => {
+    console.log(zoom);
+    document.querySelector("#zoom")!.textContent = zoom.toFixed(2);
+  });
 
   if (graph.canvas === null) return;
 
@@ -107,7 +111,9 @@ const main = () => {
   //   .fill("red");
 
   document.querySelector("#button")?.addEventListener("click", () => {
-    console.log(graph.allChildrenBox().map((box) => box.value));
+    // console.log(graph.allChildrenBox().map((box) => box.value));
+
+    console.log(graph.getViewpoint());
   });
 
   document.querySelector("#layout")?.addEventListener("click", () => {
@@ -128,7 +134,7 @@ const main = () => {
   //   graph
   // );
 
-  // graph.addChildBox(c);
+  // graph.addObjectBox(c);
 
   // const n = new KeyValueBox(
   //   graph.canvas,
