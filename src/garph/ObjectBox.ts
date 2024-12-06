@@ -2,9 +2,6 @@ import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./KeyValueBox";
 import Graph from "./graph";
 import ChildrenBox from "./ChildrenBox";
-
-const lineHeight = 30;
-
 interface Props {
   x: number;
   y: number;
@@ -18,10 +15,11 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
   constructor(draw: Svg, { x, y, value }: Props, graph: Graph) {
     super(
       draw,
-      { x, y, width: 0, height: 0, config: { ActiveStrokeColor: "red" } },
+      { x, y, width: 0, height: 0, config: { ActiveStrokeColor: "grey" } },
       graph
     );
-    this.rect.fill("red");
+    graph.addObjectBox(this);
+    this.rect.fill("grey");
     if (Array.isArray(value)) {
       this.isArray = true;
     }
@@ -31,7 +29,7 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
       this.rect.attr({
         cursor: "grab",
         "stroke-width": 5,
-        stroke: "red",
+        stroke: "grey",
       });
     });
 
@@ -47,7 +45,6 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
       }
     });
 
-    graph.addObjectBox(this);
     const entries = Object.entries(value);
     let previous = null as KeyValueBox | null;
     const children = entries.map(([key, value], index) => {
@@ -91,4 +88,19 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
     });
     return m;
   }
+
+  // move(x: number, y: number) {
+  //   // Assuming there's an existing move method
+  //   // ...existing move logic...
+  //   this.emit('move');
+  //   this.eventEmitter.emit('move');
+  // }
+
+  // on(event: string, handler: Function) {
+  //   this.eventEmitter.on(event, handler);
+  // }
+
+  // off(event: string, handler: Function) {
+  //   this.eventEmitter.off(event, handler);
+  // }
 }

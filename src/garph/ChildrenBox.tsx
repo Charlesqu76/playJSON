@@ -78,7 +78,7 @@ export default class ChildrenBox<T extends NormalRect>
   move = (x: number, y: number) => {
     this.rect.move(x, y);
     let previous = null as T | null;
-    console.log('asdfasdfasdf')
+    this.eventEmitter.emit("move");
 
     Array.from(this.children).forEach((child, index) => {
       child.move(

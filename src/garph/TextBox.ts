@@ -19,20 +19,20 @@ interface Props {
   text: string;
 }
 
-export default class TextBox extends TextEditor implements Box {
-  box: NormalRect;
+export default class TextBox extends NormalRect implements Box {
+  text: TextEditor;
+  moveCb: ((x: number, y: number) => void) | null = null;
   constructor(protected draw: Svg, { x, y, text }: Props, graph: Graph) {
     const position = textPosition(x, y);
-    super(draw, text, position.x, position.y, graph);
-    this.box = new NormalRect(draw, { ...this.boxAttrs, x, y }, graph);
-  }
-
-  get boundary() {
-    return this.box.boundary;
+    super(draw, { width: 0, height: 0, x, y }, graph);
+    this.rect.attr({ stroke: "none" });
+    this.text = new TextEditor(draw, text, position.x, position.y, graph);
+    this.rect.width(this.boxAttrs.width);
+    this.rect.height(this.boxAttrs.height);
   }
 
   get boxAttrs() {
-    const { width, height } = super.boundary;
+    const { width, height } = this.text.boundary;
     return {
       width: width + padding * 2,
       height: height + padding * 2,
@@ -40,19 +40,21 @@ export default class TextBox extends TextEditor implements Box {
   }
 
   updateText(newText: string) {
-    super.updateText(newText);
-    this.box.rect.width(this.boxAttrs.width);
-    this.box.rect.height(this.boxAttrs.height);
+    this.text.updateText(newText);
+    this.rect.width(this.boxAttrs.width);
+    this.rect.height(this.boxAttrs.height);
   }
 
   move = (x: number, y: number) => {
     const position = textPosition(x, y);
     this.text.move(position.x, position.y);
-    this.box.move(x, y);
+    this.rect.move(x, y);
+    this.eventEmitter.emit("move");
+    if (this.moveCb) this.moveCb(x, y);
   };
 
   dblclick(callback: () => void) {
-    this.text.dblclick(() => {
+    this.text.text.dblclick(() => {
       const v = window.prompt("dblclick");
       if (!v) return;
       this.updateText(v);
@@ -66,13 +68,22 @@ export default class TextBox extends TextEditor implements Box {
     });
   }
 
-  hide() {
+  hide = () => {
     this.text.hide();
-    this.box.hide();
-  }
+    this.rect.hide();
+  };
 
-  show() {
+  show = () => {
     this.text.show();
-    this.box.show();
+    this.rect.show();
+  };
+
+  front = () => {
+    this.text.text.front();
+    this.rect.front();
+  };
+
+  get value() {
+    return this.text.value;
   }
 }

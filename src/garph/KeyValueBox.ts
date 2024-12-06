@@ -1,13 +1,10 @@
 import { Svg } from "@svgdotjs/svg.js";
-import LinkLine from "./LinkLine";
 import ObjectBox from "./ObjectBox";
 import TextBox from "./TextBox";
 import ObjectSign from "./ObjectSign";
 import { Box } from "./box";
 import Graph from "./graph";
 import DraggableRect from "./DraggableRect";
-import { getRightMid, isPointInBox } from "./utils";
-import { Line } from "@svgdotjs/svg.js";
 
 interface Props {
   x: number;
@@ -18,10 +15,7 @@ interface Props {
 
 export default class KeyValueBox extends DraggableRect implements Box {
   protected keyBox: TextBox;
-  protected valueBox: TextBox | ObjectSign;
-  child: ObjectBox | null = null;
-  line: LinkLine | null = null;
-  showChild = true;
+  protected valueBox: ObjectSign;
   constructor(protected draw: Svg, { x, y, key, value }: Props, graph: Graph) {
     super(draw, { x, y, width: 0, height: 0 }, graph);
     this.graph.addKeyValueBox(this);
@@ -39,6 +33,9 @@ export default class KeyValueBox extends DraggableRect implements Box {
     });
 
     this.rect.on("dragend", (event) => {
+      this.rect.front();
+      this.keyBox.front();
+      this.valueBox.front();
       const box = this.rect.bbox();
       for (const objectBox of this.graph.objectBoxes) {
         if (
@@ -50,7 +47,10 @@ export default class KeyValueBox extends DraggableRect implements Box {
       }
 
       for (const objectBox of this.graph.objectBoxes) {
-        if (this.isOverlapping(box, objectBox.rect.bbox())) {
+        if (
+          this.isOverlapping(box, objectBox.rect.bbox()) &&
+          this.parent !== objectBox
+        ) {
           // @ts-ignore
           this.parent?.removeChildren(this);
           objectBox.addChildren(this);
@@ -69,102 +69,16 @@ export default class KeyValueBox extends DraggableRect implements Box {
       this.parent?.setHeight();
     });
     const { width } = this.keyBox.boundary;
-    if (typeof value === "object") {
-      this.valueBox = new ObjectSign(
-        draw,
-        {
-          x: x + width,
-          y: y,
-          showChild: this.showChild,
-        },
-        graph
-      );
-
-      this.valueBox.text.on("mousedown", (event) => {
-        event = event as MouseEvent;
-        event.stopPropagation();
-
-        let tempLine: Line | null = null;
-        const svgPoint = (this.draw.node as SVGSVGElement).createSVGPoint();
-        const startPos = getRightMid(this.valueBox.boundary);
-
-        tempLine = this.draw
-          .line(startPos.x, startPos.y, startPos.x, startPos.y)
-          .stroke({ width: 2, color: "#000" });
-
-        const mousemove = (e: MouseEvent) => {
-          e.preventDefault();
-          svgPoint.x = e.clientX;
-          svgPoint.y = e.clientY;
-          const cursor = svgPoint.matrixTransform(
-            (this.draw.node as SVGSVGElement).getScreenCTM()?.inverse()
-          );
-          tempLine?.plot(startPos.x, startPos.y, cursor.x, cursor.y);
-        };
-
-        const mouseup = (e: MouseEvent) => {
-          const cursor = svgPoint.matrixTransform(
-            (this.draw.node as SVGSVGElement).getScreenCTM()?.inverse()
-          );
-          const objectBox = this.graph.objectBoxes.find((box) =>
-            isPointInBox({ x: cursor.x, y: cursor.y }, box.boundary)
-          );
-
-          if (objectBox && this.child !== objectBox) {
-            this.linkToObject(objectBox);
-          }
-
-          tempLine?.remove();
-          tempLine = null;
-          document.removeEventListener("mousemove", mousemove);
-          document.removeEventListener("mouseup", mouseup);
-        };
-
-        document.addEventListener("mousemove", mousemove);
-        document.addEventListener("mouseup", mouseup);
-      });
-
-      this.valueBox.click(() => {
-        this.toggleChildVisibility();
-        this.graph.layout();
-      });
-
-      this.child = new ObjectBox(
-        draw,
-        {
-          x: this.boundary.width + (this.parent?.boundary.width || 0),
-          y: y,
-          value,
-        },
-        graph
-      );
-      this.line = new LinkLine(draw, this, this.child);
-      this.graph.addLinkLine(this.line);
-      this.child.parent = this;
-      if (!this.showChild) {
-        this.child.hide();
-        this.line.hide();
-      } else {
-        this.child.show();
-        this.line.show();
-      }
-      this.child.rect.on("dragmove", () => {
-        this.updateLine();
-      });
-    } else {
-      // primative value
-      this.valueBox = new TextBox(
-        draw,
-        { text: value, x: x + width, y },
-        this.graph
-      );
-      this.valueBox.dblclick(() => {
-        setTimeout(() => {
-          this.parent?.setWidth();
-          this.parent?.setHeight();
-        });
-      });
-    }
+    this.valueBox = new ObjectSign(
+      draw,
+      {
+        x: x + width,
+        y: y,
+        value: value,
+        parent: this,
+      },
+      graph
+    );
 
     this.setHeight();
     this.setWidth();
@@ -179,7 +93,7 @@ export default class KeyValueBox extends DraggableRect implements Box {
     this.rect.move(x, y);
     this.keyBox.move(x, y);
     this.valueBox?.move(x + this.keyBox.boundary.width, y);
-    this.updateLine();
+    this.eventEmitter.emit("move");
   };
 
   setWidth = () => {
@@ -197,85 +111,43 @@ export default class KeyValueBox extends DraggableRect implements Box {
     );
   };
 
-  updateLine = () => {
-    if (!this.child) return;
-    this.line?.update(this.valueBox, this.child);
-  };
-
-  toggleChildVisibility = () => {
-    if (!this.child) return;
-    if (!this.showChild) {
-      this.showChild = true;
-      this.line?.show();
-      this.child.show();
-      this.valueBox.updateText("-");
-    } else {
-      this.showChild = false;
-      this.line?.hide();
-      this.child.hide();
-      this.valueBox.updateText("+");
-    }
-  };
-
-  linkToObject = (targetObjectBox: ObjectBox) => {
-    console.log(targetObjectBox);
-    if (targetObjectBox.parent) {
-      window.alert("This object is already linked to another object");
-      return;
-    }
-    if (this.child && this.line) {
-      this.line.remove();
-      this.child = null;
-      this.line = null;
-    }
-
-    this.child = targetObjectBox;
-    this.child.rect.on("dragmove", () => {
-      this.updateLine();
-    });
-    this.line = new LinkLine(this.draw, this, targetObjectBox);
-    this.graph.addLinkLine(this.line);
-    this.showChild = true;
-    this.valueBox.updateText("-");
-    this.updateLine();
-  };
-
-  get value() {
-    let value = "" as any;
-    if (this.child) {
-      value = this.child.value;
-    } else {
-      value = this.valueBox.value;
-    }
-    return { [this.keyBox.value]: value };
+  get keyValue() {
+    return this.keyBox.value;
   }
 
-  // just show this box and the line
-  show = () => {
-    this.showChild = true;
-    if (this.child) {
-      this.valueBox.updateText("-");
+  get valueValue() {
+    return this.valueBox.value;
+  }
+
+  get value() {
+    return {
+      [this.keyValue]: this.valueValue,
+    };
+  }
+
+  get child() {
+    if (this.valueBox instanceof ObjectSign) {
+      return this.valueBox.child;
     }
+    return null;
+  }
+
+  get showChild() {
+    if (this.valueBox instanceof ObjectSign) {
+      return this.valueBox.showChild;
+    }
+    return false;
+  }
+
+  show = () => {
     this.rect.show();
     this.keyBox.show();
     this.valueBox.show();
   };
 
-  // hide all the children and the line
   hide = () => {
-    this.showChild = false;
-    if (this.child) {
-      this.valueBox.updateText("+");
-    }
     this.rect.hide();
     this.keyBox.hide();
-    this.line?.hide();
     this.valueBox.hide();
-    if (this.child) {
-      this.child.hide();
-    }
-    if (this.line) {
-      this.line.hide();
-    }
   };
 }

@@ -2,6 +2,7 @@ import { Svg } from "@svgdotjs/svg.js";
 import { Rect } from "@svgdotjs/svg.js";
 import { Box } from "./box";
 import Graph from "./graph";
+import EventEmitter from "./EventEmitter";
 
 interface Props {
   x: number;
@@ -11,6 +12,7 @@ interface Props {
 }
 
 export default class NormalRect implements Box {
+  eventEmitter = new EventEmitter();
   rect: Rect;
   parent: NormalRect | null = null;
   graph: Graph;
@@ -35,13 +37,13 @@ export default class NormalRect implements Box {
     return { x, y, width, height };
   }
 
-  hide = () => {
+  hide() {
     this.rect.hide();
-  };
+  }
 
-  show = () => {
+  show() {
     this.rect.show();
-  };
+  }
 
   setWidth = () => {};
 

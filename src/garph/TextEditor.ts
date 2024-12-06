@@ -1,10 +1,10 @@
 import { Svg, Text } from "@svgdotjs/svg.js";
 import { Box } from "./box";
 import { Tspan } from "@svgdotjs/svg.js";
-import { Graph } from "./graph";
+import Graph, { UPDATE_TEXT } from "./graph";
 
 const size = 16;
-const DEFAULT_MAX_WIDTH = 100;
+const DEFAULT_MAX_WIDTH = 400;
 
 export default class TextEditor implements Box {
   text: Text;
@@ -19,6 +19,7 @@ export default class TextEditor implements Box {
     graph: Graph,
     maxWidth?: number
   ) {
+    console.log(text);
     this.maxWidth = maxWidth ?? DEFAULT_MAX_WIDTH;
     this.graph = graph;
     this.text = this.draw
@@ -55,6 +56,7 @@ export default class TextEditor implements Box {
     this.text.build(true);
     this.addLine(this.text, newText);
     this.text.build(false);
+    this.graph.eventEmitter.emit(UPDATE_TEXT);
   }
 
   move(x: number, y: number) {

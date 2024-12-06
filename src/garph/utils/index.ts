@@ -26,3 +26,23 @@ export const getRightMid = (box: Box): Point => {
     y: y + height / 2,
   };
 };
+
+export const getControlPoints = (start: Box, end: Box, curveHeight = 0) => {
+  const { x, y, width, height } = start;
+  const { x: ex, y: ey, width: ewidth, height: eheight } = end;
+  const controlPoint1 = {
+    x: x + (ex - x) / 3,
+    y: y + height / 2 - curveHeight,
+  };
+  const controlPoint2 = {
+    x: x + (2 * (ex - x)) / 3,
+    y: ey + eheight / 2 - curveHeight,
+  };
+
+  return `
+              M${x + width},${y + height / 2} 
+              C${controlPoint1.x},${controlPoint1.y} 
+              ${controlPoint2.x},${controlPoint2.y} 
+              ${ex},${ey + eheight / 2}
+          `;
+};

@@ -3,17 +3,24 @@ import { Box } from "./box";
 import KeyValueBox from "./KeyValueBox";
 import ObjectBox from "./ObjectBox";
 import Line from "./Line";
+import { getControlPoints } from "./utils";
+import ObjectSign from "./ObjectSign";
 
 export default class LinkLine extends Line {
-  keyValueBox: KeyValueBox;
+  keyValueBox: ObjectSign;
   objectBox: ObjectBox;
   private keydownHandler: (event: KeyboardEvent) => void;
+  private moveHandler: () => void;
 
-  constructor(draw: Svg, start: KeyValueBox, end: ObjectBox, options = {}) {
+  constructor(draw: Svg, start: ObjectSign, end: ObjectBox, options = {}) {
     super(draw, options);
     this.keyValueBox = start;
     this.objectBox = end;
-    this.path.plot(this.getControlPoints(start, end));
+    this.keyValueBox.child = this.objectBox;
+    this.objectBox.setParent(this.keyValueBox);
+    this.path.plot(
+      getControlPoints(this.keyValueBox.boundary, this.objectBox.boundary)
+    );
 
     this.keydownHandler = (event: KeyboardEvent) => {
       if (
@@ -24,11 +31,18 @@ export default class LinkLine extends Line {
         this.remove();
       }
     };
+
+    this.moveHandler = () => this.update();
+    this.keyValueBox.eventEmitter.on("move", this.moveHandler);
+    this.objectBox.eventEmitter.on("move", this.moveHandler);
     document.addEventListener("keydown", this.keydownHandler);
   }
 
   remove = () => {
+    this.keyValueBox.eventEmitter.off("move", this.moveHandler);
+    this.objectBox.eventEmitter.off("move", this.moveHandler);
     document.removeEventListener("keydown", this.keydownHandler);
+
     if (Line.lastClickedLine === this) {
       Line.lastClickedLine = null;
     }
@@ -38,29 +52,21 @@ export default class LinkLine extends Line {
     this.keyValueBox.line = null;
   };
 
-  getControlPoints = (start: Box, end: Box) => {
-    const { curveHeight } = this.settings;
-    const { x, y, width, height } = start.boundary;
-    const { x: ex, y: ey, width: ewidth, height: eheight } = end.boundary;
-    const controlPoint1 = {
-      x: x + (ex - x) / 3,
-      y: y + height / 2 - curveHeight,
-    };
-    const controlPoint2 = {
-      x: x + (2 * (ex - x)) / 3,
-      y: ey + eheight / 2 - curveHeight,
-    };
-
-    return `
-              M${x + width},${y + height / 2} 
-              C${controlPoint1.x},${controlPoint1.y} 
-              ${controlPoint2.x},${controlPoint2.y} 
-              ${ex},${ey + eheight / 2}
-          `;
+  update = () => {
+    this.path.plot(
+      getControlPoints(this.keyValueBox.boundary, this.objectBox.boundary)
+    );
   };
 
-  update = (start: Box, end: Box) => {
-    console.log("update");
-    this.path.plot(this.getControlPoints(start, end));
+  checkValid = (start: KeyValueBox, end: ObjectBox) => {
+    if (end.parent) {
+      return false;
+    }
+  };
+
+  breakLink = () => {
+    this.keyValueBox.child = null;
+    this.objectBox.setParent(null);
+    this.path.remove();
   };
 }
