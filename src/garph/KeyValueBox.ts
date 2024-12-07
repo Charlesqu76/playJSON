@@ -16,59 +16,16 @@ interface Props {
 export default class KeyValueBox extends DraggableRect implements Box {
   protected keyBox: TextBox;
   protected valueBox: ObjectSign;
+  protected origin: { x: number; y: number } | null = null;
   constructor(protected draw: Svg, { x, y, key, value }: Props, graph: Graph) {
     super(draw, { x, y, width: 0, height: 0 }, graph);
-    this.graph.addKeyValueBox(this);
     this.rect.fill("white");
-    this.rect.on("dragmove", (event) => {
-      const { box } = (event as CustomEvent).detail;
-      if (this instanceof ObjectBox) return;
-      this.graph.objectBoxes.forEach((child) => {
-        if (this.isOverlapping(box, child.rect.bbox())) {
-          child.rect.attr({ "stroke-width": 3, stroke: "red" });
-        } else {
-          child.rect.attr({ "stroke-width": 1, stroke: "black" });
-        }
-      });
-    });
-
-    this.rect.on("dragend", (event) => {
-      this.rect.front();
-      this.keyBox.front();
-      this.valueBox.front();
-      const box = this.rect.bbox();
-      for (const objectBox of this.graph.objectBoxes) {
-        if (
-          this.parent === objectBox &&
-          !this.isOverlapping(box, objectBox.rect.bbox())
-        ) {
-          objectBox.removeChildren(this);
-        }
-      }
-
-      for (const objectBox of this.graph.objectBoxes) {
-        if (
-          this.isOverlapping(box, objectBox.rect.bbox()) &&
-          this.parent !== objectBox
-        ) {
-          // @ts-ignore
-          this.parent?.removeChildren(this);
-          objectBox.addChildren(this);
-          objectBox.rect.attr({ "stroke-width": 1, stroke: "black" });
-          break;
-        }
-      }
-    });
-
-    // key
+    this.graph.addKeyValueBox(this);
+    // keyBox
     this.keyBox = new TextBox(draw, { text: key, x, y }, graph);
-    this.keyBox.dblclick(() => {
-      const { width, x, y } = this.keyBox.boundary;
-      this.valueBox.move(x + width, y);
-      this.parent?.setWidth();
-      this.parent?.setHeight();
-    });
+    // this.keyBox.text.text.fill('#A31515');
     const { width } = this.keyBox.boundary;
+    // valyeBox
     this.valueBox = new ObjectSign(
       draw,
       {
@@ -79,49 +36,14 @@ export default class KeyValueBox extends DraggableRect implements Box {
       },
       graph
     );
-
     this.setHeight();
     this.setWidth();
-
-    this.rect.on("dragmove", (event) => {
-      const { box } = (event as CustomEvent).detail;
-      this.move(box.x, box.y);
-    });
-  }
-
-  move = (x: number, y: number) => {
-    this.rect.move(x, y);
-    this.keyBox.move(x, y);
-    this.valueBox?.move(x + this.keyBox.boundary.width, y);
-    this.eventEmitter.emit("move");
-  };
-
-  setWidth = () => {
-    this.rect.width(
-      this.keyBox.boundary.width + this.valueBox.boundary.width + 2
-    );
-  };
-
-  setHeight = () => {
-    this.rect.height(
-      Math.max(
-        this.keyBox.boundary.height + 2,
-        this.valueBox.boundary.height + 2
-      )
-    );
-  };
-
-  get keyValue() {
-    return this.keyBox.value;
-  }
-
-  get valueValue() {
-    return this.valueBox.value;
+    this.initEvnet();
   }
 
   get value() {
     return {
-      [this.keyValue]: this.valueValue,
+      [this.keyBox.value]: this.valueBox.value,
     };
   }
 
@@ -139,6 +61,98 @@ export default class KeyValueBox extends DraggableRect implements Box {
     return false;
   }
 
+  initEvnet = () => {
+    this.rect.on("mouseover", () => {
+      this.front();
+      this.rect.attr({ "stroke-width": 3, stroke: "red" });
+    });
+
+    this.rect.on("mouseout", () => {
+      this.rect.attr({ "stroke-width": 1, stroke: "black" });
+    });
+
+    this.rect.on("dragmove", (event) => {
+      const { box } = (event as CustomEvent).detail;
+      if (!this.origin) {
+        this.origin = this.boundary;
+      }
+      this.move(box.x, box.y);
+      if (this instanceof ObjectBox) return;
+      this.graph.objectBoxes.forEach((child) => {
+        if (this.isOverlapping(box, child.rect.bbox())) {
+          child.rect.attr({ "stroke-width": 3, stroke: "red" });
+        } else {
+          child.rect.attr({ "stroke-width": 1, stroke: "black" });
+        }
+      });
+    });
+
+    this.rect.on("dragend", (event) => {
+      const box = this.rect.bbox();
+      for (const objectBox of this.graph.objectBoxes) {
+        const overlap = this.isOverlapping(box, objectBox.rect.bbox());
+        if (overlap) {
+          if (this.parent !== objectBox) {
+            // @ts-ignore
+            this.parent?.removeChildren(this);
+            objectBox.addChildren(this);
+            objectBox.rect.attr({ "stroke-width": 1, stroke: "black" });
+          } else {
+            console.log("asdfasdfsdf");
+            if (this.origin) {
+              this.move(this.origin.x, this.origin.y);
+            }
+          }
+        } else {
+          if (this.parent === objectBox) {
+            objectBox.removeChildren(this);
+          }
+        }
+      }
+      this.origin = null;
+    });
+
+    this.keyBox.text.text.on("dblclick", () => {
+      const v = window.prompt("dblclick");
+      if (!v) return;
+      this.keyBox.updateText(v);
+      const { width, x, y } = this.keyBox.boundary;
+      this.valueBox.move(x + width, y);
+      this.setWidth();
+      this.setHeight();
+      this.parent?.setWidth();
+      this.parent?.setHeight();
+      this.parent?.move(this.boundary.x, this.boundary.y);
+    });
+  };
+
+  front = () => {
+    this.rect.front();
+    this.keyBox.front();
+    this.valueBox.front();
+  };
+
+  move = (x: number, y: number) => {
+    this.rect.move(x, y);
+    this.keyBox.move(x, y);
+    this.valueBox?.move(x + this.keyBox.boundary.width, y);
+    this.eventEmitter.emit("move");
+  };
+
+  setWidth = () => {
+    const width = this.keyBox.boundary.width + this.valueBox.boundary.width + 2;
+    this.rect.width(width);
+  };
+
+  setHeight = () => {
+    this.rect.height(
+      Math.max(
+        this.keyBox.boundary.height + 2,
+        this.valueBox.boundary.height + 2
+      )
+    );
+  };
+
   show = () => {
     this.rect.show();
     this.keyBox.show();
@@ -150,4 +164,6 @@ export default class KeyValueBox extends DraggableRect implements Box {
     this.keyBox.hide();
     this.valueBox.hide();
   };
+
+  delete = () => {};
 }

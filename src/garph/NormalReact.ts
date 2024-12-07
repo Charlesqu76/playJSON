@@ -22,14 +22,7 @@ export default class NormalRect implements Box {
     graph: Graph
   ) {
     this.graph = graph;
-    this.rect = draw
-      .rect(width, height)
-      .move(x, y)
-      .attr({ fill: "none", stroke: "#000" });
-  }
-
-  move(x: number, y: number) {
-    this.rect.move(x, y);
+    this.rect = draw.rect(width, height).move(x, y).attr({ fill: "none" });
   }
 
   get boundary() {
@@ -37,17 +30,25 @@ export default class NormalRect implements Box {
     return { x, y, width, height };
   }
 
-  hide() {
-    this.rect.hide();
+  move(x: number, y: number) {
+    this.rect.move(x, y);
   }
 
-  show() {
+  front() {
+    this.rect.front();
+  }
+
+  setWidth() {}
+
+  setHeight() {}
+
+  show = () => {
     this.rect.show();
-  }
+  };
 
-  setWidth = () => {};
-
-  setHeight = () => {};
+  hide = () => {
+    this.rect.hide();
+  };
 
   setParent = (parent: NormalRect | null) => {
     this.parent = parent;

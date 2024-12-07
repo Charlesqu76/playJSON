@@ -2,7 +2,10 @@ import { Svg } from "@svgdotjs/svg.js";
 import DraggableRect from "./DraggableRect";
 import NormalRect from "./NormalReact";
 import { Box } from "./box";
-import Graph from "./graph";
+import Graph, { EVENT_UPDATE } from "./graph";
+
+const padding = 5;
+const gap = 3;
 
 interface Props {
   x: number;
@@ -22,10 +25,18 @@ export default class ChildrenBox<T extends NormalRect>
   children: Set<T> = new Set([]);
   constructor(draw: Svg, props: Props, graph: Graph) {
     super(draw, props, graph);
+    this.initEvent();
+  }
+
+  initEvent = () => {
     this.rect.on("dragmove", (event) => {
       const { box } = (event as CustomEvent).detail;
       this.move(box.x, box.y);
     });
+  };
+
+  getWidth = () =>{
+    
   }
 
   addChildren(child: T | T[]) {
@@ -40,6 +51,7 @@ export default class ChildrenBox<T extends NormalRect>
     this.move(this.boundary.x, this.boundary.y);
     this.setWidth();
     this.setHeight();
+    this.graph.eventEmitter.emit(EVENT_UPDATE, { name: "addChildren" });
   }
 
   removeChildren(child: T) {
@@ -48,6 +60,7 @@ export default class ChildrenBox<T extends NormalRect>
     this.move(this.boundary.x, this.boundary.y);
     this.setWidth();
     this.setHeight();
+    this.graph.eventEmitter.emit(EVENT_UPDATE, { name: "removeChildren" });
   }
 
   setWidth = () => {
@@ -60,7 +73,7 @@ export default class ChildrenBox<T extends NormalRect>
       width = Math.max(width, child.boundary.width);
     });
 
-    this.rect.width(width + 2);
+    this.rect.width(width + padding * 2);
   };
 
   setHeight = () => {
@@ -72,21 +85,21 @@ export default class ChildrenBox<T extends NormalRect>
     this.children.forEach((child) => {
       height += child.boundary.height;
     });
-    this.rect.height(height + 2);
+    this.rect.height(height + padding * 2 + gap * (this.children.size - 1));
   };
 
   move = (x: number, y: number) => {
     this.rect.move(x, y);
-    let previous = null as T | null;
+    Array.from(this.children).reduce((acc, cur) => {
+      cur.move(x + padding, acc + padding);
+      acc += cur.boundary.height + gap;
+      return acc;
+    }, y);
     this.eventEmitter.emit("move");
+  };
 
-    Array.from(this.children).forEach((child, index) => {
-      child.move(
-        x,
-        (previous?.boundary.y ?? y) + (previous?.boundary.height ?? 0)
-      );
-      previous = child;
-    });
+  delete = () => {
+    // this.rect.remove();
   };
 
   show = () => {

@@ -10,17 +10,21 @@ import LinkLine from "./LinkLine";
 import Line from "./Line";
 import { layoutTree } from "./layout";
 import EventEmitter from "./EventEmitter";
+import ChildrenBox from "./ChildrenBox";
 
-export const UPDATE_TEXT = Symbol("updateText");
+export const EVENT_UPDATE = Symbol("update");
+export const EVENT_ADDKEYVALYEVBOX = Symbol("addKeyValueBox");
 
 class Graph {
   eventEmitter: EventEmitter = new EventEmitter();
   canvas: Svg | null = null;
   private onZoomCallback: ((zoom: number) => void) | null = null;
+  private onValueUpdate: ((value: any) => void) | null = null;
   node: ObjectBox | null = null;
   objectBoxes: ObjectBox[] = [];
   keyValueBoxes: KeyValueBox[] = [];
   linkLines: WeakSet<LinkLine> = new WeakSet([]);
+  selectedItem: ObjectBox | Line | null = null;
   private mouseX: number = 0;
   private mouseY: number = 0;
 
@@ -36,6 +40,58 @@ class Graph {
       this.mouseY = e.clientY;
     });
   }
+
+  initCanvas = (id: string) => {
+    const container = document.querySelector(id);
+    console.log(container);
+    if (!container) return;
+
+    const { width, height } = container.getBoundingClientRect();
+
+    this.canvas = SVG()
+      .addTo(id)
+      .size("100%", "100%")
+      .viewbox(`0 0 ${width} ${height}`)
+      .panZoom({ zoomMin: 0.1, zoomMax: 5 });
+
+    this.initEvent();
+
+    this.canvas.on("zoom", (event: any) => {
+      if (this.onZoomCallback) {
+        this.onZoomCallback(event.detail.level);
+      }
+    });
+  };
+
+  initEvent = () => {
+    if (!this.canvas) return;
+    // update key value text
+    // link or unlink
+    // add or remove keyvauleBox in objectBox
+    this.eventEmitter.on(EVENT_UPDATE, ({ name }) => {
+      console.log(name);
+      console.log(this.getAllIsolateObjectBox());
+      this.onValueUpdate && this.onValueUpdate('asdf');
+    });
+
+    this.eventEmitter.on(EVENT_ADDKEYVALYEVBOX, ({ name }) => {});
+
+    // link
+    this.canvas.node.addEventListener("click", () => {
+      if (Line.lastClickedLine) {
+        Line.lastClickedLine.unselect();
+        Line.lastClickedLine = null;
+      }
+    });
+  };
+
+  setUpdateCallback = (callback: (value: any) => void) => {
+    this.onValueUpdate = callback;
+  };
+
+  setZoomCallback = (callback: (zoom: number) => void) => {
+    this.onZoomCallback = callback;
+  };
 
   private async handlePaste() {
     if (this.canvas === null) return;
@@ -59,47 +115,11 @@ class Graph {
         },
         this
       );
+      layoutTree(newNode);
     } catch (err) {
       console.error("Failed to paste:", err);
     }
   }
-
-  initCanvas = (id: string) => {
-    const container = document.querySelector(id);
-    if (!container) return;
-
-    this.eventEmitter.on(UPDATE_TEXT, () => {
-      console.log("asdfasdfasdf");
-    });
-
-    const { width, height } = container.getBoundingClientRect();
-
-    this.canvas = SVG()
-      .addTo(id)
-      .size("100%", "100%")
-      .viewbox(`0 0 ${width} ${height}`)
-      .zoom(1)
-      .panZoom({ zoomMin: 0.1, zoomMax: 5 });
-
-    this.canvas.node.setAttribute("tabindex", "0");
-
-    this.canvas.node.addEventListener("click", () => {
-      if (Line.lastClickedLine) {
-        Line.lastClickedLine.unselect();
-        Line.lastClickedLine = null;
-      }
-    });
-
-    this.canvas.on("zoom", (event: any) => {
-      if (this.onZoomCallback) {
-        this.onZoomCallback(event.detail.level);
-      }
-    });
-  };
-
-  setZoomCallback = (callback: (zoom: number) => void) => {
-    this.onZoomCallback = callback;
-  };
 
   initData = (data: Object) => {
     if (!this.canvas) return;
@@ -131,7 +151,7 @@ class Graph {
     return this.objectBoxes;
   };
 
-  getAllIsolateBox = () => {
+  getAllIsolateObjectBox = () => {
     return this.objectBoxes.filter((box) => !box.parent);
   };
 
@@ -139,30 +159,30 @@ class Graph {
     this.linkLines.add(linkline);
   };
 
-  // centerViewOn = (x: number, y: number) => {
-  //   if (!this.canvas) return;
-  //   const viewbox = this.canvas.viewbox();
-  //   const newX = x - viewbox.width / 2;
-  //   const newY = y - viewbox.height / 2;
-  //   this.canvas.viewbox(newX, newY, viewbox.width, viewbox.height).zoom(0.8);
-  // };
+  centerViewOn = (x: number, y: number) => {
+    if (!this.canvas) return;
+    const viewbox = this.canvas.viewbox();
+    const newX = x - viewbox.width / 2;
+    const newY = y - viewbox.height / 2;
+    this.canvas.viewbox(newX, newY, viewbox.width, viewbox.height).zoom(0.8);
+  };
 
-  // findMatchingObjects = (searchText: string) => {
-  //   if (!searchText.trim()) return null;
+  findMatchingObjects = (searchText: string) => {
+    if (!searchText.trim()) return null;
 
-  //   const match = this.keyValueBoxes.find((box) => {
-  //     const value = box.valueValue;
-  //     if (typeof value !== "string") return false;
-  //     return value.toLowerCase().includes(searchText.toLowerCase());
-  //   });
+    const match = this.keyValueBoxes.find((box) => {
+      const value = "";
+      if (typeof value !== "string") return false;
+      return value.toLowerCase().includes(searchText.toLowerCase());
+    });
 
-  //   if (!match) return null;
+    if (!match) return null;
 
-  //   const { x, y } = match.boundary;
-  //   this.centerViewOn(x, y);
+    const { x, y } = match.boundary;
+    this.centerViewOn(x, y);
 
-  //   return null;
-  // };
+    return null;
+  };
 
   getZoom = (): number => {
     if (!this.canvas) return 1;
@@ -180,5 +200,7 @@ class Graph {
     };
   };
 }
+
+export const graph1 = new Graph();
 
 export default Graph;

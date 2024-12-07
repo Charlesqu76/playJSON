@@ -35,7 +35,7 @@ export default class DraggableRect extends NormalRect {
     });
 
     this.rect.on("mouseout", () => {
-      this.rect.attr({ "stroke-width": 1, stroke: "black" });
+      // this.rect.attr({ "stroke-width": 1, stroke: "black" });
     });
 
     this.rect.on("dragmove", (event) => {

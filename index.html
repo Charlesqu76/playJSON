@@ -5,24 +5,22 @@
     <meta charset="UTF-8" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <title>Vite App</title>
+    <link rel="stylesheet" href="/src/styles//index.css" />
     <style>
-      #app {
+      /* #app {
         margin-top: 100px;
         margin-left: 100px;
         display: flex;
         justify-content: center;
         align-items: center;
-        height: 100vh;
         font-size: 2rem;
-      }
+      } */
     </style>
   </head>
   <body>
-    <button id="button">button</button>
-    <button id="layout">layout</button>
-    <span id="zoom">1</span>
+    <div id="app" class="h-screen flex flex-col p-2"></div>
 
-    <div id="app"></div>
-    <script type="module" src="/src/main.ts"></script>
+    <!-- <script type="module" src="/src/main.ts"></script> -->
+    <script type="module" src="/src/index.tsx"></script>
   </body>
 </html>

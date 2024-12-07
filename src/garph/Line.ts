@@ -23,7 +23,12 @@ export default class Line {
       width: strokeWidth,
     });
 
-    this.path.click((event) => {
+    this.initEvent();
+  }
+
+  initEvent = () => {
+    this.path.on("click", (event) => {
+      this.path.front();
       event.stopPropagation();
       if (Line.lastClickedLine && Line.lastClickedLine !== this) {
         Line.lastClickedLine.unselect();
@@ -39,7 +44,7 @@ export default class Line {
     this.path.on("mouseout", () => {
       this.path.attr({ cursor: "default" });
     });
-  }
+  };
 
   hide = () => {
     this.path.hide();

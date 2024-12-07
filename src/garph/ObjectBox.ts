@@ -2,6 +2,7 @@ import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./KeyValueBox";
 import Graph from "./graph";
 import ChildrenBox from "./ChildrenBox";
+import LinkLine from "./LinkLine";
 interface Props {
   x: number;
   y: number;
@@ -10,6 +11,7 @@ interface Props {
 
 export default class ObjectBox extends ChildrenBox<KeyValueBox> {
   isArray = false;
+  line: LinkLine | null = null;
   private isHovered = false;
 
   constructor(draw: Svg, { x, y, value }: Props, graph: Graph) {
@@ -23,27 +25,6 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
     if (Array.isArray(value)) {
       this.isArray = true;
     }
-
-    this.rect.on("mouseover", () => {
-      this.isHovered = true;
-      this.rect.attr({
-        cursor: "grab",
-        "stroke-width": 5,
-        stroke: "grey",
-      });
-    });
-
-    this.rect.on("mouseout", () => {
-      this.isHovered = false;
-    });
-
-    // Add keyboard event listeners
-    document.addEventListener("keydown", (e) => {
-      if (!this.isHovered) return;
-      if ((e.ctrlKey || e.metaKey) && e.key === "c") {
-        this.handleCopy();
-      }
-    });
 
     const entries = Object.entries(value);
     let previous = null as KeyValueBox | null;
@@ -65,13 +46,8 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
     this.addChildren(children);
 
     this.graph.layout();
-  }
 
-  private handleCopy() {
-    const jsonStr = JSON.stringify(this.value);
-    navigator.clipboard.writeText(jsonStr).catch((err) => {
-      console.error("Failed to copy:", err);
-    });
+    this.initEvent();
   }
 
   get value() {
@@ -89,18 +65,48 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
     return m;
   }
 
-  // move(x: number, y: number) {
-  //   // Assuming there's an existing move method
-  //   // ...existing move logic...
-  //   this.emit('move');
-  //   this.eventEmitter.emit('move');
-  // }
+  private handleCopy() {
+    const jsonStr = JSON.stringify(this.value);
+    navigator.clipboard.writeText(jsonStr).catch((err) => {
+      console.error("Failed to copy:", err);
+    });
+  }
 
-  // on(event: string, handler: Function) {
-  //   this.eventEmitter.on(event, handler);
-  // }
+  initEvent = () => {
+    this.rect.on("mouseover", () => {
+      this.isHovered = true;
+      this.rect.attr({
+        cursor: "grab",
+        "stroke-width": 5,
+        stroke: "grey",
+      });
+    });
 
-  // off(event: string, handler: Function) {
-  //   this.eventEmitter.off(event, handler);
-  // }
+    this.rect.on("mouseout", () => {
+      this.isHovered = false;
+      this.rect.attr({
+        cursor: "normal",
+        "stroke-width": 1,
+        stroke: "none",
+      });
+    });
+
+    this.rect.on("click", () => {
+      // console.log("click");
+      // if (this.graph.selectedItem !== this) {
+      //   this.rect.attr({ "stroke-width": 1, stroke: "none" });
+      // }
+      // this.graph.selectedItem = this;
+      // this.rect.attr({ "stroke-width": 3, stroke: "red" });
+      // this.delete();
+    });
+
+    // Add keyboard event listeners
+    document.addEventListener("keydown", (e) => {
+      if (!this.isHovered) return;
+      if ((e.ctrlKey || e.metaKey) && e.key === "c") {
+        this.handleCopy();
+      }
+    });
+  };
 }

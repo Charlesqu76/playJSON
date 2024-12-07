@@ -5,18 +5,23 @@ import ObjectBox from "./ObjectBox";
 import Line from "./Line";
 import { getControlPoints } from "./utils";
 import ObjectSign from "./ObjectSign";
+import Graph, { EVENT_UPDATE } from "./graph";
 
 export default class LinkLine extends Line {
   keyValueBox: ObjectSign;
   objectBox: ObjectBox;
+  graph: Graph;
   private keydownHandler: (event: KeyboardEvent) => void;
   private moveHandler: () => void;
 
-  constructor(draw: Svg, start: ObjectSign, end: ObjectBox, options = {}) {
-    super(draw, options);
+  constructor(draw: Svg, start: ObjectSign, end: ObjectBox, graph: Graph) {
+    super(draw, {});
+    this.graph = graph;
     this.keyValueBox = start;
     this.objectBox = end;
     this.keyValueBox.child = this.objectBox;
+    this.keyValueBox.line = this;
+    this.objectBox.line = this;
     this.objectBox.setParent(this.keyValueBox);
     this.path.plot(
       getControlPoints(this.keyValueBox.boundary, this.objectBox.boundary)
@@ -46,10 +51,7 @@ export default class LinkLine extends Line {
     if (Line.lastClickedLine === this) {
       Line.lastClickedLine = null;
     }
-    this.objectBox.setParent(null);
-    this.keyValueBox.child = null;
-    this.path.remove();
-    this.keyValueBox.line = null;
+    this.breakLink();
   };
 
   update = () => {
@@ -65,8 +67,11 @@ export default class LinkLine extends Line {
   };
 
   breakLink = () => {
+    console.log("asdfasdf");
     this.keyValueBox.child = null;
     this.objectBox.setParent(null);
     this.path.remove();
+    this.graph.eventEmitter.emit(EVENT_UPDATE, { name: "breakLink" });
+    this.keyValueBox.line = null;
   };
 }

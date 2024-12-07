@@ -1,10 +1,10 @@
-import { data } from "./data";
+import { data, data1 } from "./data";
 import Graph from "./garph/graph";
 
 const main = () => {
   const graph = new Graph();
 
-  graph.initCanvas("#app");
+  graph.initCanvas("#graph");
   graph.initData(data);
   graph.layout();
   document.querySelector("#zoom")!.textContent = graph.getZoom().toFixed(2);

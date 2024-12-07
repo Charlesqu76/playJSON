@@ -9,6 +9,9 @@ import LinkLine from "./LinkLine";
 
 export default class ObjectSign extends TextBox {
   showChild: boolean = true;
+  isObject: boolean = false;
+  isKeyValueobject: boolean = false;
+  isArrayObject: boolean = false;
   parent: KeyValueBox;
   child: ObjectBox | null = null;
   line: LinkLine | null = null;
@@ -25,26 +28,20 @@ export default class ObjectSign extends TextBox {
     graph: Graph
   ) {
     const isObject = typeof value === "object";
-    super(draw, { text: isObject ? "object" : value, x, y }, graph);
-    this.sign = new TextBox(
+    const isKeyValueobject = isObject && !Array.isArray(value);
+    const isArray = Array.isArray(value);
+
+    super(
       draw,
-      { text: this.showChild ? "-" : "+", x: x + super.boundary.width, y },
+      { text: isObject ? (isArray ? "[]" : "{}") : value, x, y },
       graph
     );
 
-    this.sign.text.text.on("click", () => {
-      if (this.showChild) {
-        this.showChild = false;
-        this.child?.hide();
-        this.line?.hide();
-      } else {
-        this.showChild = true;
-        this.child?.show();
-        this.line?.show();
-      }
-      this.updateText(this.showChild ? "-" : "+");
-      this.graph.layout();
-    });
+    this.isObject = isObject;
+    this.isKeyValueobject = isKeyValueobject;
+    this.isArrayObject = isArray;
+
+    this.sign = this.initSign(x, y);
 
     this.moveCb = (x, y) => {
       this.sign.move(x + this.rect.bbox().width, y);
@@ -52,7 +49,9 @@ export default class ObjectSign extends TextBox {
 
     this.parent = parent;
 
+    // this.text.text.fill("#0451A5");
     this.text.text.fill("green");
+
     if (isObject) {
       this.child = new ObjectBox(
         draw,
@@ -64,7 +63,7 @@ export default class ObjectSign extends TextBox {
         graph
       );
 
-      this.line = new LinkLine(draw, this, this.child);
+      this.line = new LinkLine(draw, this, this.child, this.graph);
       this.graph.addLinkLine(this.line);
 
       if (!this.showChild) {
@@ -73,7 +72,33 @@ export default class ObjectSign extends TextBox {
       }
     }
 
+    if (this.child) {
+      this.sign.show();
+    } else {
+      this.sign.hide();
+    }
+
+    this.text.text.css({ cursor: "pointer" });
+    this.initEvent();
+  }
+
+  get value() {
+    return this.child?.value || this.text.value;
+  }
+
+  get boundary() {
+    const { x, y, width, height } = this.rect.bbox();
+    return {
+      x: x,
+      y: y,
+      width: width + this.sign.boundary.width,
+      height: height,
+    };
+  }
+
+  initEvent = () => {
     this.text.text.on("mousedown", (event) => {
+      if (!this.parent.parent) return;
       event = event as MouseEvent;
       event.stopPropagation();
 
@@ -117,27 +142,36 @@ export default class ObjectSign extends TextBox {
       document.addEventListener("mouseup", mouseup);
     });
 
-    if (this.child) {
-      this.sign.show();
-    } else {
-      this.sign.hide();
-    }
+    this.text.text.dblclick(() => {
+      const v = window.prompt("dblclick");
+      if (!v) return;
+      this.updateText(v);
+      if (v === "{}") {
+        this.isObject = true;
+        this.isKeyValueobject = true;
+        this.isArrayObject = false;
+      } else if (v === "[]") {
+        this.isObject = true;
+        this.isKeyValueobject = false;
+        this.isArrayObject = true;
+      } else {
+        this.isObject = false;
+        this.isKeyValueobject = false;
+        this.isArrayObject = false;
+        this.line?.breakLink();
+      }
+      this.parent.setWidth();
+      this.parent.setHeight();
+      this.parent?.parent?.setWidth();
+      this.parent?.parent?.setHeight();
+      this.parent?.parent?.move(this.boundary.x, this.boundary.y);
+    });
+  };
 
-    this.text.text.css({ cursor: "pointer" });
-  }
-  get value() {
-    return this.child?.value || this.text.value;
-  }
-
-  get boundary() {
-    const { x, y, width, height } = this.rect.bbox();
-    return {
-      x: x,
-      y: y,
-      width: width + this.sign.boundary.width,
-      height: height,
-    };
-  }
+  front = () => {
+    this.text.text.front();
+    this.sign.text.text.front();
+  };
 
   linkToObject = (targetObjectBox: ObjectBox) => {
     if (targetObjectBox.parent) {
@@ -148,6 +182,49 @@ export default class ObjectSign extends TextBox {
       this.line.breakLink();
     }
 
-    this.line = new LinkLine(this.draw, this, targetObjectBox);
+    this.line = new LinkLine(this.draw, this, targetObjectBox, this.graph);
+  };
+
+  show: () => void = () => {
+    this.rect.show();
+    this.text.show();
+    this.sign.show();
+  };
+
+  hide: () => void = () => {
+    this.rect.hide();
+    this.text.hide();
+    this.sign.hide();
+    this.child?.hide();
+    this.line?.hide();
+    this.showChild = false;
+    this.sign.updateText("+");
+  };
+
+  initSign = (x: number, y: number): TextBox => {
+    const sign = new TextBox(
+      this.draw,
+      { text: this.showChild ? "-" : "+", x: x + super.boundary.width, y },
+      this.graph
+    );
+
+    sign.text.text.css({ cursor: "pointer" });
+
+    sign.text.text.on("click", () => {
+      if (this.showChild) {
+        this.sign.updateText("+");
+        this.showChild = false;
+        this.child?.hide();
+        this.child?.children.forEach((child) => child.hide());
+        this.line?.hide();
+      } else {
+        this.sign.updateText("-");
+        this.showChild = true;
+        this.child?.show();
+        this.line?.show();
+      }
+      // this.graph.layout();
+    });
+    return sign;
   };
 }

@@ -22,11 +22,13 @@ interface Props {
 export default class TextBox extends NormalRect implements Box {
   text: TextEditor;
   moveCb: ((x: number, y: number) => void) | null = null;
+  dbclickCb: ((text: string) => void) | null = null;
   constructor(protected draw: Svg, { x, y, text }: Props, graph: Graph) {
     const position = textPosition(x, y);
     super(draw, { width: 0, height: 0, x, y }, graph);
     this.rect.attr({ stroke: "none" });
     this.text = new TextEditor(draw, text, position.x, position.y, graph);
+    this.text.text.attr({ cursor: "pointer" });
     this.rect.width(this.boxAttrs.width);
     this.rect.height(this.boxAttrs.height);
   }
@@ -38,6 +40,19 @@ export default class TextBox extends NormalRect implements Box {
       height: height + padding * 2,
     };
   }
+
+  db = () => {
+    const v = window.prompt("dblclick");
+    if (!v) return;
+    this.updateText(v);
+    console.log(this);
+    console.log(this.dbclickCb);
+    if (this.dbclickCb) this.dbclickCb(v);
+  };
+
+  setDbclick = (callback: (text: string) => void) => {
+    this.dbclickCb = callback;
+  };
 
   updateText(newText: string) {
     this.text.updateText(newText);
@@ -52,15 +67,6 @@ export default class TextBox extends NormalRect implements Box {
     this.eventEmitter.emit("move");
     if (this.moveCb) this.moveCb(x, y);
   };
-
-  dblclick(callback: () => void) {
-    this.text.text.dblclick(() => {
-      const v = window.prompt("dblclick");
-      if (!v) return;
-      this.updateText(v);
-      callback();
-    });
-  }
 
   click(callback: () => void) {
     this.text.click(() => {
