@@ -8,19 +8,19 @@ const App = () => {
   const [json, setJson] = React.useState([] as any);
 
   useEffect(() => {
-    // graph1.initCanvas("#graph");
-    // graph1.initData(data1);
-    // graph1.layout();
-    // const values = graph1.getAllIsolateObjectBox().map((item) => item.value);
-    // setJson(values);
-    // document.querySelector("#zoom")!.textContent = graph1.getZoom().toFixed(2);
-    // graph1.setZoomCallback((zoom) => {
-    //   document.querySelector("#zoom")!.textContent = zoom.toFixed(2);
-    // });
-    // graph1.setUpdateCallback(() => {
-    //   const values = graph1.getAllIsolateObjectBox().map((item) => item.value);
-    //   setJson(values);
-    // });
+    graph1.initCanvas("#graph");
+    graph1.initData(data);
+    graph1.layout();
+    const values = graph1.getAllIsolateObjectBox().map((item) => item.value);
+    setJson(values);
+    document.querySelector("#zoom")!.textContent = graph1.getZoom().toFixed(2);
+    graph1.setZoomCallback((zoom) => {
+      document.querySelector("#zoom")!.textContent = zoom.toFixed(2);
+    });
+    graph1.setUpdateCallback(() => {
+      const values = graph1.getAllIsolateObjectBox().map((item) => item.value);
+      setJson(values);
+    });
   }, []);
 
   return (
@@ -30,11 +30,11 @@ const App = () => {
       </header>
       <div>
         <div className="w-32">
-          <SearchInput></SearchInput>
+          {/* <SearchInput></SearchInput> */}
         </div>
       </div>
-      {/* <main className="grid grid-cols-2 grid-rows-1 w-full h-full gap-2">
-        <div className="col-span-1 row-span-1 overflow-scroll px-2">
+      <main className="grid grid-cols-2 grid-rows-1 w-full h-full gap-2">
+        {/* <div className="col-span-1 row-span-1 overflow-scroll px-2">
           <div className="space-y-4">
             {json.length &&
               json.map((v, k) => (
@@ -43,13 +43,13 @@ const App = () => {
                 </div>
               ))}
           </div>
-        </div>
+        </div> */}
 
-        <div className="col-span-1 row-span-1 w-full border relative flex-3">
+        <div className="col-span-2 row-span-1 w-full border relative flex-3">
           <div id="graph" className="h-full"></div>
           <span id="zoom" className="absolute top-1 left-1"></span>
         </div>
-      </main> */}
+      </main>
     </>
   );
 };

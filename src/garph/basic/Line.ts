@@ -46,13 +46,13 @@ export default class Line {
     });
   };
 
-  hide = () => {
+  hide() {
     this.path.hide();
-  };
+  }
 
-  show = () => {
+  show() {
     this.path.show();
-  };
+  }
 
   unselect = () => {
     this.path.stroke({ color: this.settings.strokeColor });

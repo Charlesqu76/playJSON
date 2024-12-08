@@ -7,10 +7,10 @@ import ObjectBox from "./ObjectBox";
 import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./KeyValueBox";
 import LinkLine from "./LinkLine";
-import Line from "./Line";
+import Line from "./basic/Line";
 import { layoutTree } from "./layout";
 import EventEmitter from "./EventEmitter";
-import ChildrenBox from "./ChildrenBox";
+import ChildrenBox from "./basic/ChildrenBox";
 
 export const EVENT_UPDATE = Symbol("update");
 export const EVENT_ADDKEYVALYEVBOX = Symbol("addKeyValueBox");

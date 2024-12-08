@@ -1,7 +1,7 @@
 import { Svg } from "@svgdotjs/svg.js";
 import NormalRect from "./NormalReact";
-import Graph from "./graph";
-import ObjectBox from "./ObjectBox";
+import Graph from "../graph";
+import ObjectBox from "../ObjectBox";
 
 interface Props {
   x: number;
@@ -17,7 +17,7 @@ const defaultConfig = {
   ActiveStrokeColor: "black",
 };
 
-export default class DraggableRect extends NormalRect {
+export default class DraggableRect<P> extends NormalRect<P> {
   constructor(
     protected draw: Svg,
     { x, y, width, height, config = {} }: Props,

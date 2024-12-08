@@ -1,6 +1,6 @@
 import ObjectBox from "./ObjectBox";
 
-const HORIZONTAL_SPACING = 20;
+const HORIZONTAL_SPACING = 50;
 const VERTICAL_SPACING = 30;
 
 export const layoutTree = (root: ObjectBox) => {

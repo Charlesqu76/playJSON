@@ -1,7 +1,7 @@
 import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./KeyValueBox";
 import Graph from "./graph";
-import ChildrenBox from "./ChildrenBox";
+import ChildrenBox from "./basic/ChildrenBox";
 import LinkLine from "./LinkLine";
 interface Props {
   x: number;
@@ -9,7 +9,12 @@ interface Props {
   value: Object;
 }
 
-export default class ObjectBox extends ChildrenBox<KeyValueBox> {
+/**
+ * children - KeyValueBox
+ * exact one parent - keyValueBox
+ */
+
+export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
   isArray = false;
   line: LinkLine | null = null;
   private isHovered = false;
@@ -21,32 +26,24 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
       graph
     );
     graph.addObjectBox(this);
+    this.isArray = Array.isArray(value);
     this.rect.fill("grey");
-    if (Array.isArray(value)) {
-      this.isArray = true;
-    }
 
     const entries = Object.entries(value);
-    let previous = null as KeyValueBox | null;
     const children = entries.map(([key, value], index) => {
-      const box = new KeyValueBox(
+      return new KeyValueBox(
         draw,
         {
-          x: x,
-          y: (previous?.boundary.y ?? y) + (previous?.boundary.height ?? 0),
+          x: 0,
+          y: 0,
           key: key,
           value: value,
         },
-        graph
+        graph,
+        this
       );
-      previous = box;
-      return box;
     });
-
     this.addChildren(children);
-
-    this.graph.layout();
-
     this.initEvent();
   }
 
@@ -65,15 +62,10 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
     return m;
   }
 
-  private handleCopy() {
-    const jsonStr = JSON.stringify(this.value);
-    navigator.clipboard.writeText(jsonStr).catch((err) => {
-      console.error("Failed to copy:", err);
-    });
-  }
-
   initEvent = () => {
     this.rect.on("mouseover", () => {
+      this.front();
+      this.children.forEach((child) => child.front());
       this.isHovered = true;
       this.rect.attr({
         cursor: "grab",
@@ -109,4 +101,11 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox> {
       }
     });
   };
+
+  private handleCopy() {
+    const jsonStr = JSON.stringify(this.value);
+    navigator.clipboard.writeText(jsonStr).catch((err) => {
+      console.error("Failed to copy:", err);
+    });
+  }
 }

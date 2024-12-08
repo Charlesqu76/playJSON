@@ -1,10 +1,11 @@
 import { Svg } from "@svgdotjs/svg.js";
 import ObjectBox from "./ObjectBox";
-import TextBox from "./TextBox";
+import TextBox from "./basic/TextBox";
 import ObjectSign from "./ObjectSign";
-import { Box } from "./box";
+import { Box } from "./basic/box";
 import Graph from "./graph";
-import DraggableRect from "./DraggableRect";
+import DraggableRect from "./basic/DraggableRect";
+import { EVENT_MOVE } from "./LinkLine";
 
 interface Props {
   x: number;
@@ -13,12 +14,28 @@ interface Props {
   value: string | Object;
 }
 
-export default class KeyValueBox extends DraggableRect implements Box {
+/**
+ *
+ * exact one parent - ObjectBox
+ * exact one child -  ObjectBox
+ *
+ */
+
+export default class KeyValueBox
+  extends DraggableRect<ObjectBox>
+  implements Box
+{
   protected keyBox: TextBox;
-  protected valueBox: ObjectSign;
+  valueBox: ObjectSign;
   protected origin: { x: number; y: number } | null = null;
-  constructor(protected draw: Svg, { x, y, key, value }: Props, graph: Graph) {
+  constructor(
+    protected draw: Svg,
+    { x, y, key, value }: Props,
+    graph: Graph,
+    parent: ObjectBox
+  ) {
     super(draw, { x, y, width: 0, height: 0 }, graph);
+    this.setParent(parent);
     this.rect.fill("white");
     this.graph.addKeyValueBox(this);
     // keyBox
@@ -112,18 +129,21 @@ export default class KeyValueBox extends DraggableRect implements Box {
       this.origin = null;
     });
 
-    this.keyBox.text.text.on("dblclick", () => {
-      const v = window.prompt("dblclick");
-      if (!v) return;
-      this.keyBox.updateText(v);
-      const { width, x, y } = this.keyBox.boundary;
-      this.valueBox.move(x + width, y);
-      this.setWidth();
-      this.setHeight();
-      this.parent?.setWidth();
-      this.parent?.setHeight();
-      this.parent?.move(this.boundary.x, this.boundary.y);
-    });
+    // array key can not be changed
+    if (!this.parent?.isArray) {
+      this.keyBox.text.text.on("dblclick", () => {
+        const v = window.prompt("dblclick");
+        if (!v) return;
+        this.keyBox.updateText(v);
+        const { width, x, y } = this.keyBox.boundary;
+        this.valueBox.move(x + width, y);
+        this.setWidth();
+        this.setHeight();
+        this.parent?.setWidth();
+        this.parent?.setHeight();
+        this.parent?.move(this.boundary.x, this.boundary.y);
+      });
+    }
   };
 
   front = () => {
@@ -132,12 +152,12 @@ export default class KeyValueBox extends DraggableRect implements Box {
     this.valueBox.front();
   };
 
-  move = (x: number, y: number) => {
-    this.rect.move(x, y);
+  move(x: number, y: number) {
+    super.move(x, y);
     this.keyBox.move(x, y);
-    this.valueBox?.move(x + this.keyBox.boundary.width, y);
-    this.eventEmitter.emit("move");
-  };
+    this.valueBox.move(x + this.keyBox.boundary.width, y);
+    this.eventEmitter.emit(EVENT_MOVE);
+  }
 
   setWidth = () => {
     const width = this.keyBox.boundary.width + this.valueBox.boundary.width + 2;
