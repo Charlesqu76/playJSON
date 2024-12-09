@@ -3,27 +3,26 @@ import KeyValueBox from "./KeyValueBox";
 import ObjectBox from "./ObjectBox";
 import Line from "./basic/Line";
 import { getControlPoints } from "./utils";
-import Graph, { EVENT_UPDATE } from "./graph";
-
-export const EVENT_MOVE = Symbol("move");
-export const EVENT_DELETE = Symbol("delete");
+import Graph from "./graph";
+import ObjectSign from "./ObjectSign";
+import { EVENT_UPDATE, EVENT_MOVE, EVENT_DELETE } from "@/event";
 
 export default class LinkLine extends Line {
-  keyValueBox: KeyValueBox;
+  keyValueBox: ObjectSign;
   objectBox: ObjectBox;
   graph: Graph;
   private keydownHandler: (event: KeyboardEvent) => void;
   private moveHandler: () => void;
 
-  constructor(draw: Svg, start: KeyValueBox, end: ObjectBox, graph: Graph) {
+  constructor(draw: Svg, start: ObjectSign, end: ObjectBox, graph: Graph) {
     super(draw, {});
     this.graph = graph;
     this.keyValueBox = start;
     this.objectBox = end;
-    this.keyValueBox.valueBox.child = this.objectBox;
-    this.keyValueBox.valueBox.line = this;
+    this.keyValueBox.child = this.objectBox;
+    this.keyValueBox.line = this;
     this.objectBox.line = this;
-    this.objectBox.setParent(this.keyValueBox);
+    // this.objectBox.setParent(this.keyValueBox);
     this.path.plot(
       getControlPoints(this.keyValueBox.boundary, this.objectBox.boundary)
     );
@@ -71,10 +70,10 @@ export default class LinkLine extends Line {
   };
 
   breakLink = () => {
-    this.keyValueBox.valueBox.child = null;
+    this.keyValueBox.child = null;
     this.objectBox.setParent(null);
     this.path.remove();
-    this.graph.eventEmitter.emit(EVENT_UPDATE, { name: "breakLink" });
-    this.keyValueBox.valueBox.line = null;
+    this.graph.emit(EVENT_UPDATE, { name: "breakLink" });
+    this.keyValueBox.line = null;
   };
 }

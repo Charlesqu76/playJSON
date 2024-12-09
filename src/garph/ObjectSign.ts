@@ -1,5 +1,5 @@
 import { Svg } from "@svgdotjs/svg.js";
-import TextBox, { textPosition } from "./basic/TextBox";
+import TextBox from "./basic/TextBox";
 import Graph from "./graph";
 import ObjectBox from "./ObjectBox";
 import { Line } from "@svgdotjs/svg.js";
@@ -7,7 +7,7 @@ import { getRightMid, isPointInBox } from "./utils";
 import KeyValueBox from "./KeyValueBox";
 import LinkLine from "./LinkLine";
 
-export default class ObjectSign extends TextBox {
+export default class ObjectSign extends TextBox<KeyValueBox> {
   showChild: boolean = true;
   isObject: boolean = false;
   isKeyValueobject: boolean = false;
@@ -15,7 +15,7 @@ export default class ObjectSign extends TextBox {
   // parent: KeyValueBox;
   child: ObjectBox | null = null;
   line: LinkLine | null = null;
-  sign: TextBox | null = null;
+  sign: TextBox<KeyValueBox> | null = null;
 
   constructor(
     protected draw: Svg,
@@ -40,7 +40,7 @@ export default class ObjectSign extends TextBox {
     this.isObject = isObject;
     this.isKeyValueobject = isKeyValueobject;
     this.isArrayObject = isArray;
-    this.parent = parent;
+    this.setParent(parent);
     // this.text.text.fill("#0451A5");
     this.text.text.fill("green");
 
@@ -57,7 +57,7 @@ export default class ObjectSign extends TextBox {
         graph
       );
 
-      this.line = new LinkLine(draw, this.parent, this.child, this.graph);
+      this.line = new LinkLine(draw, this, this.child, this.graph);
       this.graph.addLinkLine(this.line);
 
       if (!this.showChild) {
@@ -170,12 +170,14 @@ export default class ObjectSign extends TextBox {
       this.line.breakLink();
     }
 
-    this.line = new LinkLine(
-      this.draw,
-      this.parent,
-      targetObjectBox,
-      this.graph
-    );
+    if (this.parent instanceof ObjectSign) {
+      this.line = new LinkLine(
+        this.draw,
+        this.parent,
+        targetObjectBox,
+        this.graph
+      );
+    }
   };
 
   show: () => void = () => {
@@ -197,8 +199,8 @@ export default class ObjectSign extends TextBox {
     this.sign?.updateText("+");
   };
 
-  initSign = (x: number, y: number): TextBox => {
-    const sign = new TextBox(
+  initSign = (x: number, y: number): TextBox<KeyValueBox> => {
+    const sign = new TextBox<KeyValueBox>(
       this.draw,
       { text: this.showChild ? "-" : "+", x: x + super.boundary.width, y },
       this.graph

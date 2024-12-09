@@ -1,8 +1,9 @@
 import { Svg } from "@svgdotjs/svg.js";
 import DraggableRect from "./DraggableRect";
 import { Box } from "./box";
-import Graph, { EVENT_UPDATE } from "../graph";
-import { EVENT_MOVE } from "../LinkLine";
+import Graph from "../graph";
+import { EVENT_MOVE, EVENT_UPDATE } from "@/event";
+import NormalRect from "./NormalReact";
 
 const padding = 5;
 const gap = 3;
@@ -18,8 +19,11 @@ interface Props {
   };
 }
 
-export default class ChildrenBox<T, P> extends DraggableRect<P> implements Box {
-  children: Set<T> = new Set([]);
+export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
+  extends DraggableRect<P>
+  implements Box
+{
+  children: Set<C> = new Set([]);
   constructor(draw: Svg, props: Props, graph: Graph) {
     super(draw, props, graph);
     this.initEvent();
@@ -32,7 +36,7 @@ export default class ChildrenBox<T, P> extends DraggableRect<P> implements Box {
     });
   };
 
-  addChildren(children: T | T[]) {
+  addChildren(children: C | C[]) {
     if (!Array.isArray(children)) {
       children = [children];
     }
@@ -44,16 +48,16 @@ export default class ChildrenBox<T, P> extends DraggableRect<P> implements Box {
     this.setWidth();
     this.setHeight();
     this.arrangeChildren();
-    this.graph.eventEmitter.emit(EVENT_UPDATE, { name: "addChildren" });
+    this.graph.emit(EVENT_UPDATE, { name: "addChildren" });
   }
 
-  removeChildren(child: T) {
+  removeChildren(child: C) {
     this.children.delete(child);
     child.setParent(null);
     this.setWidth();
     this.setHeight();
     this.arrangeChildren();
-    this.graph.eventEmitter.emit(EVENT_UPDATE, { name: "removeChildren" });
+    this.graph.emit(EVENT_UPDATE, { name: "removeChildren" });
   }
 
   arrangeChildren() {
@@ -99,10 +103,10 @@ export default class ChildrenBox<T, P> extends DraggableRect<P> implements Box {
   delete() {
     this.rect.remove();
     this.children.forEach((child) => {
-      child.delete();
+      // child.delete();
     });
     this.children.clear();
-    this.graph.eventEmitter.emit(EVENT_UPDATE, { name: "delete" });
+    this.graph.emit(EVENT_UPDATE, { name: "delete" });
   }
 
   show() {

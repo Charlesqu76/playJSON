@@ -1,7 +1,8 @@
 import { Svg, Text } from "@svgdotjs/svg.js";
 import { Box } from "./box";
 import { Tspan } from "@svgdotjs/svg.js";
-import Graph, { EVENT_UPDATE } from "../graph";
+import Graph from "../graph";
+import { EVENT_UPDATE } from "@/event";
 
 const size = 16;
 const DEFAULT_MAX_WIDTH = 400;
@@ -60,7 +61,7 @@ export default class TextEditor implements Box {
     this.move(this.boundary.x, this.boundary.y);
     this.text.build(false);
 
-    this.graph.eventEmitter.emit(EVENT_UPDATE, { name: "updateText" });
+    this.graph.emit(EVENT_UPDATE, { name: "updateText" });
   }
 
   move(x: number, y: number) {

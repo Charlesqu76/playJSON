@@ -3,7 +3,7 @@ import NormalRect from "./NormalReact";
 import TextEditor from "./TextEditor";
 import { Box } from "./box";
 import Graph from "../graph";
-import { EVENT_MOVE } from "../LinkLine";
+import { EVENT_MOVE } from "@/event";
 
 const padding = 5;
 
@@ -20,7 +20,7 @@ interface Props {
   text: string;
 }
 
-export default class TextBox extends NormalRect<TextBox> implements Box {
+export default class TextBox<P> extends NormalRect<P> implements Box {
   text: TextEditor;
   constructor(protected draw: Svg, { x, y, text }: Props, graph: Graph) {
     const position = textPosition(x, y);

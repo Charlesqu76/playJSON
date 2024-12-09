@@ -50,7 +50,7 @@ export default class NormalRect<P> implements Box {
     this.rect.hide();
   }
 
-  setParent = (parent: P | null) => {
+  setParent(parent: P | null) {
     this.parent = parent;
-  };
+  }
 }

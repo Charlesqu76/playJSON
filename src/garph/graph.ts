@@ -2,7 +2,6 @@
 import { SVG } from "@svgdotjs/svg.js";
 import "@svgdotjs/svg.draggable.js";
 import "@svgdotjs/svg.panzoom.js";
-
 import ObjectBox from "./ObjectBox";
 import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./KeyValueBox";
@@ -10,13 +9,15 @@ import LinkLine from "./LinkLine";
 import Line from "./basic/Line";
 import { layoutTree } from "./layout";
 import EventEmitter from "./EventEmitter";
-import ChildrenBox from "./basic/ChildrenBox";
+import {
+  EVENT_ADDKEYVALYEVBOX,
+  EVENT_DELETE,
+  EVENT_LINK,
+  EVENT_UNLINK,
+  EVENT_UPDATE,
+} from "@/event";
 
-export const EVENT_UPDATE = Symbol("update");
-export const EVENT_ADDKEYVALYEVBOX = Symbol("addKeyValueBox");
-
-class Graph {
-  eventEmitter: EventEmitter = new EventEmitter();
+class Graph extends EventEmitter {
   canvas: Svg | null = null;
   private onZoomCallback: ((zoom: number) => void) | null = null;
   private onValueUpdate: ((value: any) => void) | null = null;
@@ -29,6 +30,7 @@ class Graph {
   private mouseY: number = 0;
 
   constructor() {
+    super();
     document.addEventListener("keydown", (e) => {
       if ((e.ctrlKey || e.metaKey) && e.key === "v") {
         this.handlePaste();
@@ -68,13 +70,17 @@ class Graph {
     // update key value text
     // link or unlink
     // add or remove keyvauleBox in objectBox
-    this.eventEmitter.on(EVENT_UPDATE, ({ name }) => {
+    this.on(EVENT_UPDATE, ({ name }) => {
       console.log(name);
       console.log(this.getAllIsolateObjectBox());
-      this.onValueUpdate && this.onValueUpdate('asdf');
+      this.onValueUpdate && this.onValueUpdate("asdf");
     });
 
-    this.eventEmitter.on(EVENT_ADDKEYVALYEVBOX, ({ name }) => {});
+    this.on(EVENT_LINK, ({}) => {});
+
+    this.on(EVENT_UNLINK, ({ line: LinkLine }) => {});
+
+    this.on(EVENT_ADDKEYVALYEVBOX, ({ name }) => {});
 
     // link
     this.canvas.node.addEventListener("click", () => {

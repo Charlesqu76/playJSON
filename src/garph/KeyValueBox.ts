@@ -5,7 +5,7 @@ import ObjectSign from "./ObjectSign";
 import { Box } from "./basic/box";
 import Graph from "./graph";
 import DraggableRect from "./basic/DraggableRect";
-import { EVENT_MOVE } from "./LinkLine";
+import { EVENT_MOVE } from "@/event";
 
 interface Props {
   x: number;
@@ -25,7 +25,7 @@ export default class KeyValueBox
   extends DraggableRect<ObjectBox>
   implements Box
 {
-  protected keyBox: TextBox;
+  protected keyBox: TextBox<KeyValueBox>;
   valueBox: ObjectSign;
   protected origin: { x: number; y: number } | null = null;
   constructor(
