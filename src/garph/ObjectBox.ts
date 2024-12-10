@@ -3,6 +3,7 @@ import KeyValueBox from "./KeyValueBox";
 import Graph from "./graph";
 import ChildrenBox from "./basic/ChildrenBox";
 import LinkLine from "./LinkLine";
+import { EVENT_SELECT, EVENT_UPDATE } from "./event";
 interface Props {
   x: number;
   y: number;
@@ -17,7 +18,6 @@ interface Props {
 export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
   isArray = false;
   line: LinkLine | null = null;
-  private isHovered = false;
 
   constructor(draw: Svg, { x, y, value }: Props, graph: Graph) {
     super(
@@ -27,7 +27,11 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
     );
     graph.addObjectBox(this);
     this.isArray = Array.isArray(value);
-    this.rect.fill("grey");
+    if (this.isArray) {
+      this.rect.fill("#dbeafe");
+    } else {
+      this.rect.fill("#f3e8ff");
+    }
 
     const entries = Object.entries(value);
     const children = entries.map(([key, value], index) => {
@@ -62,50 +66,31 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
     return m;
   }
 
+  addChildren(children: KeyValueBox | KeyValueBox[]): void {
+    super.addChildren(children);
+    this.line?.update();
+  }
+
+  removeChildren(child: KeyValueBox): void {
+    super.removeChildren(child);
+    this.line?.update();
+  }
+
   initEvent = () => {
     this.rect.on("mouseover", () => {
       this.front();
       this.children.forEach((child) => child.front());
-      this.isHovered = true;
-      this.rect.attr({
-        cursor: "grab",
-        "stroke-width": 5,
-        stroke: "grey",
-      });
-    });
-
-    this.rect.on("mouseout", () => {
-      this.isHovered = false;
-      this.rect.attr({
-        cursor: "normal",
-        "stroke-width": 1,
-        stroke: "none",
-      });
     });
 
     this.rect.on("click", () => {
-      // console.log("click");
-      // if (this.graph.selectedItem !== this) {
-      //   this.rect.attr({ "stroke-width": 1, stroke: "none" });
-      // }
-      // this.graph.selectedItem = this;
-      // this.rect.attr({ "stroke-width": 3, stroke: "red" });
-      // this.delete();
-    });
-
-    // Add keyboard event listeners
-    document.addEventListener("keydown", (e) => {
-      if (!this.isHovered) return;
-      if ((e.ctrlKey || e.metaKey) && e.key === "c") {
-        this.handleCopy();
-      }
+      this.graph.emit(EVENT_SELECT, { item: this });
     });
   };
 
-  private handleCopy() {
-    const jsonStr = JSON.stringify(this.value);
-    navigator.clipboard.writeText(jsonStr).catch((err) => {
-      console.error("Failed to copy:", err);
-    });
+  delete() {
+    this.rect.remove();
+    this.children.forEach((child) => child.delete());
+    this.line?.delete();
+    this.graph.emit(EVENT_UPDATE, { name: "deleteObjectBox" });
   }
 }

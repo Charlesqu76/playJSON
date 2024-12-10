@@ -2,7 +2,7 @@ import { Svg } from "@svgdotjs/svg.js";
 import DraggableRect from "./DraggableRect";
 import { Box } from "./box";
 import Graph from "../graph";
-import { EVENT_MOVE, EVENT_UPDATE } from "@/event";
+import { EVENT_MOVE, EVENT_UPDATE } from "@/garph/event";
 import NormalRect from "./NormalReact";
 
 const padding = 5;
@@ -30,10 +30,14 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
   }
 
   initEvent = () => {
-    this.rect.on("dragmove", (event) => {
-      const { box } = (event as CustomEvent).detail;
-      this.move(box.x, box.y);
-    });
+    this.rect.on(
+      "dragmove",
+      (event) => {
+        const { box } = (event as CustomEvent).detail;
+        this.move(box.x, box.y);
+      },
+      { passive: true }
+    );
   };
 
   addChildren(children: C | C[]) {
@@ -98,15 +102,6 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
     this.rect.move(x, y);
     this.arrangeChildren();
     this.eventEmitter.emit(EVENT_MOVE);
-  }
-
-  delete() {
-    this.rect.remove();
-    this.children.forEach((child) => {
-      // child.delete();
-    });
-    this.children.clear();
-    this.graph.emit(EVENT_UPDATE, { name: "delete" });
   }
 
   show() {

@@ -53,4 +53,12 @@ export default class NormalRect<P> implements Box {
   setParent(parent: P | null) {
     this.parent = parent;
   }
+
+  select() {
+    this.rect.attr({ "stroke-width": 3, stroke: "red" });
+  }
+
+  unselect() {
+    this.rect.attr({ "stroke-width": 1, stroke: "none" });
+  }
 }

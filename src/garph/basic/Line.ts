@@ -26,16 +26,16 @@ export default class Line {
     this.initEvent();
   }
 
-  initEvent = () => {
-    this.path.on("click", (event) => {
-      this.path.front();
-      event.stopPropagation();
-      if (Line.lastClickedLine && Line.lastClickedLine !== this) {
-        Line.lastClickedLine.unselect();
-      }
-      this.path.stroke({ color: "red" });
-      Line.lastClickedLine = this;
-    });
+  initEvent() {
+    // this.path.on("click", (event) => {
+    //   this.path.front();
+    //   event.stopPropagation();
+    //   if (Line.lastClickedLine && Line.lastClickedLine !== this) {
+    //     Line.lastClickedLine.unselect();
+    //   }
+    //   this.path.stroke({ color: "red" });
+    //   Line.lastClickedLine = this;
+    // });
 
     this.path.on("mouseover", () => {
       this.path.attr({ cursor: "pointer" });
@@ -44,7 +44,7 @@ export default class Line {
     this.path.on("mouseout", () => {
       this.path.attr({ cursor: "default" });
     });
-  };
+  }
 
   hide() {
     this.path.hide();
@@ -54,7 +54,15 @@ export default class Line {
     this.path.show();
   }
 
-  unselect = () => {
+  front() {
+    this.path.front();
+  }
+
+  select() {
+    this.path.stroke({ color: "red" });
+  }
+
+  unselect() {
     this.path.stroke({ color: this.settings.strokeColor });
-  };
+  }
 }

@@ -3,7 +3,7 @@ import NormalRect from "./NormalReact";
 import TextEditor from "./TextEditor";
 import { Box } from "./box";
 import Graph from "../graph";
-import { EVENT_MOVE } from "@/event";
+import { EVENT_MOVE } from "@/garph/event";
 
 const padding = 5;
 
@@ -39,6 +39,9 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
       height: height + padding * 2,
     };
   }
+  get value() {
+    return this.text.value;
+  }
 
   updateText(newText: string) {
     this.text.updateText(newText);
@@ -47,7 +50,6 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
   }
 
   move(x: number, y: number) {
-    console.log("text move", x, y);
     const position = textPosition(x, y);
     this.text.move(position.x, position.y);
     this.rect.move(x, y);
@@ -69,7 +71,7 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
     this.rect.front();
   }
 
-  get value() {
-    return this.text.value;
+  delete() {
+    this.text.text.remove();
   }
 }

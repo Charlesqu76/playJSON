@@ -6,50 +6,37 @@ import ObjectBox from "./ObjectBox";
 import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./KeyValueBox";
 import LinkLine from "./LinkLine";
-import Line from "./basic/Line";
 import { layoutTree } from "./layout";
 import EventEmitter from "./EventEmitter";
 import {
-  EVENT_ADDKEYVALYEVBOX,
   EVENT_DELETE,
   EVENT_LINK,
   EVENT_UNLINK,
   EVENT_UPDATE,
-} from "@/event";
+  EVENT_SELECT,
+} from "@/garph/event";
+import debounce from "./utils/debounce";
 
 class Graph extends EventEmitter {
   canvas: Svg | null = null;
   private onZoomCallback: ((zoom: number) => void) | null = null;
   private onValueUpdate: ((value: any) => void) | null = null;
-  node: ObjectBox | null = null;
   objectBoxes: ObjectBox[] = [];
   keyValueBoxes: KeyValueBox[] = [];
   linkLines: WeakSet<LinkLine> = new WeakSet([]);
-  selectedItem: ObjectBox | Line | null = null;
+  selectedItem: LinkLine | KeyValueBox | ObjectBox | null = null;
   private mouseX: number = 0;
   private mouseY: number = 0;
 
   constructor() {
     super();
-    document.addEventListener("keydown", (e) => {
-      if ((e.ctrlKey || e.metaKey) && e.key === "v") {
-        this.handlePaste();
-      }
-    });
-
-    document.addEventListener("mousemove", (e) => {
-      this.mouseX = e.clientX;
-      this.mouseY = e.clientY;
-    });
   }
 
   initCanvas = (id: string) => {
     const container = document.querySelector(id);
-    console.log(container);
     if (!container) return;
 
     const { width, height } = container.getBoundingClientRect();
-
     this.canvas = SVG()
       .addTo(id)
       .size("100%", "100%")
@@ -57,36 +44,81 @@ class Graph extends EventEmitter {
       .panZoom({ zoomMin: 0.1, zoomMax: 5 });
 
     this.initEvent();
-
-    this.canvas.on("zoom", (event: any) => {
-      if (this.onZoomCallback) {
-        this.onZoomCallback(event.detail.level);
-      }
-    });
   };
 
   initEvent = () => {
     if (!this.canvas) return;
-    // update key value text
-    // link or unlink
-    // add or remove keyvauleBox in objectBox
-    this.on(EVENT_UPDATE, ({ name }) => {
-      console.log(name);
-      console.log(this.getAllIsolateObjectBox());
+
+    document.addEventListener("keydown", (e) => {
+      if (e.ctrlKey || e.metaKey) {
+        if (e.key === "c") {
+          this.handleCopy();
+        }
+        if (e.key === "v") {
+          this.handlePaste();
+        }
+        if (e.key === "Delete" || e.key === "Backspace") {
+          this.emit(EVENT_DELETE, { item: this.selectedItem });
+        }
+      }
+
+      if (e.key === "Tab") {
+        e.preventDefault();
+        this.addChildren();
+      }
+    });
+
+    document.addEventListener("mousemove", (e) => {
+      this.mouseX = e.clientX;
+      this.mouseY = e.clientY;
+    });
+
+    const ss = debounce(() => {
       this.onValueUpdate && this.onValueUpdate("asdf");
+    }, 200);
+
+    this.on(EVENT_UPDATE, ({ name }) => {
+      ss();
     });
 
     this.on(EVENT_LINK, ({}) => {});
 
     this.on(EVENT_UNLINK, ({ line: LinkLine }) => {});
 
-    this.on(EVENT_ADDKEYVALYEVBOX, ({ name }) => {});
+    this.on(
+      EVENT_DELETE,
+      ({ item }: { item: KeyValueBox | ObjectBox | LinkLine | null }) => {
+        if (!item) return;
+        item.delete();
+        this.selectedItem = null;
+      }
+    );
 
-    // link
-    this.canvas.node.addEventListener("click", () => {
-      if (Line.lastClickedLine) {
-        Line.lastClickedLine.unselect();
-        Line.lastClickedLine = null;
+    this.on(
+      EVENT_SELECT,
+      ({ item }: { item: LinkLine | KeyValueBox | ObjectBox }) => {
+        console.log(EVENT_SELECT);
+        if (item !== this.selectedItem) {
+          console.log("111");
+          this.selectedItem?.unselect();
+        }
+        item.select();
+        this.selectedItem = item;
+      }
+    );
+
+    this.canvas.click((event: Event) => {
+      if (event.target === this.canvas?.node) {
+        if (this.selectedItem) {
+          this.selectedItem.unselect();
+          this.selectedItem = null;
+        }
+      }
+    });
+
+    this.canvas.on("zoom", (event: any) => {
+      if (this.onZoomCallback) {
+        this.onZoomCallback(event.detail.level);
       }
     });
   };
@@ -98,6 +130,27 @@ class Graph extends EventEmitter {
   setZoomCallback = (callback: (zoom: number) => void) => {
     this.onZoomCallback = callback;
   };
+
+  private addChildren() {
+    if (!(this.selectedItem instanceof ObjectBox) || !this.canvas) return;
+    let key = "key";
+    let value = "value";
+    if (this.selectedItem.isArray) {
+      key = this.selectedItem.value.length;
+    }
+    const keyvaluebox = new KeyValueBox(
+      this.canvas,
+      {
+        x: 0,
+        y: 0,
+        key,
+        value,
+      },
+      this,
+      this.selectedItem
+    );
+    this.selectedItem.addChildren(keyvaluebox);
+  }
 
   private async handlePaste() {
     if (this.canvas === null) return;
@@ -129,7 +182,7 @@ class Graph extends EventEmitter {
 
   initData = (data: Object) => {
     if (!this.canvas) return;
-    this.node = new ObjectBox(
+    new ObjectBox(
       this.canvas,
       {
         x: 100,
@@ -141,8 +194,9 @@ class Graph extends EventEmitter {
   };
 
   layout = () => {
-    if (!this.node) return;
-    layoutTree(this.node);
+    this.getAllIsolateObjectBox().forEach((box) => {
+      layoutTree(box);
+    });
   };
 
   addObjectBox = (box: ObjectBox) => {
@@ -170,19 +224,27 @@ class Graph extends EventEmitter {
     const viewbox = this.canvas.viewbox();
     const newX = x - viewbox.width / 2;
     const newY = y - viewbox.height / 2;
-    this.canvas.viewbox(newX, newY, viewbox.width, viewbox.height).zoom(0.8);
+    this.canvas
+      .animate(200)
+      .viewbox(newX, newY, viewbox.width, viewbox.height)
+      .zoom(0.8);
   };
 
   findMatchingObjects = (searchText: string) => {
     if (!searchText.trim()) return null;
 
     const match = this.keyValueBoxes.find((box) => {
-      const value = "";
-      if (typeof value !== "string") return false;
-      return value.toLowerCase().includes(searchText.toLowerCase());
+      const keyValue = box.keyValue;
+      const valueValue = box.valueValue;
+      if (typeof valueValue === "string") {
+        return valueValue.includes(searchText) || keyValue.includes(searchText);
+      }
+      return keyValue.includes(searchText);
     });
 
     if (!match) return null;
+
+    this.emit(EVENT_SELECT, { item: match });
 
     const { x, y } = match.boundary;
     this.centerViewOn(x, y);
@@ -205,6 +267,15 @@ class Graph extends EventEmitter {
       height: viewbox.height,
     };
   };
+
+  private handleCopy() {
+    if (this.selectedItem instanceof ObjectBox) {
+      const jsonStr = JSON.stringify(this.selectedItem.value);
+      navigator.clipboard.writeText(jsonStr).catch((err) => {
+        console.error("Failed to copy:", err);
+      });
+    }
+  }
 }
 
 export const graph1 = new Graph();

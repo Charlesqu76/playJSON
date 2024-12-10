@@ -146,7 +146,7 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
         this.isObject = false;
         this.isKeyValueobject = false;
         this.isArrayObject = false;
-        this.line?.breakLink();
+        this.line?.delete();
       }
       this.parent?.setWidth();
       this.parent?.setHeight();
@@ -162,31 +162,26 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
   };
 
   linkToObject = (targetObjectBox: ObjectBox) => {
+    console.log(targetObjectBox.parent);
     if (targetObjectBox.parent) {
       window.alert("This object is already linked to another object");
       return;
     }
+    if (this.isArrayObject && !targetObjectBox.isArray) {
+      window.alert("link to array object");
+      return;
+    }
     if (this.line) {
-      this.line.breakLink();
+      this.line.delete();
     }
 
-    if (this.parent instanceof ObjectSign) {
-      this.line = new LinkLine(
-        this.draw,
-        this.parent,
-        targetObjectBox,
-        this.graph
-      );
-    }
+    this.line = new LinkLine(this.draw, this, targetObjectBox, this.graph);
   };
 
   show: () => void = () => {
     super.show();
     if (this.isObject) {
       this.sign?.show();
-      console.log(this.sign?.boundary);
-      // this.sign?.move(0, this.sign.boundary.y);
-      // this.sign?.move(this.boundary.x, this.boundary.y);
     }
   };
 
@@ -228,4 +223,10 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
     super.move(x, y);
     this.sign?.move(x + this.rect.bbox().width, y);
   };
+
+  delete() {
+    super.delete();
+    this.sign?.delete();
+    this.line?.delete();
+  }
 }

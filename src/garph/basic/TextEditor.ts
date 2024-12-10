@@ -2,7 +2,7 @@ import { Svg, Text } from "@svgdotjs/svg.js";
 import { Box } from "./box";
 import { Tspan } from "@svgdotjs/svg.js";
 import Graph from "../graph";
-import { EVENT_UPDATE } from "@/event";
+import { EVENT_UPDATE } from "@/garph/event";
 
 const size = 16;
 const DEFAULT_MAX_WIDTH = 400;

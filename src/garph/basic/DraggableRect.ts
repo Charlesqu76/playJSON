@@ -38,10 +38,14 @@ export default class DraggableRect<P> extends NormalRect<P> {
       // this.rect.attr({ "stroke-width": 1, stroke: "black" });
     });
 
-    this.rect.on("dragmove", (event) => {
-      const { box } = (event as CustomEvent).detail;
-      this.rect.move(box.x, box.y);
-    });
+    this.rect.on(
+      "dragmove",
+      (event) => {
+        const { box } = (event as CustomEvent).detail;
+        this.rect.move(box.x, box.y);
+      },
+      { passive: true }
+    );
   }
 
   isOverlapping(
