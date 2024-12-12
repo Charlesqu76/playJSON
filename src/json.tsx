@@ -2,20 +2,92 @@ import React, { useRef, useState, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
 
-// Sample initial JSON data
-const initialJsonData = {
-  name: "Sample Project",
-  version: "1.0.0",
-  description: "A sample JSON project",
-  dependencies: {
-    react: "^17.0.2",
-    "monaco-editor": "^0.30.1",
-  },
+interface JsonPosition {
+  key: string;
+  line: number;
+  path: string[];
+  isArrayItem: boolean;
+}
+
+const getJsonPositions = (content: string): JsonPosition[] => {
+  const positions: JsonPosition[] = [];
+  const lines = content.split('\n');
+  const pathStack: string[] = [];
+  const arrayIndexStack: number[] = [];
+  let currentArrayIndex = -1;
+
+  lines.forEach((line, index) => {
+    const trimmedLine = line.trim();
+    
+    // Handle array start
+    if (trimmedLine === '[') {
+      currentArrayIndex = -1;
+      arrayIndexStack.push(currentArrayIndex);
+    }
+    // Handle array end
+    else if (trimmedLine === ']' || trimmedLine === '],') {
+      arrayIndexStack.pop();
+      if (pathStack.length > 0) {
+        pathStack.pop();
+      }
+    }
+    // Handle object start in array
+    else if (trimmedLine === '{' && arrayIndexStack.length > 0) {
+      currentArrayIndex = arrayIndexStack[arrayIndexStack.length - 1] + 1;
+      arrayIndexStack[arrayIndexStack.length - 1] = currentArrayIndex;
+    }
+    // Handle object end
+    else if (trimmedLine === '}' || trimmedLine === '},') {
+      if (pathStack.length > 0 && arrayIndexStack.length === 0) {
+        pathStack.pop();
+      }
+    }
+    // Handle key-value pairs
+    else {
+      const keyMatch = trimmedLine.match(/"([^"]+)":\s*(.*)/);
+      if (keyMatch) {
+        const [, key, value] = keyMatch;
+        const currentPath = [...pathStack];
+        const isInArray = arrayIndexStack.length > 0;
+        
+        // Build the path
+        let finalPath = [...currentPath];
+        if (isInArray && currentArrayIndex >= 0) {
+          const lastPath = finalPath[finalPath.length - 1];
+          finalPath[finalPath.length - 1] = `${lastPath}[${currentArrayIndex}]`;
+        }
+
+        positions.push({
+          key,
+          line: index + 1,
+          path: finalPath,
+          isArrayItem: isInArray
+        });
+
+        // Update stacks for nested structures
+        if (value.includes('{')) {
+          pathStack.push(key);
+        } else if (value.includes('[')) {
+          pathStack.push(key);
+        }
+      }
+    }
+  });
+
+  return positions;
 };
 
-interface MonacoJsonEditorProps {
-  jsondata: string;
-}
+const findPathAtLine = (positions: JsonPosition[], targetLine: number): string => {
+  const position = positions.find(p => p.line === targetLine);
+  if (!position) return '';
+  
+  const pathParts = [...position.path];
+  if (!position.isArrayItem || position.path.length === 0) {
+    pathParts.push(position.key);
+  }
+  
+  return pathParts.filter(Boolean).join('.');
+};
 
 const MonacoJsonEditor: React.FC<MonacoJsonEditorProps> = ({ jsondata }) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
@@ -23,49 +95,18 @@ const MonacoJsonEditor: React.FC<MonacoJsonEditorProps> = ({ jsondata }) => {
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
   const [editorHeight, setEditorHeight] = useState("400px");
 
-  const getPathFromNode = (model: monaco.editor.ITextModel, lineNumber: number): string => {
-    try {
-      // Get the JSON worker
-      const { worker } = monaco.languages.json;
-      return worker().then(async (client) => {
-        // Get JSON document symbols
-        const symbols = await client.findDocumentSymbols(model.uri.toString());
-        let path = '';
-        
-        // Find the symbol that contains our line
-        for (const symbol of symbols) {
-          const range = symbol.range;
-          const startLine = range.startLineNumber;
-          const endLine = range.endLineNumber;
-          
-          if (lineNumber >= startLine && lineNumber <= endLine) {
-            // Found containing symbol
-            if (symbol.containerName) {
-              path = symbol.containerName + '.' + symbol.name;
-            } else {
-              path = symbol.name;
-            }
-            break;
-          }
-        }
-        
-        return path;
-      });
-    } catch (error) {
-      return Promise.resolve('');
-    }
-  };
-
   const handleEditorDidMount: OnMount = (editor) => {
     editorRef.current = editor;
-    
+
     editor.onMouseDown(async (e) => {
       if (e.target.position) {
         const model = editor.getModel();
         if (model) {
-          const path = await getPathFromNode(model, e.target.position.lineNumber);
+          const content = model.getValue();
+          const positions = getJsonPositions(content);
+          const path = findPathAtLine(positions, e.target.position.lineNumber);
           if (path) {
-            console.log('Path:', path);
+            console.log("Path:", path);
           }
         }
       }
