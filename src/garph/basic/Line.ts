@@ -27,16 +27,6 @@ export default class Line {
   }
 
   initEvent() {
-    // this.path.on("click", (event) => {
-    //   this.path.front();
-    //   event.stopPropagation();
-    //   if (Line.lastClickedLine && Line.lastClickedLine !== this) {
-    //     Line.lastClickedLine.unselect();
-    //   }
-    //   this.path.stroke({ color: "red" });
-    //   Line.lastClickedLine = this;
-    // });
-
     this.path.on("mouseover", () => {
       this.path.attr({ cursor: "pointer" });
     });

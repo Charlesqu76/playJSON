@@ -17,7 +17,7 @@ interface Props {
 
 export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
   isArray = false;
-  line: LinkLine | null = null;
+  protected line: LinkLine | null = null;
 
   constructor(draw: Svg, { x, y, value }: Props, graph: Graph) {
     super(
@@ -66,20 +66,42 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
     return m;
   }
 
+  setChildrenWidth() {
+    let maxWidth = 0;
+    this.children.forEach((child) => {
+      maxWidth = Math.max(maxWidth, child.boundary.width);
+    });
+
+    this.children.forEach((child) => {
+      child.rect.width(maxWidth);
+    });
+  }
+
   addChildren(children: KeyValueBox | KeyValueBox[]): void {
     super.addChildren(children);
     this.line?.update();
+    this.setChildrenWidth();
   }
 
   removeChildren(child: KeyValueBox): void {
     super.removeChildren(child);
     this.line?.update();
+    this.setChildrenWidth();
+  }
+
+  setLine(line: LinkLine | null) {
+    this.line = line;
   }
 
   initEvent = () => {
     this.rect.on("mouseover", () => {
+      this.rect.attr({ stroke: "red", "stroke-width": 3 });
       this.front();
       this.children.forEach((child) => child.front());
+    });
+
+    this.rect.on("mouseout", () => {
+      this.rect.attr({ stroke: "none" });
     });
 
     this.rect.on("click", () => {

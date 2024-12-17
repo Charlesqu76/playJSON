@@ -37,7 +37,6 @@ export default class KeyValueBox
     super(draw, { x, y, width: 0, height: 0 }, graph);
     this.setParent(parent);
     this.rect.fill("white");
-    this.rect.attr({ "stroke-width": 1, stroke: "black" });
     this.graph.addKeyValueBox(this);
     // keyBox
     this.keyBox = new TextBox(draw, { text: key, x, y }, graph);
@@ -99,7 +98,7 @@ export default class KeyValueBox
 
     this.rect.on("mouseout", () => {
       if (this.graph.selectedItem === this) return;
-      this.rect.attr({ "stroke-width": 1, stroke: "black" });
+      this.rect.attr({ "stroke-width": 1, stroke: "none" });
     });
 
     this.rect.on(
@@ -115,7 +114,7 @@ export default class KeyValueBox
           if (this.isOverlapping(box, child.rect.bbox())) {
             child.rect.attr({ "stroke-width": 3, stroke: "red" });
           } else {
-            child.rect.attr({ "stroke-width": 1, stroke: "black" });
+            child.rect.attr({ "stroke-width": 1, stroke: "none" });
           }
         });
       },
@@ -131,7 +130,7 @@ export default class KeyValueBox
             // @ts-ignore
             this.parent?.removeChildren(this);
             objectBox.addChildren(this);
-            objectBox.rect.attr({ "stroke-width": 1, stroke: "black" });
+            objectBox.rect.attr({ "stroke-width": 1, stroke: "none" });
           } else {
             console.log("asdfasdfsdf");
             if (this.origin) {

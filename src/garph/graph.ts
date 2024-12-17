@@ -32,8 +32,11 @@ class Graph extends EventEmitter {
     super();
   }
 
-  initCanvas = (id: string) => {
-    const container = document.querySelector(id);
+  initCanvas = (id: string | HTMLElement) => {
+    let container: HTMLElement | null = id as HTMLElement;
+    if (typeof id === "string") {
+      container = document.querySelector(id);
+    }
     if (!container) return;
 
     const { width, height } = container.getBoundingClientRect();
@@ -73,17 +76,20 @@ class Graph extends EventEmitter {
       this.mouseY = e.clientY;
     });
 
-    const ss = debounce(() => {
-      this.onValueUpdate && this.onValueUpdate("asdf");
+    const update = debounce((data: ObjectBox[]) => {
+      const d = data.map((item) => item.value);
+      this.onValueUpdate && this.onValueUpdate(d);
     }, 200);
 
     this.on(EVENT_UPDATE, ({ name }) => {
-      ss();
+      update(this.getAllIsolateObjectBox());
     });
 
-    this.on(EVENT_LINK, ({}) => {});
-
-    this.on(EVENT_UNLINK, ({ line: LinkLine }) => {});
+    this.on(EVENT_LINK, ({ signBox, objectBox }) => {
+      if (this.canvas === null) return;
+      const line = new LinkLine(this.canvas, signBox, objectBox, this);
+      this.addLinkLine(line);
+    });
 
     this.on(
       EVENT_DELETE,
@@ -162,9 +168,7 @@ class Graph extends EventEmitter {
         (this.canvas.node as SVGSVGElement).getScreenCTM()?.inverse()
       );
       const text = await navigator.clipboard.readText();
-
       const value = JSON.parse(text);
-
       const newNode = new ObjectBox(
         this.canvas,
         {
@@ -180,17 +184,22 @@ class Graph extends EventEmitter {
     }
   }
 
-  initData = (data: Object) => {
-    if (!this.canvas) return;
-    new ObjectBox(
-      this.canvas,
-      {
-        x: 100,
-        y: 100,
-        value: data,
-      },
-      this
-    );
+  initData = (data: Object | Object[]) => {
+    if (!Array.isArray(data)) {
+      data = [data];
+    }
+    (data as object[]).forEach((item) => {
+      if (this.canvas === null) return;
+      new ObjectBox(
+        this.canvas,
+        {
+          x: 100,
+          y: 0,
+          value: item,
+        },
+        this
+      );
+    });
   };
 
   layout = () => {

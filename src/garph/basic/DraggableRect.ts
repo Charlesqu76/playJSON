@@ -1,7 +1,6 @@
 import { Svg } from "@svgdotjs/svg.js";
 import NormalRect from "./NormalReact";
 import Graph from "../graph";
-import ObjectBox from "../ObjectBox";
 
 interface Props {
   x: number;
@@ -13,14 +12,10 @@ interface Props {
   };
 }
 
-const defaultConfig = {
-  ActiveStrokeColor: "black",
-};
-
 export default class DraggableRect<P> extends NormalRect<P> {
   constructor(
     protected draw: Svg,
-    { x, y, width, height, config = {} }: Props,
+    { x, y, width, height }: Props,
     graph: Graph
   ) {
     super(draw, { x, y, width, height }, graph);
@@ -30,12 +25,11 @@ export default class DraggableRect<P> extends NormalRect<P> {
     this.rect.on("mouseover", () => {
       this.rect.attr({
         cursor: "grab",
-        "stroke-width": 3,
       });
     });
 
     this.rect.on("mouseout", () => {
-      // this.rect.attr({ "stroke-width": 1, stroke: "black" });
+      this.rect.attr({ cursor: "default" });
     });
 
     this.rect.on(

@@ -1,6 +1,9 @@
 import React, { useRef, useState, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
+import { match } from "assert";
+import { arch } from "os";
+import { Button } from "antd";
 
 interface JsonPosition {
   key: string;
@@ -9,87 +12,11 @@ interface JsonPosition {
   isArrayItem: boolean;
 }
 
-const getJsonPositions = (content: string): JsonPosition[] => {
-  const positions: JsonPosition[] = [];
-  const lines = content.split('\n');
-  const pathStack: string[] = [];
-  const arrayIndexStack: number[] = [];
-  let currentArrayIndex = -1;
+interface IProps {
+  jsondata: string;
+}
 
-  lines.forEach((line, index) => {
-    const trimmedLine = line.trim();
-    
-    // Handle array start
-    if (trimmedLine === '[') {
-      currentArrayIndex = -1;
-      arrayIndexStack.push(currentArrayIndex);
-    }
-    // Handle array end
-    else if (trimmedLine === ']' || trimmedLine === '],') {
-      arrayIndexStack.pop();
-      if (pathStack.length > 0) {
-        pathStack.pop();
-      }
-    }
-    // Handle object start in array
-    else if (trimmedLine === '{' && arrayIndexStack.length > 0) {
-      currentArrayIndex = arrayIndexStack[arrayIndexStack.length - 1] + 1;
-      arrayIndexStack[arrayIndexStack.length - 1] = currentArrayIndex;
-    }
-    // Handle object end
-    else if (trimmedLine === '}' || trimmedLine === '},') {
-      if (pathStack.length > 0 && arrayIndexStack.length === 0) {
-        pathStack.pop();
-      }
-    }
-    // Handle key-value pairs
-    else {
-      const keyMatch = trimmedLine.match(/"([^"]+)":\s*(.*)/);
-      if (keyMatch) {
-        const [, key, value] = keyMatch;
-        const currentPath = [...pathStack];
-        const isInArray = arrayIndexStack.length > 0;
-        
-        // Build the path
-        let finalPath = [...currentPath];
-        if (isInArray && currentArrayIndex >= 0) {
-          const lastPath = finalPath[finalPath.length - 1];
-          finalPath[finalPath.length - 1] = `${lastPath}[${currentArrayIndex}]`;
-        }
-
-        positions.push({
-          key,
-          line: index + 1,
-          path: finalPath,
-          isArrayItem: isInArray
-        });
-
-        // Update stacks for nested structures
-        if (value.includes('{')) {
-          pathStack.push(key);
-        } else if (value.includes('[')) {
-          pathStack.push(key);
-        }
-      }
-    }
-  });
-
-  return positions;
-};
-
-const findPathAtLine = (positions: JsonPosition[], targetLine: number): string => {
-  const position = positions.find(p => p.line === targetLine);
-  if (!position) return '';
-  
-  const pathParts = [...position.path];
-  if (!position.isArrayItem || position.path.length === 0) {
-    pathParts.push(position.key);
-  }
-  
-  return pathParts.filter(Boolean).join('.');
-};
-
-const MonacoJsonEditor: React.FC<MonacoJsonEditorProps> = ({ jsondata }) => {
+const MonacoJsonEditor = ({ jsondata }: IProps) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [jsonContent, setJsonContent] = useState(jsondata);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
@@ -97,20 +24,6 @@ const MonacoJsonEditor: React.FC<MonacoJsonEditorProps> = ({ jsondata }) => {
 
   const handleEditorDidMount: OnMount = (editor) => {
     editorRef.current = editor;
-
-    editor.onMouseDown(async (e) => {
-      if (e.target.position) {
-        const model = editor.getModel();
-        if (model) {
-          const content = model.getValue();
-          const positions = getJsonPositions(content);
-          const path = findPathAtLine(positions, e.target.position.lineNumber);
-          if (path) {
-            console.log("Path:", path);
-          }
-        }
-      }
-    });
   };
 
   const handleValidateJSON = () => {
@@ -172,20 +85,20 @@ const MonacoJsonEditor: React.FC<MonacoJsonEditorProps> = ({ jsondata }) => {
   }, [jsondata]);
 
   return (
-    <div className="w-full max-w-4xl mx-auto p-4">
+    <div className="w-full mx-auto p-4">
       <div className="mb-4 flex space-x-2">
-        <button
+        <Button
           onClick={handleValidateJSON}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
-          Validate JSON
-        </button>
-        <button
+          Validate
+        </Button>
+        <Button
           onClick={handleFormatJSON}
           className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
         >
-          Format JSON
-        </button>
+          Format
+        </Button>
       </div>
 
       {validationErrors.length > 0 && (

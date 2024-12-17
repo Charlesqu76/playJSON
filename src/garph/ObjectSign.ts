@@ -6,15 +6,15 @@ import { Line } from "@svgdotjs/svg.js";
 import { getRightMid, isPointInBox } from "./utils";
 import KeyValueBox from "./KeyValueBox";
 import LinkLine from "./LinkLine";
+import { EVENT_LINK } from "./event";
 
 export default class ObjectSign extends TextBox<KeyValueBox> {
   showChild: boolean = true;
   isObject: boolean = false;
   isKeyValueobject: boolean = false;
   isArrayObject: boolean = false;
-  // parent: KeyValueBox;
   child: ObjectBox | null = null;
-  line: LinkLine | null = null;
+  protected line: LinkLine | null = null;
   sign: TextBox<KeyValueBox> | null = null;
 
   constructor(
@@ -56,9 +56,7 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
         },
         graph
       );
-
-      this.line = new LinkLine(draw, this, this.child, this.graph);
-      this.graph.addLinkLine(this.line);
+      this.graph.emit(EVENT_LINK, { signBox: this, objectBox: this.child });
 
       if (!this.showChild) {
         this.child.hide();
@@ -82,6 +80,10 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
       width: width + (this.sign?.boundary.width || 0),
       height: height,
     };
+  }
+
+  setLine(line: LinkLine | null) {
+    this.line = line;
   }
 
   initEvent = () => {
@@ -159,10 +161,10 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
   front = () => {
     super.front();
     this.sign?.front();
+    this.line?.front();
   };
 
   linkToObject = (targetObjectBox: ObjectBox) => {
-    console.log(targetObjectBox.parent);
     if (targetObjectBox.parent) {
       window.alert("This object is already linked to another object");
       return;
@@ -174,8 +176,7 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
     if (this.line) {
       this.line.delete();
     }
-
-    this.line = new LinkLine(this.draw, this, targetObjectBox, this.graph);
+    this.graph.emit(EVENT_LINK, { signBox: this, objectBox: targetObjectBox });
   };
 
   show: () => void = () => {
