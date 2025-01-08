@@ -5,7 +5,7 @@ const main = () => {
   const graph = new Graph();
 
   graph.initCanvas("#graph");
-  graph.initData([data]);
+  graph.initData([data1]);
   graph.layout();
 };
 

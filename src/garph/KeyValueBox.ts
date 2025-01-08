@@ -5,7 +5,12 @@ import ObjectSign from "./ObjectSign";
 import { Box } from "./basic/box";
 import Graph from "./graph";
 import DraggableRect from "./basic/DraggableRect";
-import { EVENT_MOVE, EVENT_SELECT, EVENT_UPDATE } from "@/garph/event";
+import {
+  EVENT_DRAG,
+  EVENT_MOVE,
+  EVENT_SELECT,
+  EVENT_UPDATE,
+} from "@/garph/event";
 
 interface Props {
   x: number;
@@ -42,7 +47,6 @@ export default class KeyValueBox
     this.keyBox = new TextBox(draw, { text: key, x, y }, graph);
     // this.keyBox.text.text.fill('#A31515');
     const { width } = this.keyBox.boundary;
-    // valyeBox
     this.valueBox = new ObjectSign(
       draw,
       {
@@ -56,6 +60,7 @@ export default class KeyValueBox
     this.setHeight();
     this.setWidth();
     this.initEvnet();
+    // valyeBox
   }
 
   get keyValue() {
@@ -68,7 +73,7 @@ export default class KeyValueBox
 
   get value() {
     return {
-      [this.keyBox.value]: this.valueBox.value,
+      [this.keyValue]: this.valueValue,
     };
   }
 
@@ -101,6 +106,11 @@ export default class KeyValueBox
       this.rect.attr({ "stroke-width": 1, stroke: "none" });
     });
 
+    // this.rect.on("dragstart", () => {
+    //   console.log("this is dragstart");
+    //   this.graph.emit(EVENT_DRAG, { item: this });
+    // });
+
     this.rect.on(
       "dragmove",
       (event) => {
@@ -127,12 +137,10 @@ export default class KeyValueBox
         const overlap = this.isOverlapping(box, objectBox.rect.bbox());
         if (overlap) {
           if (this.parent !== objectBox) {
-            // @ts-ignore
             this.parent?.removeChildren(this);
             objectBox.addChildren(this);
             objectBox.rect.attr({ "stroke-width": 1, stroke: "none" });
           } else {
-            console.log("asdfasdfsdf");
             if (this.origin) {
               this.move(this.origin.x, this.origin.y);
             }

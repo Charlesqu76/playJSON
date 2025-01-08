@@ -14,3 +14,7 @@ export const EVENT_UNLINK = Symbol("unlink");
 // keyvaluebox
 // objectbox
 export const EVENT_SELECT = Symbol("select");
+
+// keyvaluebox
+// objectbox
+export const EVENT_DRAG = Symbol("drag");

@@ -14,8 +14,10 @@ import {
   EVENT_UNLINK,
   EVENT_UPDATE,
   EVENT_SELECT,
+  EVENT_DRAG,
 } from "@/garph/event";
 import debounce from "./utils/debounce";
+import { Box } from "lucide-react";
 
 class Graph extends EventEmitter {
   canvas: Svg | null = null;
@@ -25,6 +27,7 @@ class Graph extends EventEmitter {
   keyValueBoxes: KeyValueBox[] = [];
   linkLines: WeakSet<LinkLine> = new WeakSet([]);
   selectedItem: LinkLine | KeyValueBox | ObjectBox | null = null;
+  draggingItem: KeyValueBox | null = null;
   private mouseX: number = 0;
   private mouseY: number = 0;
 
@@ -103,6 +106,7 @@ class Graph extends EventEmitter {
     this.on(
       EVENT_SELECT,
       ({ item }: { item: LinkLine | KeyValueBox | ObjectBox }) => {
+        // if (this.draggingItem) return;
         console.log(EVENT_SELECT);
         if (item !== this.selectedItem) {
           console.log("111");
@@ -112,6 +116,11 @@ class Graph extends EventEmitter {
         this.selectedItem = item;
       }
     );
+
+    // this.on(EVENT_DRAG, ({ item }: { item: KeyValueBox }) => {
+    //   console.log(item);
+    //   this.draggingItem = item;
+    // });
 
     this.canvas.click((event: Event) => {
       if (event.target === this.canvas?.node) {
@@ -123,9 +132,16 @@ class Graph extends EventEmitter {
     });
 
     this.canvas.on("zoom", (event: any) => {
+      const { x, y, width, height } = this.canvas?.viewbox() || {};
+      // console.log(x, y, width, height);
+
       if (this.onZoomCallback) {
         this.onZoomCallback(event.detail.level);
       }
+    });
+
+    this.canvas.on("panned", (event: any) => {
+      console.log("panned", event);
     });
   };
 
@@ -224,6 +240,11 @@ class Graph extends EventEmitter {
     return this.objectBoxes.filter((box) => !box.parent);
   };
 
+  getValues = () => {
+    const values = this.getAllIsolateObjectBox().map((item) => item.value);
+    return values;
+  };
+
   addLinkLine = (linkline: LinkLine) => {
     this.linkLines.add(linkline);
   };
@@ -286,7 +307,5 @@ class Graph extends EventEmitter {
     }
   }
 }
-
-export const graph1 = new Graph();
 
 export default Graph;

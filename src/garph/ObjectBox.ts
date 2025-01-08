@@ -101,6 +101,9 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
     });
 
     this.rect.on("mouseout", () => {
+      if (this.graph.selectedItem === this) {
+        return;
+      }
       this.rect.attr({ stroke: "none" });
     });
 

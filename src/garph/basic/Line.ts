@@ -4,7 +4,7 @@ import { Svg } from "@svgdotjs/svg.js";
 const defaultOptions = {
   curveHeight: 0,
   strokeColor: "black",
-  strokeWidth: 4,
+  strokeWidth: 2,
   showControlPoints: false,
 };
 

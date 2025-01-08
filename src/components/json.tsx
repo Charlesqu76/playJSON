@@ -1,16 +1,7 @@
 import React, { useRef, useState, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import { match } from "assert";
-import { arch } from "os";
 import { Button } from "antd";
-
-interface JsonPosition {
-  key: string;
-  line: number;
-  path: string[];
-  isArrayItem: boolean;
-}
 
 interface IProps {
   jsondata: string;
