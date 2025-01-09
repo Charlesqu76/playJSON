@@ -3,6 +3,7 @@ import { Rect } from "@svgdotjs/svg.js";
 import { Box } from "./box";
 import Graph from "../graph";
 import EventEmitter from "../EventEmitter";
+import Basic from "./basic";
 
 interface Props {
   x: number;
@@ -11,16 +12,14 @@ interface Props {
   height: number;
 }
 
-export default class NormalRect<P> implements Box {
-  eventEmitter = new EventEmitter();
+export default class NormalRect<P> extends Basic<P> implements Box {
   rect: Rect;
-  parent: P | null = null;
-  graph: Graph;
   constructor(
     protected draw: Svg,
     { x, y, width, height }: Props,
     graph: Graph
   ) {
+    super(graph);
     this.graph = graph;
     this.rect = draw.rect(width, height).move(x, y).attr({ fill: "none" });
   }
@@ -38,9 +37,13 @@ export default class NormalRect<P> implements Box {
     this.rect.front();
   }
 
-  setWidth() {}
+  setWidth(width: number) {
+    this.rect.width(width);
+  }
 
-  setHeight() {}
+  setHeight(height: number) {
+    this.rect.height(height);
+  }
 
   show() {
     this.rect.show();
@@ -48,6 +51,10 @@ export default class NormalRect<P> implements Box {
 
   hide() {
     this.rect.hide();
+  }
+
+  remove() {
+    this.rect.remove();
   }
 
   setParent(parent: P | null) {

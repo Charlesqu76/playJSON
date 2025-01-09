@@ -7,18 +7,30 @@ import flattenJSONToList from "@/util/flatJsonList";
 export default function Header() {
   const jsons = useStore((store) => store.jsons);
   const graph = useStore((store) => store.graph);
-  const [options, setOptions] = useState([]);
+  const searchText = useStore((store) => store.searchText);
+  const setSearchText = useStore((store) => store.setSearchText);
   const s = flattenJSONToList(jsons[0]);
-  console.log;
   return (
     <header className="h-16 flex items-center px-2 justify-between">
       <h2 className="text-xl font-bold">Play JSON</h2>
       <div className="flex items-center space-x-4">
         <InputSearch
-          options={s.map(({ path, value }) => `${path}: ${value}`)}
-          onChange={(text) => {
-            console.log(text);
-          }}
+          value={searchText}
+          options={s
+            .map(({ path, value }) => `${path}: ${value}`)
+            .filter((v) => v.includes(searchText))}
+          onChange={setSearchText}
+          OptionComponent={({ data }) => (
+            <div
+              className="line-clamp-1"
+              onClick={() => {
+                
+                console.log(data);
+              }}
+            >
+              {data}
+            </div>
+          )}
         />
         <Zoom />
         <Button

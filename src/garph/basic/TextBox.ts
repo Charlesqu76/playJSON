@@ -25,11 +25,20 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
   constructor(protected draw: Svg, { x, y, text }: Props, graph: Graph) {
     const position = textPosition(x, y);
     super(draw, { width: 0, height: 0, x, y }, graph);
-    this.rect.attr({ stroke: "none" });
+    // this.rect.attr({ stroke: "none" });
     this.text = new TextEditor(draw, text, position.x, position.y, graph);
     this.text.text.attr({ cursor: "pointer" });
-    this.rect.width(this.boxAttrs.width);
-    this.rect.height(this.boxAttrs.height);
+    this.text.text.width(this.boxAttrs.width);
+    this.text.text.height(this.boxAttrs.height);
+    // this.rect.width(this.boxAttrs.width);
+    // this.rect.height(this.boxAttrs.height);
+    // this.nested = draw.nested();
+    // this.nested.add(this.rect).add(this.text.text);
+  }
+
+  get boundary() {
+    const { x, y, width, height } = this.text.boundary;
+    return { x, y, width, height };
   }
 
   get boxAttrs() {
@@ -39,6 +48,7 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
       height: height + padding * 2,
     };
   }
+
   get value() {
     return this.text.value;
   }
@@ -53,7 +63,7 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
     const position = textPosition(x, y);
     this.text.move(position.x, position.y);
     this.rect.move(x, y);
-    this.eventEmitter.emit(EVENT_MOVE);
+    this.emit(EVENT_MOVE);
   }
 
   hide() {

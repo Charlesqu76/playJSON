@@ -11,12 +11,12 @@ interface Props {
 }
 
 /**
- * children - KeyValueBox
  * exact one parent - keyValueBox
+ * children - KeyValueBox
  */
 
 export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
-  isArray = false;
+  public isArray = false;
   protected line: LinkLine | null = null;
 
   constructor(draw: Svg, { x, y, value }: Props, graph: Graph) {

@@ -8,19 +8,15 @@ const size = 16;
 const DEFAULT_MAX_WIDTH = 400;
 
 export default class TextEditor implements Box {
-  text: Text;
   graph: Graph;
-  private maxWidth: number;
-
+  text: Text;
   constructor(
     protected draw: Svg,
     text: string,
     x: number,
     y: number,
-    graph: Graph,
-    maxWidth?: number
+    graph: Graph
   ) {
-    this.maxWidth = maxWidth ?? DEFAULT_MAX_WIDTH;
     this.graph = graph;
     this.text = this.draw
       .text((add) => this.addLine(add, String(text)))
@@ -40,7 +36,7 @@ export default class TextEditor implements Box {
       const tempText = this.draw.text(testLine).font({ size: 16 });
       const lineWidth = tempText.length();
       tempText.remove();
-      if (lineWidth > this.maxWidth) {
+      if (lineWidth > DEFAULT_MAX_WIDTH) {
         if (currentLine) {
           add.tspan(currentLine).newLine();
         }
@@ -83,6 +79,10 @@ export default class TextEditor implements Box {
 
   hide() {
     this.text.hide();
+  }
+
+  front() {
+    this.text.front();
   }
 
   show() {

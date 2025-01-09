@@ -7,15 +7,16 @@ import { getRightMid, isPointInBox } from "./utils";
 import KeyValueBox from "./KeyValueBox";
 import LinkLine from "./LinkLine";
 import { EVENT_LINK } from "./event";
+import TextEditor from "./basic/TextEditor";
 
-export default class ObjectSign extends TextBox<KeyValueBox> {
+export default class ObjectSign extends TextEditor {
   showChild: boolean = true;
   isObject: boolean = false;
   isKeyValueobject: boolean = false;
   isArrayObject: boolean = false;
   child: ObjectBox | null = null;
   protected line: LinkLine | null = null;
-  sign: TextBox<KeyValueBox> | null = null;
+  // sign: TextBox<KeyValueBox> | null = null;
 
   constructor(
     protected draw: Svg,
@@ -31,18 +32,14 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
     const isKeyValueobject = isObject && !Array.isArray(value);
     const isArray = Array.isArray(value);
 
-    super(
-      draw,
-      { text: isObject ? (isArray ? "[]" : "{}") : value, x, y },
-      graph
-    );
+    super(draw, isObject ? (isArray ? "[]" : "{}") : value, x, y, graph);
 
     this.isObject = isObject;
     this.isKeyValueobject = isKeyValueobject;
     this.isArrayObject = isArray;
-    this.setParent(parent);
+    // this.setParent(parent);
     // this.text.text.fill("#0451A5");
-    this.text.text.fill("green");
+    this.text.fill("green");
 
     if (this.isObject) {
       this.sign = this.initSign(x, y);
@@ -64,7 +61,7 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
       }
     }
 
-    this.text.text.css({ cursor: "pointer" });
+    this.text.css({ cursor: "pointer" });
     this.initEvent();
   }
 
@@ -72,22 +69,12 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
     return this.child?.value || this.text.value;
   }
 
-  get boundary() {
-    const { x, y, width, height } = this.rect.bbox();
-    return {
-      x: x,
-      y: y,
-      width: width + (this.sign?.boundary.width || 0),
-      height: height,
-    };
-  }
-
   setLine(line: LinkLine | null) {
     this.line = line;
   }
 
   initEvent = () => {
-    this.text.text.on("mousedown", (event) => {
+    this.text.on("mousedown", (event) => {
       if (!this.parent?.parent || !this.isObject) return;
       event = event as MouseEvent;
       event.stopPropagation();
@@ -130,31 +117,6 @@ export default class ObjectSign extends TextBox<KeyValueBox> {
 
       document.addEventListener("mousemove", mousemove);
       document.addEventListener("mouseup", mouseup);
-    });
-
-    this.text.text.on("dblclick", () => {
-      const v = window.prompt("dblclick");
-      if (!v) return;
-      this.updateText(v);
-      if (v === "{}") {
-        this.isObject = true;
-        this.isKeyValueobject = true;
-        this.isArrayObject = false;
-      } else if (v === "[]") {
-        this.isObject = true;
-        this.isKeyValueobject = false;
-        this.isArrayObject = true;
-      } else {
-        this.isObject = false;
-        this.isKeyValueobject = false;
-        this.isArrayObject = false;
-        this.line?.delete();
-      }
-      this.parent?.setWidth();
-      this.parent?.setHeight();
-      this.parent?.parent?.setWidth();
-      this.parent?.parent?.setHeight();
-      this.parent?.parent?.arrangeChildren();
     });
   };
 

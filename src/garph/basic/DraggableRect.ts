@@ -19,7 +19,6 @@ export default class DraggableRect<P> extends NormalRect<P> {
     graph: Graph
   ) {
     super(draw, { x, y, width, height }, graph);
-    this.graph = graph;
     this.rect.draggable();
 
     this.rect.on("mouseover", () => {
@@ -39,18 +38,6 @@ export default class DraggableRect<P> extends NormalRect<P> {
         this.rect.move(box.x, box.y);
       },
       { passive: true }
-    );
-  }
-
-  isOverlapping(
-    box1: { x: number; y: number; width: number; height: number },
-    box2: { x: number; y: number; width: number; height: number }
-  ) {
-    return !(
-      box1.x + box1.width < box2.x ||
-      box2.x + box2.width < box1.x ||
-      box1.y + box1.height < box2.y ||
-      box2.y + box2.height < box1.y
     );
   }
 }

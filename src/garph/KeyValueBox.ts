@@ -1,16 +1,21 @@
 import { Svg } from "@svgdotjs/svg.js";
 import ObjectBox from "./ObjectBox";
-import TextBox from "./basic/TextBox";
-import ObjectSign from "./ObjectSign";
-import { Box } from "./basic/box";
 import Graph from "./graph";
-import DraggableRect from "./basic/DraggableRect";
 import {
   EVENT_DRAG,
+  EVENT_LINK,
   EVENT_MOVE,
   EVENT_SELECT,
   EVENT_UPDATE,
 } from "@/garph/event";
+import TextEditor from "./basic/TextEditor";
+import DraggableRect from "./basic/DraggableRect";
+import isOverlapping from "@/garph/utils/isOverlapping";
+import LinkLine from "./LinkLine";
+import { getDataType } from "./utils";
+
+const PADDING_Y = 5;
+const PADDING_X = 10;
 
 interface Props {
   x: number;
@@ -26,13 +31,15 @@ interface Props {
  *
  */
 
-export default class KeyValueBox
-  extends DraggableRect<ObjectBox>
-  implements Box
-{
-  protected keyBox: TextBox<KeyValueBox>;
-  valueBox: ObjectSign;
+export default class KeyValueBox extends DraggableRect<ObjectBox> {
+  protected keyChain = "";
+  protected keyBox: TextEditor;
+  protected valueBox: TextEditor;
   protected origin: { x: number; y: number } | null = null;
+  child: ObjectBox | null = null;
+  showChild: boolean = true;
+  protected valueType: "string" | "object" | "array" = "string";
+  protected line: LinkLine | null = null;
   constructor(
     protected draw: Svg,
     { x, y, key, value }: Props,
@@ -40,27 +47,46 @@ export default class KeyValueBox
     parent: ObjectBox
   ) {
     super(draw, { x, y, width: 0, height: 0 }, graph);
+
+    this.valueType = getDataType(value);
+
     this.setParent(parent);
     this.rect.fill("white");
     this.graph.addKeyValueBox(this);
     // keyBox
-    this.keyBox = new TextBox(draw, { text: key, x, y }, graph);
-    // this.keyBox.text.text.fill('#A31515');
-    const { width } = this.keyBox.boundary;
-    this.valueBox = new ObjectSign(
+    this.keyBox = new TextEditor(draw, key, x, y, graph);
+
+    if (this.valueType !== "string") {
+      this.child = new ObjectBox(
+        draw,
+        {
+          x: 0,
+          y: 0,
+          value,
+        },
+        graph
+      );
+      this.graph.emit(EVENT_LINK, { keyvalueBox: this, objectBox: this.child });
+    }
+
+    this.valueBox = new TextEditor(
       draw,
-      {
-        x: x + width,
-        y: y,
-        value: value,
-        parent: this,
-      },
+      // @ts-ignore
+      this.valueType === "array"
+        ? "[]"
+        : this.valueType === "object"
+        ? "{}"
+        : value,
+      x,
+      y,
       graph
     );
+
+    this.valueBox.text.fill("green");
+
+    this.initEvnet();
     this.setHeight();
     this.setWidth();
-    this.initEvnet();
-    // valyeBox
   }
 
   get keyValue() {
@@ -77,21 +103,31 @@ export default class KeyValueBox
     };
   }
 
-  get child() {
-    if (this.valueBox instanceof ObjectSign) {
-      return this.valueBox.child;
-    }
-    return null;
-  }
-
-  get showChild() {
-    if (this.valueBox instanceof ObjectSign) {
-      return this.valueBox.showChild;
-    }
-    return false;
-  }
-
   initEvnet() {
+    this.valueBox.text.on("dblclick", () => {
+      const v = window.prompt("dblclick");
+      if (!v) return;
+      this.valueBox.updateText(v);
+      // if (v === "{}") {
+      //   this.isObject = true;
+      //   this.isKeyValueobject = true;
+      //   this.isArrayObject = false;
+      // } else if (v === "[]") {
+      //   this.isObject = true;
+      //   this.isKeyValueobject = false;
+      //   this.isArrayObject = true;
+      // } else {
+      //   this.isObject = false;
+      //   this.isKeyValueobject = false;
+      //   this.isArrayObject = false;
+      //   this.line?.delete();
+      // }
+      this.setWidth();
+      this.setHeight();
+      this.parent?.setWidth();
+      this.parent?.setHeight();
+      this.parent?.arrangeChildren();
+    });
     this.rect.on("click", () => {
       this.graph.emit(EVENT_SELECT, { item: this });
     });
@@ -121,7 +157,7 @@ export default class KeyValueBox
         this.move(box.x, box.y);
         if (this instanceof ObjectBox) return;
         this.graph.objectBoxes.forEach((child) => {
-          if (this.isOverlapping(box, child.rect.bbox())) {
+          if (isOverlapping(box, child)) {
             child.rect.attr({ "stroke-width": 3, stroke: "red" });
           } else {
             child.rect.attr({ "stroke-width": 1, stroke: "none" });
@@ -132,9 +168,8 @@ export default class KeyValueBox
     );
 
     this.rect.on("dragend", (event) => {
-      const box = this.rect.bbox();
       for (const objectBox of this.graph.objectBoxes) {
-        const overlap = this.isOverlapping(box, objectBox.rect.bbox());
+        const overlap = isOverlapping(this, objectBox);
         if (overlap) {
           if (this.parent !== objectBox) {
             this.parent?.removeChildren(this);
@@ -156,7 +191,7 @@ export default class KeyValueBox
 
     // array key can not be changed
     if (!this.parent?.isArray) {
-      this.keyBox.text.text.on("dblclick", () => {
+      this.keyBox.text.on("dblclick", () => {
         const v = window.prompt("dblclick");
         if (!v) return;
         this.keyBox.updateText(v);
@@ -171,50 +206,53 @@ export default class KeyValueBox
     }
   }
 
+  setLine(line: LinkLine | null) {
+    this.line = line;
+  }
+
+  setChild(payload: ObjectBox | null) {
+    this.child = payload;
+  }
+
   front() {
-    this.rect.front();
+    super.front();
     this.keyBox.front();
     this.valueBox.front();
   }
 
   move(x: number, y: number) {
     super.move(x, y);
-    this.keyBox.move(x, y);
-    this.valueBox.move(x + this.keyBox.boundary.width, y);
-    this.eventEmitter.emit(EVENT_MOVE);
+    this.keyBox.move(x + PADDING_X, y + PADDING_Y);
+    this.valueBox.move(
+      x + PADDING_X + this.keyBox.boundary.width,
+      y + PADDING_Y
+    );
+    this.emit(EVENT_MOVE);
   }
 
   setWidth() {
     const width = this.keyBox.boundary.width + this.valueBox.boundary.width + 2;
-    this.rect.width(width);
+    super.setWidth(width + PADDING_X * 2);
   }
 
   setHeight() {
-    this.rect.height(
-      Math.max(
-        this.keyBox.boundary.height + 2,
-        this.valueBox.boundary.height + 2
-      )
-    );
+    super.setHeight(this.valueBox.boundary.height + PADDING_Y * 2);
   }
 
   show() {
-    this.rect.show();
+    super.show();
     this.keyBox.show();
     this.valueBox.show();
   }
 
   hide() {
-    this.rect.hide();
+    super.hide();
     this.keyBox.hide();
     this.valueBox.hide();
   }
 
   delete() {
-    this.rect.remove();
-    this.keyBox.delete();
-    this.valueBox.delete();
-    this.parent?.removeChildren(this);
+    super.remove();
     this.graph.emit(EVENT_UPDATE, { name: "deleteObjectBox" });
   }
 }

@@ -17,7 +17,6 @@ import {
   EVENT_DRAG,
 } from "@/garph/event";
 import debounce from "./utils/debounce";
-import { Box } from "lucide-react";
 
 class Graph extends EventEmitter {
   canvas: Svg | null = null;
@@ -88,9 +87,9 @@ class Graph extends EventEmitter {
       update(this.getAllIsolateObjectBox());
     });
 
-    this.on(EVENT_LINK, ({ signBox, objectBox }) => {
+    this.on(EVENT_LINK, ({ keyvalueBox, objectBox }) => {
       if (this.canvas === null) return;
-      const line = new LinkLine(this.canvas, signBox, objectBox, this);
+      const line = new LinkLine(this.canvas, keyvalueBox, objectBox, this);
       this.addLinkLine(line);
     });
 
@@ -132,9 +131,6 @@ class Graph extends EventEmitter {
     });
 
     this.canvas.on("zoom", (event: any) => {
-      const { x, y, width, height } = this.canvas?.viewbox() || {};
-      // console.log(x, y, width, height);
-
       if (this.onZoomCallback) {
         this.onZoomCallback(event.detail.level);
       }
@@ -240,11 +236,6 @@ class Graph extends EventEmitter {
     return this.objectBoxes.filter((box) => !box.parent);
   };
 
-  getValues = () => {
-    const values = this.getAllIsolateObjectBox().map((item) => item.value);
-    return values;
-  };
-
   addLinkLine = (linkline: LinkLine) => {
     this.linkLines.add(linkline);
   };
@@ -282,12 +273,17 @@ class Graph extends EventEmitter {
     return null;
   };
 
-  getZoom = (): number => {
+  get values() {
+    const values = this.getAllIsolateObjectBox().map((item) => item.value);
+    return values;
+  }
+
+  get zoom() {
     if (!this.canvas) return 1;
     return this.canvas.zoom();
-  };
+  }
 
-  getViewpoint = () => {
+  get viewpoint() {
     if (!this.canvas) return { x: 0, y: 0, width: 1000, height: 1000 };
     const viewbox = this.canvas.viewbox();
     return {
@@ -296,7 +292,7 @@ class Graph extends EventEmitter {
       width: viewbox.width,
       height: viewbox.height,
     };
-  };
+  }
 
   private handleCopy() {
     if (this.selectedItem instanceof ObjectBox) {

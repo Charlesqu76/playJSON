@@ -66,9 +66,9 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
 
   arrangeChildren() {
     const { x, y } = this.boundary;
-    Array.from(this.children).reduce((acc, cur) => {
-      cur.move(x + padding, acc + padding);
-      acc += cur.boundary.height + gap;
+    Array.from(this.children).reduce((acc, child) => {
+      child.move(x + padding, acc + padding);
+      acc += child.boundary.height + gap;
       return acc;
     }, y);
   }
@@ -99,9 +99,9 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
   }
 
   move(x: number, y: number) {
-    this.rect.move(x, y);
+    super.move(x, y);
     this.arrangeChildren();
-    this.eventEmitter.emit(EVENT_MOVE);
+    this.emit(EVENT_MOVE);
   }
 
   show() {

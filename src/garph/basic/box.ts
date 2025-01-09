@@ -1,5 +1,5 @@
 export interface Box {
   get boundary(): { x: number; y: number; width: number; height: number };
-  setWidth: () => void;
-  setHeight: () => void;
+  setWidth: (width: number) => void;
+  setHeight: (height: number) => void;
 }
