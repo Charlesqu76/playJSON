@@ -80,7 +80,11 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
     }
     let width = 0;
     this.children.forEach((child) => {
-      width = Math.max(width, child.boundary.width);
+      width = Math.max(width, child.realWidth + 10 * 2);
+    });
+
+    this.children.forEach((child) => {
+      child.rect.width(width);
     });
 
     this.rect.width(width + padding * 2);

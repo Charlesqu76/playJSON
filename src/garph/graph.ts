@@ -106,7 +106,6 @@ class Graph extends EventEmitter {
       EVENT_SELECT,
       ({ item }: { item: LinkLine | KeyValueBox | ObjectBox }) => {
         // if (this.draggingItem) return;
-        console.log(EVENT_SELECT);
         if (item !== this.selectedItem) {
           console.log("111");
           this.selectedItem?.unselect();
@@ -273,6 +272,15 @@ class Graph extends EventEmitter {
     return null;
   };
 
+  private handleCopy() {
+    if (this.selectedItem instanceof ObjectBox) {
+      const jsonStr = JSON.stringify(this.selectedItem.value);
+      navigator.clipboard.writeText(jsonStr).catch((err) => {
+        console.error("Failed to copy:", err);
+      });
+    }
+  }
+
   get values() {
     const values = this.getAllIsolateObjectBox().map((item) => item.value);
     return values;
@@ -292,15 +300,6 @@ class Graph extends EventEmitter {
       width: viewbox.width,
       height: viewbox.height,
     };
-  }
-
-  private handleCopy() {
-    if (this.selectedItem instanceof ObjectBox) {
-      const jsonStr = JSON.stringify(this.selectedItem.value);
-      navigator.clipboard.writeText(jsonStr).catch((err) => {
-        console.error("Failed to copy:", err);
-      });
-    }
   }
 }
 

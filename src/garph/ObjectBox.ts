@@ -66,27 +66,16 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
     return m;
   }
 
-  setChildrenWidth() {
-    let maxWidth = 0;
-    this.children.forEach((child) => {
-      maxWidth = Math.max(maxWidth, child.boundary.width);
-    });
-
-    this.children.forEach((child) => {
-      child.rect.width(maxWidth);
-    });
-  }
-
   addChildren(children: KeyValueBox | KeyValueBox[]): void {
     super.addChildren(children);
     this.line?.update();
-    this.setChildrenWidth();
+    this.setWidth();
   }
 
   removeChildren(child: KeyValueBox): void {
     super.removeChildren(child);
     this.line?.update();
-    this.setChildrenWidth();
+    this.setWidth();
   }
 
   setLine(line: LinkLine | null) {

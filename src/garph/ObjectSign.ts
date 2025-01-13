@@ -74,50 +74,7 @@ export default class ObjectSign extends TextEditor {
   }
 
   initEvent = () => {
-    this.text.on("mousedown", (event) => {
-      if (!this.parent?.parent || !this.isObject) return;
-      event = event as MouseEvent;
-      event.stopPropagation();
-
-      let tempLine: Line | null = null;
-      const svgPoint = (this.draw.node as SVGSVGElement).createSVGPoint();
-      const startPos = getRightMid(this.parent.boundary);
-
-      tempLine = this.draw
-        .line(startPos.x, startPos.y, startPos.x, startPos.y)
-        .stroke({ width: 2, color: "#000" });
-
-      const mousemove = (e: MouseEvent) => {
-        e.preventDefault();
-        svgPoint.x = e.clientX;
-        svgPoint.y = e.clientY;
-        const cursor = svgPoint.matrixTransform(
-          (this.draw.node as SVGSVGElement).getScreenCTM()?.inverse()
-        );
-        tempLine?.plot(startPos.x, startPos.y, cursor.x, cursor.y);
-      };
-
-      const mouseup = (e: MouseEvent) => {
-        const cursor = svgPoint.matrixTransform(
-          (this.draw.node as SVGSVGElement).getScreenCTM()?.inverse()
-        );
-        const objectBox = this.graph.objectBoxes.find((box) =>
-          isPointInBox({ x: cursor.x, y: cursor.y }, box.boundary)
-        );
-
-        if (objectBox && this.child !== objectBox) {
-          this.linkToObject(objectBox);
-        }
-
-        tempLine?.remove();
-        tempLine = null;
-        document.removeEventListener("mousemove", mousemove);
-        document.removeEventListener("mouseup", mouseup);
-      };
-
-      document.addEventListener("mousemove", mousemove);
-      document.addEventListener("mouseup", mouseup);
-    });
+ 
   };
 
   front = () => {
@@ -126,20 +83,6 @@ export default class ObjectSign extends TextEditor {
     this.line?.front();
   };
 
-  linkToObject = (targetObjectBox: ObjectBox) => {
-    if (targetObjectBox.parent) {
-      window.alert("This object is already linked to another object");
-      return;
-    }
-    if (this.isArrayObject && !targetObjectBox.isArray) {
-      window.alert("link to array object");
-      return;
-    }
-    if (this.line) {
-      this.line.delete();
-    }
-    this.graph.emit(EVENT_LINK, { signBox: this, objectBox: targetObjectBox });
-  };
 
   show: () => void = () => {
     super.show();
