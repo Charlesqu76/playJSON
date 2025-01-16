@@ -1,4 +1,4 @@
-import React, { ReactElement, useState } from "react";
+import React, { ReactElement, useRef, useState } from "react";
 import { Input } from "./ui/input";
 import { ScrollArea } from "./ui/scroll-area";
 import clsx from "clsx";
@@ -16,28 +16,24 @@ export default function InputSearch<T>({
   onChange,
   OptionComponent,
 }: IProps<T>) {
-  const [focus, setFocus] = useState(false);
+  const [show, setShow] = useState(false);
   return (
     <div className="relative h-10">
       <Input
         placeholder="Search Keyword"
-        className={clsx("h-full mb-2 max-w-80", focus && "w-80")}
+        className={clsx("h-full mb-2 max-w-80", show && "w-80")}
         value={value}
-        onFocus={() => {
-          setFocus(true);
-        }}
-        // onBlur={() => {
-        //   setFocus(false);
-        // }}
+        onFocus={() => setShow(true)}
+        onBlur={() => setShow(false)}
         onChange={(e) => onChange?.(e.target.value)}
       ></Input>
       <ScrollArea
         className={clsx(
           "absolute h-40 hidden z-10 max-w-80 bg-white p-2 shadow rounded",
-          focus && "block"
+          show && "block"
         )}
       >
-        <div className=" space-y-2">
+        <div className=" space-y-2   [&>*:hover]:bg-gray-100">
           {options.map((v, i) => (
             <OptionComponent data={v} key={i} />
           ))}

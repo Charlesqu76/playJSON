@@ -1,4 +1,4 @@
-import React, { useState } from "react";
+import React from "react";
 import InputSearch from "./InputSearch";
 import { useStore } from "@/store";
 import { Button } from "./ui/button";
@@ -23,8 +23,7 @@ export default function Header() {
           OptionComponent={({ data }) => (
             <div
               className="line-clamp-1"
-              onClick={() => {
-                
+              onClick={(e) => {
                 console.log(data);
               }}
             >
