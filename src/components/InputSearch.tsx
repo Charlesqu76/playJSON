@@ -18,18 +18,22 @@ export default function InputSearch<T>({
 }: IProps<T>) {
   const [show, setShow] = useState(false);
   return (
-    <div className="relative h-10">
+    <div className="relative h-8">
       <Input
         placeholder="Search Keyword"
-        className={clsx("h-full mb-2 max-w-80", show && "w-80")}
+        className={clsx("h-full max-w-80", show && "w-80")}
         value={value}
         onFocus={() => setShow(true)}
-        onBlur={() => setShow(false)}
+        onBlur={() => {
+          setTimeout(() => {
+            setShow(false);
+          }, 50);
+        }}
         onChange={(e) => onChange?.(e.target.value)}
       ></Input>
       <ScrollArea
         className={clsx(
-          "absolute h-40 hidden z-10 max-w-80 bg-white p-2 shadow rounded",
+          "absolute top-2 h-40 hidden z-10 max-w-80 bg-white p-1 shadow rounded",
           show && "block"
         )}
       >

@@ -1,5 +1,6 @@
-interface FlattenedItem {
+export interface FlattenedItem {
   path: string;
+  key: string;
   value: string | number | boolean | null | undefined;
 }
 
@@ -21,6 +22,7 @@ export default function flattenJSONToList(
           result.push(...arrayFlattened);
         } else {
           result.push({
+            key: key,
             path: `${newKey}[${index}]`,
             value: item,
           });
@@ -34,6 +36,7 @@ export default function flattenJSONToList(
       // Handle primitive values
       result.push({
         path: newKey,
+        key: key,
         value: value,
       });
     }

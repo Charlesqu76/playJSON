@@ -1,17 +1,17 @@
 import React, { useRef, useState, useEffect } from "react";
 import Editor, { OnMount } from "@monaco-editor/react";
 import * as monaco from "monaco-editor";
-import { Button } from "antd";
+import { Button } from "./ui/button";
 
 interface IProps {
   jsondata: string;
+  onChange?: (value: string) => void;
 }
 
-const MonacoJsonEditor = ({ jsondata }: IProps) => {
+const MonacoJsonEditor = ({ jsondata, onChange }: IProps) => {
   const editorRef = useRef<monaco.editor.IStandaloneCodeEditor | null>(null);
   const [jsonContent, setJsonContent] = useState(jsondata);
   const [validationErrors, setValidationErrors] = useState<string[]>([]);
-  const [editorHeight, setEditorHeight] = useState("400px");
 
   const handleEditorDidMount: OnMount = (editor) => {
     editorRef.current = editor;
@@ -47,26 +47,6 @@ const MonacoJsonEditor = ({ jsondata }: IProps) => {
     }
   };
 
-  const updateEditorHeight = () => {
-    if (editorRef.current) {
-      const contentHeight = Math.min(
-        editorRef.current.getContentHeight(),
-        400 // maximum height
-      );
-      setEditorHeight(`${contentHeight}px`);
-    }
-  };
-
-  useEffect(() => {
-    if (editorRef.current) {
-      const editor = editorRef.current;
-      // Update height when content changes
-      editor.onDidContentSizeChange(updateEditorHeight);
-      // Initial height calculation
-      updateEditorHeight();
-    }
-  }, [editorRef.current]);
-
   useEffect(() => {
     if (editorRef.current) {
       editorRef.current.setValue(jsondata);
@@ -78,12 +58,12 @@ const MonacoJsonEditor = ({ jsondata }: IProps) => {
   return (
     <div className="w-full mx-auto p-4">
       <div className="mb-4 flex space-x-2">
-        <Button
+        {/* <Button
           onClick={handleValidateJSON}
           className="bg-blue-500 text-white px-4 py-2 rounded hover:bg-blue-600"
         >
           Validate
-        </Button>
+        </Button> */}
         <Button
           onClick={handleFormatJSON}
           className="bg-green-500 text-white px-4 py-2 rounded hover:bg-green-600"
@@ -104,11 +84,14 @@ const MonacoJsonEditor = ({ jsondata }: IProps) => {
       )}
 
       <Editor
-        height={editorHeight}
+        height={"400px"}
         defaultLanguage="json"
         defaultValue={jsondata}
         onMount={handleEditorDidMount}
-        onChange={(value) => setJsonContent(value || "")}
+        onChange={(value) => {
+          onChange?.(value || "");
+          setJsonContent(value || "");
+        }}
         options={{
           minimap: { enabled: false },
           formatOnType: true,

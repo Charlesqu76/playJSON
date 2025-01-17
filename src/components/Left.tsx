@@ -8,7 +8,10 @@ export default function Left() {
     <div className="flex-1 space-y-4 overflow-y-scroll">
       {jsons.map((json, i) => (
         <div key={i} className="bg-slate-100">
-          <MonacoJsonEditor jsondata={JSON.stringify(json)} />
+          <MonacoJsonEditor
+            jsondata={JSON.stringify(json)}
+            onChange={(value) => console.log(value)}
+          />
         </div>
       ))}
     </div>

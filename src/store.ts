@@ -1,6 +1,5 @@
 import { create } from "zustand";
-import data from "../data1.json";
-import { data1 } from "./data";
+import data from "../data.json";
 import Graph from "./garph/graph";
 
 type State = {

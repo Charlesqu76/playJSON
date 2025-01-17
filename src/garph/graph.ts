@@ -227,10 +227,6 @@ class Graph extends EventEmitter {
     this.keyValueBoxes.push(box);
   };
 
-  allChildrenBox = () => {
-    return this.objectBoxes;
-  };
-
   getAllIsolateObjectBox = () => {
     return this.objectBoxes.filter((box) => !box.parent);
   };
