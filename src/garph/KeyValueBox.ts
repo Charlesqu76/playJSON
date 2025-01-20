@@ -58,6 +58,8 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
     // keyBox
     this.keyBox = new TextEditor(draw, key, x, y, graph);
 
+    console.log(this, this.keyValue);
+
     if (this.valueType !== "string") {
       this.child = new ObjectBox(
         draw,
@@ -83,12 +85,16 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
       y,
       graph
     );
-
     this.valueBox.text.fill("green");
+
+    console.log(this, this.keyValue);
 
     this.initEvnet();
     this.setHeight();
     this.setWidth();
+
+    // this.setKeyChain();
+    // console.log(this.keyChain);
   }
 
   get keyValue() {
@@ -103,6 +109,14 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
     return {
       [this.keyValue]: this.valueValue,
     };
+  }
+
+  setKeyChain() {
+    if (this.parent?.parent?.keyValue) {
+      this.keyChain = this.parent?.parent?.keyValue + "." + this.keyValue;
+    } else {
+      this.keyChain = this.keyValue;
+    }
   }
 
   initEvnet() {
