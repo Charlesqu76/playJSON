@@ -1,4 +1,4 @@
-import ObjectBox from "./ObjectBox";
+import ObjectBox from "../ObjectBox";
 
 const HORIZONTAL_SPACING = 50;
 const VERTICAL_SPACING = 30;

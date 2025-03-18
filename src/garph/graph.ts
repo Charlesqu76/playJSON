@@ -4,19 +4,27 @@ import "@svgdotjs/svg.draggable.js";
 import "@svgdotjs/svg.panzoom.js";
 import ObjectBox from "./ObjectBox";
 import { Svg } from "@svgdotjs/svg.js";
-import KeyValueBox from "./KeyValueBox";
+import KeyValueBox from "./keyvalueBox";
 import LinkLine from "./LinkLine";
-import { layoutTree } from "./layout";
-import EventEmitter from "./EventEmitter";
+import { layoutTree } from "./utils/layout";
+import EventEmitter from "./utils/EventEmitter";
 import {
   EVENT_DELETE,
   EVENT_LINK,
   EVENT_UNLINK,
   EVENT_UPDATE,
   EVENT_SELECT,
-  EVENT_DRAG,
+  EVENT_MOUSEOUT,
+  EVENT_MOUSEOVER,
 } from "@/garph/event";
 import debounce from "./utils/debounce";
+import mouseout from "./event/mouseout";
+import mouseover from "./event/mouseover";
+import link from "./event/link";
+import unlink from "./event/unlink";
+import deleteItem from "./event/delete";
+import select from "./event/select";
+import keydown from "./event/keydown";
 
 class Graph extends EventEmitter {
   canvas: Svg | null = null;
@@ -26,9 +34,9 @@ class Graph extends EventEmitter {
   keyValueBoxes: KeyValueBox[] = [];
   linkLines: WeakSet<LinkLine> = new WeakSet([]);
   selectedItem: LinkLine | KeyValueBox | ObjectBox | null = null;
-  draggingItem: KeyValueBox | null = null;
-  private mouseX: number = 0;
-  private mouseY: number = 0;
+  mouseX: number = 0;
+  mouseY: number = 0;
+  isLinking: boolean = false;
 
   constructor() {
     super();
@@ -55,22 +63,7 @@ class Graph extends EventEmitter {
     if (!this.canvas) return;
 
     document.addEventListener("keydown", (e) => {
-      if (e.ctrlKey || e.metaKey) {
-        if (e.key === "c") {
-          this.handleCopy();
-        }
-        if (e.key === "v") {
-          this.handlePaste();
-        }
-        if (e.key === "Delete" || e.key === "Backspace") {
-          this.emit(EVENT_DELETE, { item: this.selectedItem });
-        }
-      }
-
-      if (e.key === "Tab") {
-        e.preventDefault();
-        this.addChildren();
-      }
+      keydown(e, this);
     });
 
     document.addEventListener("mousemove", (e) => {
@@ -83,42 +76,34 @@ class Graph extends EventEmitter {
       this.onValueUpdate && this.onValueUpdate(d);
     }, 200);
 
-    this.on(EVENT_UPDATE, ({ name }) => {
+    this.on(EVENT_UPDATE, (data) => {
+      console.log(data);
       update(this.getAllIsolateObjectBox());
     });
 
     this.on(EVENT_LINK, ({ keyvalueBox, objectBox }) => {
-      if (this.canvas === null) return;
-      const line = new LinkLine(this.canvas, keyvalueBox, objectBox, this);
-      this.addLinkLine(line);
+      link(this, { keyvalueBox, objectBox });
     });
 
-    this.on(
-      EVENT_DELETE,
-      ({ item }: { item: KeyValueBox | ObjectBox | LinkLine | null }) => {
-        if (!item) return;
-        item.delete();
-        this.selectedItem = null;
-      }
-    );
+    this.on(EVENT_UNLINK, ({ keyvalueBox }) => {
+      unlink(this, keyvalueBox);
+    });
 
-    this.on(
-      EVENT_SELECT,
-      ({ item }: { item: LinkLine | KeyValueBox | ObjectBox }) => {
-        // if (this.draggingItem) return;
-        if (item !== this.selectedItem) {
-          console.log("111");
-          this.selectedItem?.unselect();
-        }
-        item.select();
-        this.selectedItem = item;
-      }
-    );
+    this.on(EVENT_DELETE, ({ item }) => {
+      deleteItem(this, item);
+    });
 
-    // this.on(EVENT_DRAG, ({ item }: { item: KeyValueBox }) => {
-    //   console.log(item);
-    //   this.draggingItem = item;
-    // });
+    this.on(EVENT_SELECT, ({ item }) => {
+      select(this, item);
+    });
+
+    this.on(EVENT_MOUSEOUT, ({ item }) => {
+      mouseout(this, item);
+    });
+
+    this.on(EVENT_MOUSEOVER, ({ item }) => {
+      mouseover(this, item);
+    });
 
     this.canvas.click((event: Event) => {
       if (event.target === this.canvas?.node) {
@@ -148,53 +133,6 @@ class Graph extends EventEmitter {
     this.onZoomCallback = callback;
   };
 
-  private addChildren() {
-    if (!(this.selectedItem instanceof ObjectBox) || !this.canvas) return;
-    let key = "key";
-    let value = "value";
-    if (this.selectedItem.isArray) {
-      key = this.selectedItem.value.length;
-    }
-    const keyvaluebox = new KeyValueBox(
-      this.canvas,
-      {
-        x: 0,
-        y: 0,
-        key,
-        value,
-      },
-      this,
-      this.selectedItem
-    );
-    this.selectedItem.addChildren(keyvaluebox);
-  }
-
-  private async handlePaste() {
-    if (this.canvas === null) return;
-    try {
-      const svgPoint = (this.canvas.node as SVGSVGElement).createSVGPoint();
-      svgPoint.x = this.mouseX;
-      svgPoint.y = this.mouseY;
-      const cursor = svgPoint.matrixTransform(
-        (this.canvas.node as SVGSVGElement).getScreenCTM()?.inverse()
-      );
-      const text = await navigator.clipboard.readText();
-      const value = JSON.parse(text);
-      const newNode = new ObjectBox(
-        this.canvas,
-        {
-          x: cursor.x,
-          y: cursor.y,
-          value: value,
-        },
-        this
-      );
-      layoutTree(newNode);
-    } catch (err) {
-      console.error("Failed to paste:", err);
-    }
-  }
-
   initData = (data: Object | Object[]) => {
     if (!Array.isArray(data)) {
       data = [data];
@@ -202,7 +140,6 @@ class Graph extends EventEmitter {
     (data as object[]).forEach((item) => {
       if (this.canvas === null) return;
       new ObjectBox(
-        this.canvas,
         {
           x: 100,
           y: 0,
@@ -227,12 +164,12 @@ class Graph extends EventEmitter {
     this.keyValueBoxes.push(box);
   };
 
-  getAllIsolateObjectBox = () => {
-    return this.objectBoxes.filter((box) => !box.parent);
-  };
-
   addLinkLine = (linkline: LinkLine) => {
     this.linkLines.add(linkline);
+  };
+
+  getAllIsolateObjectBox = () => {
+    return this.objectBoxes.filter((box) => !box.parent);
   };
 
   centerViewOn = (x: number, y: number) => {
@@ -250,8 +187,8 @@ class Graph extends EventEmitter {
     if (!searchText.trim()) return null;
 
     const match = this.keyValueBoxes.find((box) => {
-      const keyValue = box.keyValue;
-      const valueValue = box.valueValue;
+      const keyValue = box.key;
+      const valueValue = box.value;
       if (typeof valueValue === "string") {
         return valueValue.includes(searchText) || keyValue.includes(searchText);
       }
@@ -267,15 +204,6 @@ class Graph extends EventEmitter {
 
     return null;
   };
-
-  private handleCopy() {
-    if (this.selectedItem instanceof ObjectBox) {
-      const jsonStr = JSON.stringify(this.selectedItem.value);
-      navigator.clipboard.writeText(jsonStr).catch((err) => {
-        console.error("Failed to copy:", err);
-      });
-    }
-  }
 
   get values() {
     const values = this.getAllIsolateObjectBox().map((item) => item.value);

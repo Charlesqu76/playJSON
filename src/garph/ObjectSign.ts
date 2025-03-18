@@ -2,14 +2,11 @@ import { Svg } from "@svgdotjs/svg.js";
 import TextBox from "./basic/TextBox";
 import Graph from "./graph";
 import ObjectBox from "./ObjectBox";
-import { Line } from "@svgdotjs/svg.js";
-import { getRightMid, isPointInBox } from "./utils";
-import KeyValueBox from "./KeyValueBox";
+import KeyValueBox from "./keyvalueBox";
 import LinkLine from "./LinkLine";
 import { EVENT_LINK } from "./event";
-import TextEditor from "./basic/TextEditor";
 
-export default class ObjectSign extends TextEditor {
+export default class ObjectSign extends TextBox<KeyValueBox> {
   showChild: boolean = true;
   isObject: boolean = false;
   isKeyValueobject: boolean = false;
@@ -19,7 +16,6 @@ export default class ObjectSign extends TextEditor {
   // sign: TextBox<KeyValueBox> | null = null;
 
   constructor(
-    protected draw: Svg,
     {
       x,
       y,
@@ -32,7 +28,7 @@ export default class ObjectSign extends TextEditor {
     const isKeyValueobject = isObject && !Array.isArray(value);
     const isArray = Array.isArray(value);
 
-    super(draw, isObject ? (isArray ? "[]" : "{}") : value, x, y, graph);
+    super(isObject ? (isArray ? "[]" : "{}") : value, x, y, graph);
 
     this.isObject = isObject;
     this.isKeyValueobject = isKeyValueobject;
@@ -45,7 +41,6 @@ export default class ObjectSign extends TextEditor {
       this.sign = this.initSign(x, y);
 
       this.child = new ObjectBox(
-        draw,
         {
           x: 0,
           y: 0,
@@ -73,16 +68,13 @@ export default class ObjectSign extends TextEditor {
     this.line = line;
   }
 
-  initEvent = () => {
- 
-  };
+  initEvent = () => {};
 
   front = () => {
     super.front();
     this.sign?.front();
     this.line?.front();
   };
-
 
   show: () => void = () => {
     super.show();
@@ -102,7 +94,6 @@ export default class ObjectSign extends TextEditor {
 
   initSign = (x: number, y: number): TextBox<KeyValueBox> => {
     const sign = new TextBox<KeyValueBox>(
-      this.draw,
       { text: this.showChild ? "-" : "+", x: x + super.boundary.width, y },
       this.graph
     );

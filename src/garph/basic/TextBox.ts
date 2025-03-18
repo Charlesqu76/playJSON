@@ -5,12 +5,13 @@ import { Box } from "./box";
 import Graph from "../graph";
 import { EVENT_MOVE } from "@/garph/event";
 
-const padding = 5;
+const PADDING_X = 2;
+const PADDING_Y = 2;
 
 export const textPosition = (x: number, y: number) => {
   return {
-    x: x + padding,
-    y: y + padding,
+    x: x + PADDING_X,
+    y: y + PADDING_Y,
   };
 };
 
@@ -22,30 +23,22 @@ interface Props {
 
 export default class TextBox<P> extends NormalRect<P> implements Box {
   text: TextEditor;
-  constructor(protected draw: Svg, { x, y, text }: Props, graph: Graph) {
+  constructor({ x, y, text }: Props, graph: Graph) {
     const position = textPosition(x, y);
-    super(draw, { width: 0, height: 0, x, y }, graph);
-    // this.rect.attr({ stroke: "none" });
-    this.text = new TextEditor(draw, text, position.x, position.y, graph);
+    super({ width: 0, height: 0, x, y }, graph);
+    this.text = new TextEditor(text, position.x, position.y, graph);
     this.text.text.attr({ cursor: "pointer" });
-    this.text.text.width(this.boxAttrs.width);
-    this.text.text.height(this.boxAttrs.height);
-    // this.rect.width(this.boxAttrs.width);
-    // this.rect.height(this.boxAttrs.height);
-    // this.nested = draw.nested();
-    // this.nested.add(this.rect).add(this.text.text);
+    this.text.text.width(this.boundary.width);
+    this.text.text.height(this.boundary.height);
   }
 
   get boundary() {
-    const { x, y, width, height } = this.text.boundary;
-    return { x, y, width, height };
-  }
-
-  get boxAttrs() {
-    const { width, height } = this.text.boundary;
+    const { width, height, x, y } = this.text.boundary;
     return {
-      width: width + padding * 2,
-      height: height + padding * 2,
+      width: width + PADDING_X * 2,
+      height: height + PADDING_Y * 2,
+      x,
+      y,
     };
   }
 
@@ -55,20 +48,15 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
 
   updateText(newText: string) {
     this.text.updateText(newText);
-    this.rect.width(this.boxAttrs.width);
-    this.rect.height(this.boxAttrs.height);
+    this.rect.width(this.boundary.width);
+    this.rect.height(this.boundary.height);
   }
 
   move(x: number, y: number) {
+    this.rect.move(x, y);
     const position = textPosition(x, y);
     this.text.move(position.x, position.y);
-    this.rect.move(x, y);
     this.emit(EVENT_MOVE);
-  }
-
-  hide() {
-    this.text.hide();
-    super.hide();
   }
 
   show() {
@@ -76,9 +64,14 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
     super.show();
   }
 
+  hide() {
+    this.text.hide();
+    super.hide();
+  }
+
   front() {
-    this.text.text.front();
-    this.rect.front();
+    this.text.front();
+    super.front();
   }
 
   delete() {

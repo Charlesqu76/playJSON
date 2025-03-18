@@ -1,9 +1,8 @@
-import { Svg } from "@svgdotjs/svg.js";
 import { Rect } from "@svgdotjs/svg.js";
 import { Box } from "./box";
 import Graph from "../graph";
-import EventEmitter from "../EventEmitter";
 import Basic from "./basic";
+import { highlightRect, unHighlightRect } from "../utils/rect";
 
 interface Props {
   x: number;
@@ -14,14 +13,13 @@ interface Props {
 
 export default class NormalRect<P> extends Basic<P> implements Box {
   rect: Rect;
-  constructor(
-    protected draw: Svg,
-    { x, y, width, height }: Props,
-    graph: Graph
-  ) {
+  constructor({ x, y, width, height }: Props, graph: Graph) {
     super(graph);
     this.graph = graph;
-    this.rect = draw.rect(width, height).move(x, y).attr({ fill: "none" });
+    this.rect = this.graph.canvas
+      ?.rect(width, height)
+      .move(x, y)
+      .attr({ fill: "none" });
   }
 
   get boundary() {
@@ -61,11 +59,13 @@ export default class NormalRect<P> extends Basic<P> implements Box {
     this.parent = parent;
   }
 
+  render() {}
+
   select() {
-    this.rect.attr({ "stroke-width": 3, stroke: "red" });
+    highlightRect(this.rect);
   }
 
   unselect() {
-    this.rect.attr({ "stroke-width": 1, stroke: "none" });
+    unHighlightRect(this.rect);
   }
 }

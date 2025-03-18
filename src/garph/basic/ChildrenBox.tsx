@@ -5,18 +5,16 @@ import Graph from "../graph";
 import { EVENT_MOVE, EVENT_UPDATE } from "@/garph/event";
 import NormalRect from "./NormalReact";
 
-const padding = 5;
-const gap = 3;
+const PADDING_X = 5;
+const PADDING_Y = 5;
+const GAP = 5;
+const MIN_WIDTH = 100;
 
 interface Props {
   x: number;
   y: number;
   width: number;
   height: number;
-  config?: {
-    ActiveStrokeColor?: string;
-    padding?: number;
-  };
 }
 
 export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
@@ -24,8 +22,8 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
   implements Box
 {
   children: Set<C> = new Set([]);
-  constructor(draw: Svg, props: Props, graph: Graph) {
-    super(draw, props, graph);
+  constructor(props: Props, graph: Graph) {
+    super(props, graph);
     this.initEvent();
   }
 
@@ -49,45 +47,41 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
       child.setParent(this);
     });
 
-    this.setWidth();
-    this.setHeight();
     this.arrangeChildren();
-    this.graph.emit(EVENT_UPDATE, { name: "addChildren" });
   }
 
   removeChildren(child: C) {
     this.children.delete(child);
     child.setParent(null);
-    this.setWidth();
-    this.setHeight();
     this.arrangeChildren();
-    this.graph.emit(EVENT_UPDATE, { name: "removeChildren" });
   }
 
   arrangeChildren() {
+    this.setWidth();
+    this.setHeight();
     const { x, y } = this.boundary;
     Array.from(this.children).reduce((acc, child) => {
-      child.move(x + padding, acc + padding);
-      acc += child.boundary.height + gap;
+      child.move(x + PADDING_X, acc + PADDING_Y);
+      acc += child.boundary.height + GAP;
       return acc;
     }, y);
   }
 
   setWidth() {
     if (this.children.size === 0) {
-      this.rect.width(100);
+      this.rect.width(MIN_WIDTH);
       return;
     }
     let width = 0;
     this.children.forEach((child) => {
-      width = Math.max(width, child.realWidth + 10 * 2);
+      width = Math.max(width, child.realWidth);
     });
 
     this.children.forEach((child) => {
       child.rect.width(width);
     });
 
-    this.rect.width(width + padding * 2);
+    this.rect.width(width + PADDING_X * 2);
   }
 
   setHeight() {
@@ -99,13 +93,20 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
     this.children.forEach((child) => {
       height += child.boundary.height;
     });
-    this.rect.height(height + padding * 2 + gap * (this.children.size - 1));
+    this.rect.height(height + PADDING_Y * 2 + GAP * (this.children.size - 1));
   }
 
   move(x: number, y: number) {
     super.move(x, y);
     this.arrangeChildren();
     this.emit(EVENT_MOVE);
+  }
+
+  front(): void {
+    this.rect.front();
+    this.children.forEach((child) => {
+      child.front();
+    });
   }
 
   show() {
@@ -120,5 +121,10 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
     this.children.forEach((child) => {
       child.hide();
     });
+  }
+
+  delete() {
+    this.rect.remove();
+    this.children.forEach((child) => child.delete());
   }
 }

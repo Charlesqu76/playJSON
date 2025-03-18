@@ -1,5 +1,6 @@
 import { Path } from "@svgdotjs/svg.js";
 import { Svg } from "@svgdotjs/svg.js";
+import Graph from "../graph";
 
 const defaultOptions = {
   curveHeight: 0,
@@ -10,29 +11,17 @@ const defaultOptions = {
 
 export default class Line {
   static lastClickedLine: Line | null = null;
-  draw: Svg;
   path: Path;
+  graph: Graph;
   settings = defaultOptions;
 
-  constructor(draw: Svg, options = {}) {
-    this.draw = draw;
+  constructor(options = {}, graph: Graph) {
+    this.graph = graph;
     this.settings = { ...defaultOptions, ...options };
     const { strokeColor, strokeWidth } = this.settings;
-    this.path = this.draw.path().fill("none").stroke({
+    this.path = this.graph.canvas.path().fill("none").stroke({
       color: strokeColor,
       width: strokeWidth,
-    });
-
-    this.initEvent();
-  }
-
-  initEvent() {
-    this.path.on("mouseover", () => {
-      this.path.attr({ cursor: "pointer" });
-    });
-
-    this.path.on("mouseout", () => {
-      this.path.attr({ cursor: "default" });
     });
   }
 

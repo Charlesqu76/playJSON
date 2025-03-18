@@ -1,5 +1,4 @@
-import { Svg, Text } from "@svgdotjs/svg.js";
-import { Box } from "./box";
+import { Text } from "@svgdotjs/svg.js";
 import { Tspan } from "@svgdotjs/svg.js";
 import Graph from "../graph";
 import { EVENT_UPDATE } from "@/garph/event";
@@ -7,19 +6,13 @@ import { EVENT_UPDATE } from "@/garph/event";
 const size = 16;
 const DEFAULT_MAX_WIDTH = 400;
 
-export default class TextEditor implements Box {
+export default class TextEditor {
   graph: Graph;
   text: Text;
-  constructor(
-    protected draw: Svg,
-    text: string,
-    x: number,
-    y: number,
-    graph: Graph
-  ) {
+  constructor(text: string, x: number, y: number, graph: Graph) {
     this.graph = graph;
-    this.text = this.draw
-      .text((add) => this.addLine(add, String(text)))
+    this.text = this.graph.canvas
+      ?.text((add) => this.addLine(add, String(text)))
       .move(x, y)
       .font({ size: size });
   }
@@ -33,7 +26,7 @@ export default class TextEditor implements Box {
 
     words.forEach((word, index) => {
       const testLine = currentLine ? currentLine + " " + word : word;
-      const tempText = this.draw.text(testLine).font({ size: 16 });
+      const tempText = this.graph.canvas.text(testLine).font({ size: 16 });
       const lineWidth = tempText.length();
       tempText.remove();
       if (lineWidth > DEFAULT_MAX_WIDTH) {
@@ -56,8 +49,7 @@ export default class TextEditor implements Box {
     this.addLine(this.text, newText);
     this.move(this.boundary.x, this.boundary.y);
     this.text.build(false);
-
-    this.graph.emit(EVENT_UPDATE, { name: "updateText" });
+    this.graph.emit(EVENT_UPDATE, { name: "updateText", value: newText });
   }
 
   move(x: number, y: number) {
@@ -73,19 +65,15 @@ export default class TextEditor implements Box {
     return this.text.text();
   }
 
-  click(callback: () => void) {
-    this.text.on("click", callback);
-  }
-
-  hide() {
-    this.text.hide();
-  }
-
   front() {
     this.text.front();
   }
 
   show() {
     this.text.show();
+  }
+
+  hide() {
+    this.text.hide();
   }
 }

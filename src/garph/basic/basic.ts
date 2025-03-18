@@ -1,4 +1,4 @@
-import EventEmitter from "../EventEmitter";
+import EventEmitter from "../utils/EventEmitter";
 import Graph from "../graph";
 
 export default class Basic<P> extends EventEmitter {
