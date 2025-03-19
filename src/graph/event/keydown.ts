@@ -1,5 +1,5 @@
 import { EVENT_DELETE } from "../event";
-import Graph from "../graph";
+import Graph from "..";
 import KeyValueBox from "../keyvalueBox";
 import ObjectBox from "../ObjectBox";
 import { layoutTree } from "../utils/layout";

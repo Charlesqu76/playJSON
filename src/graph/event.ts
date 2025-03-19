@@ -21,3 +21,5 @@ export const EVENT_ISLINKING = Symbol("islinking");
 
 export const EVENT_MOUSEOVER = Symbol("mouseover");
 export const EVENT_MOUSEOUT = Symbol("mouseout");
+
+export const EVENT_CREATE = Symbol("create");

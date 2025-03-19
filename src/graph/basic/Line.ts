@@ -1,6 +1,6 @@
 import { Path } from "@svgdotjs/svg.js";
-import { Svg } from "@svgdotjs/svg.js";
-import Graph from "../graph";
+import Graph from "..";
+import Basic from "./basic";
 
 const defaultOptions = {
   curveHeight: 0,
@@ -9,24 +9,19 @@ const defaultOptions = {
   showControlPoints: false,
 };
 
-export default class Line {
+export default class Line extends Basic {
   static lastClickedLine: Line | null = null;
   path: Path;
-  graph: Graph;
   settings = defaultOptions;
 
   constructor(options = {}, graph: Graph) {
-    this.graph = graph;
+    super(graph);
     this.settings = { ...defaultOptions, ...options };
     const { strokeColor, strokeWidth } = this.settings;
-    this.path = this.graph.canvas.path().fill("none").stroke({
+    this.path = this.canvas.path().fill("none").stroke({
       color: strokeColor,
       width: strokeWidth,
     });
-  }
-
-  hide() {
-    this.path.hide();
   }
 
   show() {
@@ -37,11 +32,19 @@ export default class Line {
     this.path.front();
   }
 
+  hide() {
+    this.path.hide();
+  }
+
   select() {
     this.path.stroke({ color: "red" });
   }
 
   unselect() {
     this.path.stroke({ color: this.settings.strokeColor });
+  }
+
+  delete() {
+    this.path.remove();
   }
 }

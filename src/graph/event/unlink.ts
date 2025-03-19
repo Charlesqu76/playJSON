@@ -1,4 +1,4 @@
-import Graph from "../graph";
+import Graph from "..";
 import KeyValueBox from "../keyvalueBox";
 
 export default function unlink(graph: Graph, keyvalueBox: KeyValueBox) {

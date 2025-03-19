@@ -1,14 +1,14 @@
 import ObjectBox from "./ObjectBox";
 import Line from "./basic/Line";
 import { getControlPoints } from "./utils";
-import Graph from "./graph";
+import Graph from ".";
 import {
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_MOVE,
   EVENT_SELECT,
   EVENT_UPDATE,
-} from "@/garph/event";
+} from "@/graph/event";
 import KeyValueBox from "./keyvalueBox";
 
 export default class LinkLine extends Line {
@@ -56,6 +56,8 @@ export default class LinkLine extends Line {
     this.graph.linkLines.add(this);
   }
 
+  unlink() {}
+
   delete() {
     this.path.remove();
     this.keyValueBox.setChild(null);
@@ -66,7 +68,6 @@ export default class LinkLine extends Line {
     this.keyValueBox.changed();
     this.keyValueBox.off(EVENT_MOVE, this.update);
     this.objectBox.off(EVENT_MOVE, this.update);
-    this.graph.linkLines.delete(this);
     this.graph.emit(EVENT_UPDATE, { name: "delete" });
   }
 }

@@ -1,8 +1,7 @@
-import { Svg } from "@svgdotjs/svg.js";
 import DraggableRect from "./DraggableRect";
 import { Box } from "./box";
-import Graph from "../graph";
-import { EVENT_MOVE, EVENT_UPDATE } from "@/garph/event";
+import Graph from "..";
+import { EVENT_MOVE } from "@/graph/event";
 import NormalRect from "./NormalReact";
 
 const PADDING_X = 5;

@@ -1,6 +1,6 @@
 import { create } from "zustand";
 import data from "../data.json";
-import Graph from "./garph/graph";
+import Graph from "./graph";
 
 type State = {
   jsons: any[];

@@ -1,4 +1,4 @@
-import Graph from "../graph";
+import Graph from "..";
 import KeyValueBox from "../keyvalueBox";
 import LinkLine from "../LinkLine";
 import ObjectBox from "../ObjectBox";

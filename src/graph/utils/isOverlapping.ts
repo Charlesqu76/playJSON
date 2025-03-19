@@ -1,4 +1,4 @@
-import { Box } from "@/garph/basic/box";
+import { Box } from "@/graph/basic/box";
 
 export default function isOverlapping(box1: Box, box2: Box) {
   const { boundary } = box1;

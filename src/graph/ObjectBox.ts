@@ -1,9 +1,9 @@
-import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./keyvalueBox";
-import Graph from "./graph";
+import Graph from ".";
 import ChildrenBox from "./basic/ChildrenBox";
 import LinkLine from "./LinkLine";
 import {
+  EVENT_CREATE,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_SELECT,
@@ -36,7 +36,7 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
 
   constructor({ x, y, value }: Props, graph: Graph) {
     super({ x, y, width: 0, height: 0 }, graph);
-    graph.addObjectBox(this);
+    this.graph.emit(EVENT_CREATE, { item: this });
     this.isArray = Array.isArray(value);
     this.rect.attr({
       ...this.defaultStyle,
@@ -89,15 +89,15 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
   }
 
   addChildren(children: KeyValueBox | KeyValueBox[]): void {
+    this.graph.emit(EVENT_UPDATE, { name: "addChildren" });
     super.addChildren(children);
     this.line?.update();
-    this.graph.emit(EVENT_UPDATE, { name: "addChildren" });
   }
 
   removeChildren(child: KeyValueBox): void {
+    this.graph.emit(EVENT_UPDATE, { name: "removeChildren" });
     super.removeChildren(child);
     this.line?.update();
-    this.graph.emit(EVENT_UPDATE, { name: "removeChildren" });
   }
 
   setLine(line: LinkLine | null) {
@@ -105,8 +105,8 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
   }
 
   delete() {
+    this.graph.emit(EVENT_UPDATE, { name: "deleteObjectBox" });
     super.delete();
     this.line?.delete();
-    this.graph.emit(EVENT_UPDATE, { name: "deleteObjectBox" });
   }
 }

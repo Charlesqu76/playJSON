@@ -1,9 +1,8 @@
-import { Svg } from "@svgdotjs/svg.js";
 import NormalRect from "./NormalReact";
 import TextEditor from "./TextEditor";
 import { Box } from "./box";
-import Graph from "../graph";
-import { EVENT_MOVE } from "@/garph/event";
+import Graph from "..";
+import { EVENT_MOVE } from "@/graph/event";
 
 const PADDING_X = 2;
 const PADDING_Y = 2;

@@ -1,17 +1,16 @@
 import { Text } from "@svgdotjs/svg.js";
 import { Tspan } from "@svgdotjs/svg.js";
-import Graph from "../graph";
-import { EVENT_UPDATE } from "@/garph/event";
+import Graph from "..";
+import Basic from "./basic";
 
 const size = 16;
 const DEFAULT_MAX_WIDTH = 400;
 
-export default class TextEditor {
-  graph: Graph;
+export default class TextEditor extends Basic {
   text: Text;
   constructor(text: string, x: number, y: number, graph: Graph) {
-    this.graph = graph;
-    this.text = this.graph.canvas
+    super(graph);
+    this.text = this.canvas
       ?.text((add) => this.addLine(add, String(text)))
       .move(x, y)
       .font({ size: size });
@@ -26,7 +25,7 @@ export default class TextEditor {
 
     words.forEach((word, index) => {
       const testLine = currentLine ? currentLine + " " + word : word;
-      const tempText = this.graph.canvas.text(testLine).font({ size: 16 });
+      const tempText = this.canvas.text(testLine).font({ size: 16 });
       const lineWidth = tempText.length();
       tempText.remove();
       if (lineWidth > DEFAULT_MAX_WIDTH) {
@@ -49,7 +48,6 @@ export default class TextEditor {
     this.addLine(this.text, newText);
     this.move(this.boundary.x, this.boundary.y);
     this.text.build(false);
-    this.graph.emit(EVENT_UPDATE, { name: "updateText", value: newText });
   }
 
   move(x: number, y: number) {

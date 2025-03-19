@@ -1,7 +1,7 @@
-import { Svg } from "@svgdotjs/svg.js";
-import Graph from "@/garph/graph";
-import TextBox from "@/garph/basic/TextBox";
+import Graph from "@/graph";
+import TextBox from "@/graph/basic/TextBox";
 import KeyValueBox from ".";
+import { EVENT_UPDATE } from "../event";
 
 export default class KeyEditor extends TextBox<KeyValueBox> {
   parent: KeyValueBox;
@@ -19,6 +19,15 @@ export default class KeyEditor extends TextBox<KeyValueBox> {
       if (!v) return;
       this.updateText(v);
       this.parent.changed();
+    });
+  }
+
+  updateText(newText: string) {
+    super.updateText(newText);
+    this.graph.emit(EVENT_UPDATE, {
+      name: "updateText",
+      value: newText,
+      self: this,
     });
   }
 }

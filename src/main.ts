@@ -1,5 +1,5 @@
 import data from "../data.json";
-import Graph from "./garph/graph";
+import Graph from "./graph/index";
 
 const main = () => {
   const graph = new Graph();

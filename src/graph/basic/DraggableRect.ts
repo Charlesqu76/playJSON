@@ -1,6 +1,6 @@
 import { Svg } from "@svgdotjs/svg.js";
 import NormalRect from "./NormalReact";
-import Graph from "../graph";
+import Graph from "..";
 
 interface Props {
   x: number;

@@ -1,4 +1,3 @@
-// src/main.ts
 import { SVG } from "@svgdotjs/svg.js";
 import "@svgdotjs/svg.draggable.js";
 import "@svgdotjs/svg.panzoom.js";
@@ -16,7 +15,10 @@ import {
   EVENT_SELECT,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
-} from "@/garph/event";
+  EVENT_CREATE_OBJECT,
+  EVENT_CREATE_KEYVALUE,
+  EVENT_CREATE,
+} from "@/graph/event";
 import debounce from "./utils/debounce";
 import mouseout from "./event/mouseout";
 import mouseover from "./event/mouseover";
@@ -25,6 +27,7 @@ import unlink from "./event/unlink";
 import deleteItem from "./event/delete";
 import select from "./event/select";
 import keydown from "./event/keydown";
+import create from "./event/create";
 
 class Graph extends EventEmitter {
   canvas: Svg | null = null;
@@ -103,6 +106,10 @@ class Graph extends EventEmitter {
 
     this.on(EVENT_MOUSEOVER, ({ item }) => {
       mouseover(this, item);
+    });
+
+    this.on(EVENT_CREATE, ({ item }) => {
+      create(this, item);
     });
 
     this.canvas.click((event: Event) => {

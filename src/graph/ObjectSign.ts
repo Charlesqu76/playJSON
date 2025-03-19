@@ -1,6 +1,6 @@
 import { Svg } from "@svgdotjs/svg.js";
 import TextBox from "./basic/TextBox";
-import Graph from "./graph";
+import Graph from ".";
 import ObjectBox from "./ObjectBox";
 import KeyValueBox from "./keyvalueBox";
 import LinkLine from "./LinkLine";

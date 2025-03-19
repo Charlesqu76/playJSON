@@ -1,6 +1,6 @@
 import { Rect } from "@svgdotjs/svg.js";
 import { Box } from "./box";
-import Graph from "../graph";
+import Graph from "..";
 import Basic from "./basic";
 import { highlightRect, unHighlightRect } from "../utils/rect";
 
@@ -13,10 +13,11 @@ interface Props {
 
 export default class NormalRect<P> extends Basic<P> implements Box {
   rect: Rect;
+
   constructor({ x, y, width, height }: Props, graph: Graph) {
     super(graph);
     this.graph = graph;
-    this.rect = this.graph.canvas
+    this.rect = this.canvas
       ?.rect(width, height)
       .move(x, y)
       .attr({ fill: "none" });
@@ -53,10 +54,6 @@ export default class NormalRect<P> extends Basic<P> implements Box {
 
   remove() {
     this.rect.remove();
-  }
-
-  setParent(parent: P | null) {
-    this.parent = parent;
   }
 
   render() {}

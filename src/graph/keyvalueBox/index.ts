@@ -1,14 +1,15 @@
 import ObjectBox from "../ObjectBox";
-import Graph from "../graph";
+import Graph from "..";
 import {
+  EVENT_CREATE,
   EVENT_LINK,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_MOVE,
   EVENT_SELECT,
-} from "@/garph/event";
+} from "@/graph/event";
 import DraggableRect from "../basic/DraggableRect";
-import isOverlapping from "@/garph/utils/isOverlapping";
+import isOverlapping from "@/graph/utils/isOverlapping";
 import LinkLine from "../LinkLine";
 import KeyEditor from "./KeyEditor";
 import ValueEdit from "./ValueEditor";
@@ -54,7 +55,7 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
   constructor({ x, y, key, value }: Props, graph: Graph, parent: ObjectBox) {
     super({ x, y, width: 0, height: 0 }, graph);
     this.rect.attr(this.defaultStyles);
-    this.graph.addKeyValueBox(this);
+    this.graph.emit(EVENT_CREATE, { item: this });
     this.setParent(parent);
 
     this.keyBox = new KeyEditor(key, x, y, graph, this);
