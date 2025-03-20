@@ -7,12 +7,14 @@ import {
   EVENT_MOUSEOVER,
   EVENT_MOVE,
   EVENT_SELECT,
+  EVENT_UNLINK,
 } from "@/graph/event";
 import DraggableRect from "../basic/DraggableRect";
 import isOverlapping from "@/graph/utils/isOverlapping";
 import LinkLine from "../LinkLine";
 import KeyEditor from "./KeyEditor";
 import ValueEdit from "./ValueEditor";
+import { highlightRect, unHighlightRect } from "../utils/rect";
 
 const PADDING_Y = 5;
 const PADDING_X = 10;
@@ -44,7 +46,7 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
   keyBox: KeyEditor;
   valueBox: ValueEdit;
 
-  origin: { x: number; y: number } | null = null;
+  public origin: { x: number; y: number } | null = null;
   realWidth = 0;
 
   child: ObjectBox | null = null;
@@ -87,6 +89,9 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
   }
 
   get value() {
+    if (this.child) {
+      return this.child.value;
+    }
     return this.valueBox.value;
   }
 
@@ -94,24 +99,6 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
     return {
       [this.key]: this.value,
     };
-  }
-
-  setValue(value?: string) {
-    if (this.child) {
-      if (this.child.isArray) {
-        this.valueBox.updateText("[]");
-        this.valueBox.valueType = "array";
-      } else {
-        this.valueBox.updateText("{}");
-        this.valueBox.valueType = "object";
-      }
-    } else {
-      if (value) {
-        this.valueBox.updateText(value);
-      }
-    }
-
-    this.changed();
   }
 
   changed() {
@@ -135,51 +122,50 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
 
     this.rect.on("dragstart", () => {
       this.origin = this.boundary;
+      this.graph.isKeyvvalueBoxMoving = true;
     });
 
     this.rect.on(
       "dragmove",
       (event) => {
         const { box } = (event as CustomEvent).detail;
-
         this.move(box.x, box.y);
-        if (this instanceof ObjectBox) return;
-        for (const objectBox of this.graph.objectBoxes) {
-          const overlap = isOverlapping(this, objectBox);
-          if (overlap) {
-            objectBox.rect.attr({ "stroke-width": 3, stroke: "red" });
+
+        const overlapItem = this.graph.objectBoxes.find((objectBox) => {
+          return isOverlapping(this, objectBox);
+        });
+
+        this.graph.objectBoxes.forEach((objectBox) => {
+          if (overlapItem === objectBox && objectBox !== this.parent) {
+            highlightRect(objectBox.rect);
           } else {
-            objectBox.rect.attr({ "stroke-width": 1, stroke: "none" });
+            unHighlightRect(objectBox.rect);
           }
-        }
+        });
       },
       { passive: true }
     );
 
     this.rect.on("dragend", (event) => {
-      const overlapItem = this.graph.objectBoxes.find((objectBox) =>
-        isOverlapping(this, objectBox)
-      );
+      setTimeout(() => {
+        this.graph.isKeyvvalueBoxMoving = false;
+      }, 10);
 
-      if (!overlapItem && this.origin) {
-        this.move(this.origin.x, this.origin.y);
-        return;
-      }
+      const overlapItem = this.graph.objectBoxes.find((objectBox) => {
+        const is = isOverlapping(this, objectBox);
+        return is && objectBox !== this.parent;
+      });
 
       if (!overlapItem) {
+        if (this.origin) {
+          this.move(this.origin.x, this.origin.y);
+        }
         return;
       }
 
-      if (this.parent === overlapItem && this.origin) {
-        this.move(this.origin.x, this.origin.y);
-        return;
-      }
-
-      if (this.parent !== overlapItem) {
-        this.parent?.removeChildren(this);
-        overlapItem.addChildren(this);
-        overlapItem.rect.attr({ "stroke-width": 1, stroke: "none" });
-      }
+      unHighlightRect(overlapItem.rect);
+      this.parent?.removeChildren(this);
+      overlapItem.addChildren(this);
     });
   }
 
@@ -229,12 +215,22 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
     super.setHeight(height);
   }
 
-  setLine(line: LinkLine | null) {
+  link(line: LinkLine, objectBox: ObjectBox) {
     this.line = line;
+    this.child = objectBox;
+    if (this.child.isArray) {
+      this.valueBox.updateText("[]");
+      this.valueBox.valueType = "array";
+    } else {
+      this.valueBox.updateText("{}");
+      this.valueBox.valueType = "object";
+    }
   }
 
-  setChild(payload: ObjectBox | null) {
-    this.child = payload;
+  unlink() {
+    this.line = null;
+    this.child = null;
+    this.valueBox.updateText("null");
   }
 
   front() {
@@ -257,9 +253,7 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
 
   delete() {
     this.parent?.removeChildren(this);
-    if (this.line) {
-      this.line.delete();
-    }
+    this.graph.emit(EVENT_UNLINK, { line: this.line });
     super.remove();
     this.keyBox.delete();
     this.valueBox.delete();

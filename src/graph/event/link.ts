@@ -15,9 +15,12 @@ export default function link(
     return;
   }
 
-  if (keyvalueBox.child) {
-    graph.emit(EVENT_UNLINK, { keyvalueBox });
+  if (keyvalueBox.line) {
+    graph.emit(EVENT_UNLINK, { line: keyvalueBox.line });
   }
 
-  new LinkLine(keyvalueBox, objectBox, graph);
+  const line = new LinkLine(keyvalueBox, objectBox, graph);
+  keyvalueBox.link(line, objectBox);
+  objectBox.link(line, keyvalueBox);
+  graph.addLinkLine(line);
 }

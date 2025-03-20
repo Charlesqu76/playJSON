@@ -7,32 +7,21 @@ import KeyValueBox from "./keyvalueBox";
 import LinkLine from "./LinkLine";
 import { layoutTree } from "./utils/layout";
 import EventEmitter from "./utils/EventEmitter";
-import {
-  EVENT_DELETE,
-  EVENT_LINK,
-  EVENT_UNLINK,
-  EVENT_UPDATE,
-  EVENT_SELECT,
-  EVENT_MOUSEOUT,
-  EVENT_MOUSEOVER,
-  EVENT_CREATE_OBJECT,
-  EVENT_CREATE_KEYVALUE,
-  EVENT_CREATE,
-} from "@/graph/event";
-import debounce from "./utils/debounce";
-import mouseout from "./event/mouseout";
-import mouseover from "./event/mouseover";
-import link from "./event/link";
-import unlink from "./event/unlink";
-import deleteItem from "./event/delete";
-import select from "./event/select";
+import { EVENT_SELECT } from "@/graph/event";
 import keydown from "./event/keydown";
-import create from "./event/create";
+
+import { events } from "./event/index";
+
+interface IProps {
+  zoomCallback?: (zoom: number) => void;
+  valueChanged?: (value: any) => void;
+  json?: object | object[];
+}
 
 class Graph extends EventEmitter {
   canvas: Svg | null = null;
-  private onZoomCallback: ((zoom: number) => void) | null = null;
-  private onValueUpdate: ((value: any) => void) | null = null;
+  zoomCallback: ((zoom: number) => void) | null = null;
+  valueChanged: ((value: any) => void) | null = null;
   objectBoxes: ObjectBox[] = [];
   keyValueBoxes: KeyValueBox[] = [];
   linkLines: WeakSet<LinkLine> = new WeakSet([]);
@@ -40,9 +29,13 @@ class Graph extends EventEmitter {
   mouseX: number = 0;
   mouseY: number = 0;
   isLinking: boolean = false;
+  isKeyvvalueBoxMoving: boolean = false;
 
-  constructor() {
+  constructor(props: IProps) {
     super();
+    const { zoomCallback, valueChanged, json } = props || {};
+    this.zoomCallback = zoomCallback || null;
+    this.valueChanged = valueChanged || null;
   }
 
   initCanvas = (id: string | HTMLElement) => {
@@ -74,70 +67,7 @@ class Graph extends EventEmitter {
       this.mouseY = e.clientY;
     });
 
-    const update = debounce((data: ObjectBox[]) => {
-      const d = data.map((item) => item.value);
-      this.onValueUpdate && this.onValueUpdate(d);
-    }, 200);
-
-    this.on(EVENT_UPDATE, (data) => {
-      console.log(data);
-      update(this.getAllIsolateObjectBox());
-    });
-
-    this.on(EVENT_LINK, ({ keyvalueBox, objectBox }) => {
-      link(this, { keyvalueBox, objectBox });
-    });
-
-    this.on(EVENT_UNLINK, ({ keyvalueBox }) => {
-      unlink(this, keyvalueBox);
-    });
-
-    this.on(EVENT_DELETE, ({ item }) => {
-      deleteItem(this, item);
-    });
-
-    this.on(EVENT_SELECT, ({ item }) => {
-      select(this, item);
-    });
-
-    this.on(EVENT_MOUSEOUT, ({ item }) => {
-      mouseout(this, item);
-    });
-
-    this.on(EVENT_MOUSEOVER, ({ item }) => {
-      mouseover(this, item);
-    });
-
-    this.on(EVENT_CREATE, ({ item }) => {
-      create(this, item);
-    });
-
-    this.canvas.click((event: Event) => {
-      if (event.target === this.canvas?.node) {
-        if (this.selectedItem) {
-          this.selectedItem.unselect();
-          this.selectedItem = null;
-        }
-      }
-    });
-
-    this.canvas.on("zoom", (event: any) => {
-      if (this.onZoomCallback) {
-        this.onZoomCallback(event.detail.level);
-      }
-    });
-
-    this.canvas.on("panned", (event: any) => {
-      console.log("panned", event);
-    });
-  };
-
-  setUpdateCallback = (callback: (value: any) => void) => {
-    this.onValueUpdate = callback;
-  };
-
-  setZoomCallback = (callback: (zoom: number) => void) => {
-    this.onZoomCallback = callback;
+    events(this);
   };
 
   initData = (data: Object | Object[]) => {
@@ -212,7 +142,7 @@ class Graph extends EventEmitter {
     return null;
   };
 
-  get values() {
+  get value() {
     const values = this.getAllIsolateObjectBox().map((item) => item.value);
     return values;
   }

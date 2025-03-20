@@ -2,15 +2,14 @@ import React from "react";
 import { useStore } from "@/store";
 import { Button } from "./ui/button";
 import Zoom from "./Zoom";
-import JsonSearch from "./JsonSearch";
 export default function Header() {
   const graph = useStore((store) => store.graph);
 
   return (
-    <header className="h-10 flex items-center px-2 justify-between">
+    <header className="h-16 flex items-center px-2 justify-between mb-2">
       <h2 className="text-xl font-bold">Play JSON</h2>
       <div className="flex items-center space-x-4">
-        <JsonSearch />
+        {/* <JsonSearch /> */}
         <Zoom />
         <Button
           size="sm"

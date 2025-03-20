@@ -7,8 +7,8 @@ const App = () => {
   return (
     <>
       <Header />
-      <main className="flex-1 overflow-hidden flex space-x-2 px-2">
-        {/* <Left /> */}
+      <main className="flex-1 overflow-hidden flex space-x-2 p-2">
+        <Left />
         <Graph />
       </main>
     </>

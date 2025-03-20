@@ -23,7 +23,6 @@ export default class LinkLine extends Line {
     this.objectBox = objectBox;
     this.initEvent();
     this.link();
-
     this.path.plot(getControlPoints(this.keyValueBox, this.objectBox));
   }
 
@@ -46,28 +45,21 @@ export default class LinkLine extends Line {
   };
 
   link() {
-    this.keyValueBox.setChild(this.objectBox);
-    this.objectBox.setParent(this.keyValueBox);
-    this.keyValueBox.setLine(this);
-    this.objectBox.setLine(this);
     this.keyValueBox.on(EVENT_MOVE, this.update);
     this.objectBox.on(EVENT_MOVE, this.update);
     this.graph.emit(EVENT_UPDATE, { name: "link" });
-    this.graph.linkLines.add(this);
   }
 
-  unlink() {}
+  unlink() {
+    console.log("asdfsadf");
+    this.keyValueBox.off(EVENT_MOVE, this.update);
+    this.objectBox.off(EVENT_MOVE, this.update);
+    this.graph.emit(EVENT_UPDATE, { name: "unlink" });
+    this.delete();
+  }
 
   delete() {
     this.path.remove();
-    this.keyValueBox.setChild(null);
-    this.objectBox.setParent(null);
-    this.keyValueBox.setLine(null);
-    this.objectBox.setLine(null);
-    this.keyValueBox.valueBox.updateText("null");
-    this.keyValueBox.changed();
-    this.keyValueBox.off(EVENT_MOVE, this.update);
-    this.objectBox.off(EVENT_MOVE, this.update);
     this.graph.emit(EVENT_UPDATE, { name: "delete" });
   }
 }

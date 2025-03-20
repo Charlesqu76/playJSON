@@ -77,7 +77,7 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
     if (this.isArray) {
       const m = [] as any;
       this.children.forEach((child) => {
-        m.push(Object.values(child.value)[0]);
+        m.push(child.value);
       });
       return m;
     }
@@ -100,8 +100,14 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
     this.line?.update();
   }
 
-  setLine(line: LinkLine | null) {
+  link(line: LinkLine, keyValueBox: KeyValueBox) {
     this.line = line;
+    this.setParent(keyValueBox);
+  }
+
+  unlink() {
+    this.line = null;
+    this.setParent(null);
   }
 
   delete() {

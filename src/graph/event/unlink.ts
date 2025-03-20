@@ -1,10 +1,10 @@
 import Graph from "..";
-import KeyValueBox from "../keyvalueBox";
+import LinkLine from "../LinkLine";
 
-export default function unlink(graph: Graph, keyvalueBox: KeyValueBox) {
-  if (!keyvalueBox) return;
-  if (graph.canvas === null) return;
-  if (keyvalueBox.line) {
-    keyvalueBox.line.delete();
-  }
+export default function unlink(graph: Graph, line: LinkLine) {
+  console.log("unlink");
+  if (graph.canvas === null || !line) return;
+  line.keyValueBox.unlink();
+  line.objectBox.unlink();
+  line.delete();
 }

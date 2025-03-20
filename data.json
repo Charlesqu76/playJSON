@@ -1,6 +1,6 @@
 {
   "name": "charles charles charles charles charles",
-  "age": 18,
-  "hobbies": [{ "name": "bed" }, { "name": "basketball", "level": 3 }],
+  "age": "18",
+  "asdf": [{ "name": "bed" }, { "name": "basketball", "level": "3" }],
   "address": { "city": "shanghai", "street": "nanjing road" }
 }

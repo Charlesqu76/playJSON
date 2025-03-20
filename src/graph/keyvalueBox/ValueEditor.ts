@@ -43,7 +43,10 @@ export default class ValueEdit extends TextBox<KeyValueBox> {
     this.text.text.on("dblclick", (e) => {
       const v = prompt("dblclick");
       if (!v) return;
-      this.graph?.emit(EVENT_UNLINK, { keyvalueBox: this.parent });
+      this.graph?.emit(EVENT_UNLINK, {
+        keyvalueBox: this.parent,
+        line: this.parent.line,
+      });
       this.updateText(v);
     });
 

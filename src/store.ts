@@ -18,7 +18,14 @@ type Actions = {
 export const useStore = create<State & Actions>((set, get) => ({
   searchText: "",
   jsons: [data],
-  graph: new Graph(),
+  graph: new Graph({
+    zoomCallback: (zoom) => {
+      set(() => ({ zoom: zoom * 100 }));
+    },
+    valueChanged: (value) => {
+      set(() => ({ jsons: value }));
+    },
+  }),
   zoom: undefined,
   setJsons: (jsons) => set(() => ({ jsons: jsons })),
   setZoom: (zoom) => set(() => ({ zoom: zoom * 100 })),
