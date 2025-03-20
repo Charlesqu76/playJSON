@@ -2,6 +2,7 @@ import Graph from "@/graph";
 import TextBox from "@/graph/basic/TextBox";
 import KeyValueBox from ".";
 import { EVENT_UPDATE } from "../event";
+import { EVENT_EDITING } from "../basic/TextEditor";
 
 export default class KeyEditor extends TextBox<KeyValueBox> {
   parent: KeyValueBox;
@@ -14,10 +15,7 @@ export default class KeyEditor extends TextBox<KeyValueBox> {
   ) {
     super({ text, x, y }, graph);
     this.parent = parent;
-    this.text.text.on("dblclick", () => {
-      const v = window.prompt("dblclick");
-      if (!v) return;
-      this.updateText(v);
+    this.text.on(EVENT_EDITING, () => {
       this.parent.changed();
     });
   }

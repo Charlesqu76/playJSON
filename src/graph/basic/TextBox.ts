@@ -1,5 +1,5 @@
 import NormalRect from "./NormalReact";
-import TextEditor from "./TextEditor";
+import EditText from "./TextEditor";
 import { Box } from "./box";
 import Graph from "..";
 import { EVENT_MOVE } from "@/graph/event";
@@ -18,17 +18,32 @@ interface Props {
   x: number;
   y: number;
   text: string;
+  style?: {
+    color: string;
+  };
 }
 
+const size = "16px";
+
 export default class TextBox<P> extends NormalRect<P> implements Box {
-  text: TextEditor;
-  constructor({ x, y, text }: Props, graph: Graph) {
-    const position = textPosition(x, y);
+  text: EditText;
+  constructor({ x, y, text, style }: Props, graph: Graph) {
+    // const position = textPosition(x, y);
     super({ width: 0, height: 0, x, y }, graph);
-    this.text = new TextEditor(text, position.x, position.y, graph);
-    this.text.text.attr({ cursor: "pointer" });
-    this.text.text.width(this.boundary.width);
-    this.text.text.height(this.boundary.height);
+    this.text = new EditText({ style });
+    this.text
+      .move(x, y)
+      .attr({
+        "font-size": size,
+        "line-height": "1",
+        "font-family": "Arial, Helvetica, sans-serif",
+      })
+      .fill(style?.color || "black");
+
+    this.text.updateText(text);
+    this.canvas.add(this.text);
+    this.text.width(this.boundary.width);
+    this.text.height(this.boundary.height);
   }
 
   get boundary() {
@@ -42,7 +57,7 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
   }
 
   get value() {
-    return this.text.value;
+    return this.text.text();
   }
 
   updateText(newText: string) {
@@ -74,6 +89,6 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
   }
 
   delete() {
-    this.text.text.remove();
+    this.text.remove();
   }
 }

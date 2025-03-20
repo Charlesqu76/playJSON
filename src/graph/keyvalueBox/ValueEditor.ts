@@ -1,10 +1,11 @@
 import Graph from "..";
 import { getDataType, getRightMid, isPointInBox } from "../utils";
 import TextBox from "../basic/TextBox";
-import { EVENT_LINK, EVENT_UNLINK, EVENT_UPDATE } from "../event";
+import { EVENT_LINK, EVENT_UPDATE } from "../event";
 import { Line } from "@svgdotjs/svg.js";
 import KeyValueBox from ".";
 import { highlightRect, unHighlightRect } from "../utils/rect";
+import { EVENT_EDITING } from "../basic/TextEditor";
 
 const VALUE_COLOR = "green";
 
@@ -31,26 +32,18 @@ export default class ValueEdit extends TextBox<KeyValueBox> {
         a = text;
         break;
     }
-    super({ x, y, text: a as string }, graph);
+    super({ x, y, text: a as string, style: { color: VALUE_COLOR } }, graph);
     this.valueType = valueType;
     this.parent = parent || null;
-    this.text.text.fill(VALUE_COLOR);
 
     this.initEvnet();
   }
 
   initEvnet() {
-    this.text.text.on("dblclick", (e) => {
-      const v = prompt("dblclick");
-      if (!v) return;
-      this.graph?.emit(EVENT_UNLINK, {
-        keyvalueBox: this.parent,
-        line: this.parent.line,
-      });
-      this.updateText(v);
+    this.text.on(EVENT_EDITING, () => {
+      this.parent.changed();
     });
-
-    this.text.text.on("mousedown", (event) => {
+    this.text.on("mousedown", (event) => {
       if (!this.parent) return;
       event = event as MouseEvent;
       event.stopPropagation();
