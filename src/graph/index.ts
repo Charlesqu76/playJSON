@@ -19,6 +19,7 @@ interface IProps {
 }
 
 class Graph extends EventEmitter {
+  container: HTMLElement | null = null;
   canvas: Svg | null = null;
   zoomCallback: ((zoom: number) => void) | null = null;
   valueChanged: ((value: any) => void) | null = null;
@@ -39,13 +40,15 @@ class Graph extends EventEmitter {
   }
 
   initCanvas = (id: string | HTMLElement) => {
-    let container: HTMLElement | null = id as HTMLElement;
+    this.container = id as HTMLElement;
     if (typeof id === "string") {
-      container = document.querySelector(id);
+      this.container = document.querySelector(id);
     }
-    if (!container) return;
+    if (!this.container) return;
 
-    const { width, height } = container.getBoundingClientRect();
+    this.container.style.position = "relative";
+
+    const { width, height } = this.container.getBoundingClientRect();
     this.canvas = SVG()
       .addTo(id)
       .size("100%", "100%")

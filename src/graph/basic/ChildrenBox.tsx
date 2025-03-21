@@ -44,6 +44,7 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
     children.forEach((child) => {
       this.children.add(child);
       child.setParent(this);
+      child.changeMode();
     });
 
     this.arrangeChildren();

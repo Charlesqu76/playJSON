@@ -89,8 +89,8 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
   }
 
   addChildren(children: KeyValueBox | KeyValueBox[]): void {
-    this.graph.emit(EVENT_UPDATE, { name: "addChildren" });
     super.addChildren(children);
+    this.graph.emit(EVENT_UPDATE, { name: "addChildren" });
     this.line?.update();
   }
 

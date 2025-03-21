@@ -61,9 +61,7 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
     this.setParent(parent);
 
     this.keyBox = new KeyEditor(key, x, y, graph, this);
-    if (this.parent?.isArray) {
-      this.keyBox.hide();
-    }
+    this.changeMode();
 
     this.valueBox = new ValueEdit(value, 0, 0, graph, this);
 
@@ -183,6 +181,14 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
       keyPostion,
       valuePosition,
     };
+  }
+
+  changeMode() {
+    if (this.parent?.isArray) {
+      this.keyBox.hide();
+    } else {
+      this.keyBox.show();
+    }
   }
 
   move(x: number, y: number) {

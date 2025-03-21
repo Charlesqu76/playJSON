@@ -42,6 +42,9 @@ export default class ValueEdit extends TextBox<KeyValueBox> {
   initEvnet() {
     this.text.on(EVENT_EDITING, () => {
       this.parent.changed();
+      this.graph.emit(EVENT_UPDATE, {
+        name: "updateText",
+      });
     });
     this.text.on("mousedown", (event) => {
       if (!this.parent) return;

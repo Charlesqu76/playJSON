@@ -1,6 +1,6 @@
 ### Play JSON
 
-> v-json is a powerful tool for visualizing JSON data as interactive graphs, allowing users to explore and manipulate complex data structures visually.
+> Play JSON is a powerful tool for visualizing JSON data as interactive graphs, allowing users to explore and manipulate complex data structures visually.
 
 **The system uses a custom graph visualization engine built on SVG.js that provides:**
 
@@ -10,9 +10,16 @@
 
 **Features**
 
-- Visualization: Renders JSON as interactive SVG graphs
-- Navigation: Pan and zoom to explore complex data
-- Editing: Add, modify, and delete values directly
-- Search: Find specific keys or values in large structures
-- Layout: Automatically organize nodes in a readable format
-- Clipboard: Copy/paste JSON data between graphs
+
+- [x] Visualization: Renders JSON as interactive SVG graphs
+- [x] Navigation: Pan and zoom to explore complex data
+- [x] Editing: Add, modify, and delete values directly
+- [x] Layout: Automatically organize nodes in a readable format
+- [x] Clipboard: Copy/paste JSON data between graphs
+- [ ] Search: Find specific keys or values in large structures
+
+**Command**
+
+- copy: Command + C
+- paste: Command + V
+- layout: Command + K

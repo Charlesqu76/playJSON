@@ -18,15 +18,17 @@ export default class EditText extends Text {
   constructor({
     maxWidth,
     style,
+    element,
   }: {
     maxWidth?: number;
+    element: HTMLElement;
     style?: {
       color: string;
     };
   }) {
     super();
     this.maxWidth = maxWidth || DEFAULT_MAX_WIDTH;
-    this.on("click", () => {
+    this.on("dblclick", () => {
       const input = document.createElement("textarea");
       const bbox = this.bbox();
       input.value = this.text();
@@ -37,7 +39,7 @@ export default class EditText extends Text {
       input.style.zIndex = "9999";
       input.style.color = style?.color || "black";
       input.style.width = `${bbox.width}px`;
-      input.style.maxWidth = "400px";
+      input.style.maxWidth = `${this.maxWidth}px`;
       input.style.border = "none";
       input.style.padding = "0";
       input.style.margin = "0";
@@ -50,7 +52,7 @@ export default class EditText extends Text {
       input.style.fontSize = "16px";
       input.style.lineHeight = "1.25";
       (input.style.fontFamily = "Arial, Helvetica, sans-serif"),
-        document.body.appendChild(input);
+        element.appendChild(input);
       input.focus();
 
       const applyChanges = () => {
@@ -74,7 +76,7 @@ export default class EditText extends Text {
       });
 
       const removeInput = () => {
-        document.body.removeChild(input);
+        element.removeChild(input);
       };
 
       // Handle input blur (clicking outside)
@@ -104,9 +106,9 @@ export default class EditText extends Text {
       const testLine = currentLine ? currentLine + " " + word : word;
       const t = new Text();
       t.text(testLine).font({ size: size });
-      const lineWidth = t.length();
+      const { width } = t.bbox();
       t.remove();
-      if (lineWidth > this.maxWidth) {
+      if (width > this.maxWidth) {
         if (currentLine) {
           this.tspan(currentLine).newLine();
         }

@@ -17,6 +17,9 @@ export default class KeyEditor extends TextBox<KeyValueBox> {
     this.parent = parent;
     this.text.on(EVENT_EDITING, () => {
       this.parent.changed();
+      this.graph.emit(EVENT_UPDATE, {
+        name: "updateText",
+      });
     });
   }
 

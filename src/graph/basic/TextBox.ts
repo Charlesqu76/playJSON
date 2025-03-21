@@ -3,6 +3,7 @@ import EditText from "./TextEditor";
 import { Box } from "./box";
 import Graph from "..";
 import { EVENT_MOVE } from "@/graph/event";
+import convertStringValue from "../utils/convertStringValue";
 
 const PADDING_X = 2;
 const PADDING_Y = 2;
@@ -30,7 +31,7 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
   constructor({ x, y, text, style }: Props, graph: Graph) {
     // const position = textPosition(x, y);
     super({ width: 0, height: 0, x, y }, graph);
-    this.text = new EditText({ style });
+    this.text = new EditText({ style, element: graph.container });
     this.text
       .move(x, y)
       .attr({
@@ -57,7 +58,8 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
   }
 
   get value() {
-    return this.text.text();
+    const value = this.text.text();
+    return convertStringValue(value);
   }
 
   updateText(newText: string) {
