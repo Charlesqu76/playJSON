@@ -1,7 +1,7 @@
 import { SVG } from "@svgdotjs/svg.js";
 import "@svgdotjs/svg.draggable.js";
 import "@svgdotjs/svg.panzoom.js";
-import ObjectBox from "./ObjectBox";
+import ObjectBox from "./basic2/ObjectBox";
 import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./keyvalueBox";
 import LinkLine from "./LinkLine";
@@ -93,6 +93,10 @@ class Graph extends EventEmitter {
   layout = () => {
     this.getAllIsolateObjectBox().forEach((box) => {
       layoutTree(box);
+    });
+
+    this.getAllIsolateObjectBox().forEach((box) => {
+      box.render();
     });
   };
 

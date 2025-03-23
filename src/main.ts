@@ -6,6 +6,9 @@ const main = () => {
   graph.initCanvas("#app");
   graph.initData([data]);
   graph.layout();
+
+  // const a = new KeyEditor("asdfasdf", 0, 0, graph);
+  // a.render(20, 20);
 };
 
 main();

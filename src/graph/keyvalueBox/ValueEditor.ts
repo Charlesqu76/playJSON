@@ -11,15 +11,20 @@ const VALUE_COLOR = "green";
 
 export default class ValueEdit extends TextBox<KeyValueBox> {
   valueType: "string" | "object" | "array" = "string";
-  parent: KeyValueBox;
   constructor(
-    text: string | object | any[],
-    x: number,
-    y: number,
-    graph: Graph,
-    parent: KeyValueBox
+    {
+      text,
+      x = 0,
+      y = 0,
+      valueType = "string",
+    }: {
+      text: string | object | any[];
+      x?: number;
+      y?: number;
+      valueType: "string" | "object" | "array";
+    },
+    graph: Graph
   ) {
-    const valueType = getDataType(text);
     let a;
     switch (valueType) {
       case "object":
@@ -34,19 +39,19 @@ export default class ValueEdit extends TextBox<KeyValueBox> {
     }
     super({ x, y, text: a as string, style: { color: VALUE_COLOR } }, graph);
     this.valueType = valueType;
-    this.parent = parent || null;
+    // this.parent = parent || null;
 
     this.initEvnet();
   }
 
   initEvnet() {
-    this.text.on(EVENT_EDITING, () => {
-      this.parent.changed();
+    this.text?.on(EVENT_EDITING, () => {
+      // this.parent.changed();
       this.graph.emit(EVENT_UPDATE, {
         name: "updateText",
       });
     });
-    this.text.on("mousedown", (event) => {
+    this.text?.on("mousedown", (event) => {
       if (!this.parent) return;
       event = event as MouseEvent;
       event.stopPropagation();
@@ -72,7 +77,7 @@ export default class ValueEdit extends TextBox<KeyValueBox> {
         for (const objectBox of this.graph.objectBoxes) {
           if (
             isPointInBox({ x: cursor.x, y: cursor.y }, objectBox) &&
-            objectBox !== this.parent.parent
+            objectBox !== this.parent?.parent
           ) {
             highlightRect(objectBox.rect);
           } else {
@@ -97,7 +102,7 @@ export default class ValueEdit extends TextBox<KeyValueBox> {
           unHighlightRect(objectBox?.rect);
         }
 
-        if (objectBox && this.parent.child !== objectBox) {
+        if (objectBox && this.parent?.child !== objectBox) {
           this.graph.emit(EVENT_LINK, {
             keyvalueBox: this.parent,
             objectBox: objectBox,

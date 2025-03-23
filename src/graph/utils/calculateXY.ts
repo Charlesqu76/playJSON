@@ -1,10 +1,10 @@
-import ObjectBox from "../basic2/ObjectBox";
+import ObjectBox from "../ObjectBox";
 
 const HORIZONTAL_SPACING = 50;
 const VERTICAL_SPACING = 30;
 
 export const layoutTree = (root: ObjectBox) => {
-  const { x, y } = root;
+  const { x, y } = root.boundary;
   const initialX = x;
   const initialY = y;
   // Group nodes by levels
@@ -24,7 +24,9 @@ export const layoutTree = (root: ObjectBox) => {
   const levelWidths: number[] = [];
   const calculateWidths = () => {
     levels.forEach((nodes, level) => {
-      levelWidths[level] = Math.max(...nodes.map((node) => node.width));
+      levelWidths[level] = Math.max(
+        ...nodes.map((node) => node.boundary.width)
+      );
     });
   };
 
@@ -42,7 +44,7 @@ export const layoutTree = (root: ObjectBox) => {
     // Find the level with maximum total height first
     const levelHeights = levels.map((nodes) => {
       return (
-        nodes.reduce((sum, node) => sum + node.height, 0) +
+        nodes.reduce((sum, node) => sum + node.boundary.height, 0) +
         (nodes.length - 1) * VERTICAL_SPACING
       );
     });
@@ -57,9 +59,8 @@ export const layoutTree = (root: ObjectBox) => {
       let y = initialY + (maxHeight - levelHeight) / 2;
 
       nodes.forEach((node) => {
-        node.x = x;
-        node.y = y;
-        y += node.height + VERTICAL_SPACING;
+        node.move(x, y);
+        y += node.boundary.height + VERTICAL_SPACING;
 
         // Array.from(node.children)
         //   .filter(({ showChild }) => showChild)

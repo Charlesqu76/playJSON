@@ -9,21 +9,56 @@ const PADDING_Y = 5;
 const GAP = 5;
 const MIN_WIDTH = 100;
 
+function getWidth(children: Set<any>) {
+  if (children.size === 0) {
+    return MIN_WIDTH;
+  }
+  let width = 0;
+  children.forEach((child) => {
+    width = Math.max(width, child.realWidth);
+  });
+
+  return width;
+
+  // children.forEach((child) => {
+  //   child.rect.width(width);
+  // });
+
+  // this.rect.width(width + PADDING_X * 2);
+}
+
+function getHeight(children: Set<any>) {
+  if (children.size === 0) {
+    return 30;
+  }
+  let height = 0;
+  children.forEach((child) => {
+    height += child.height;
+  });
+  return height + PADDING_Y * 2 + GAP * (children.size - 1);
+}
 interface Props {
   x: number;
   y: number;
   width: number;
   height: number;
+  children: any[];
 }
 
 export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
   extends DraggableRect<P>
   implements Box
 {
+  group: any;
   children: Set<C> = new Set([]);
   constructor(props: Props, graph: Graph) {
-    super(props, graph);
+    const { children } = props;
+    const setChildren = new Set(children);
+    const width = getWidth(setChildren);
+    const height = getHeight(setChildren);
+    super({ ...props, width, height }, graph);
     this.initEvent();
+    this.children = setChildren;
   }
 
   initEvent = () => {
@@ -68,15 +103,7 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
   }
 
   setWidth() {
-    if (this.children.size === 0) {
-      this.rect.width(MIN_WIDTH);
-      return;
-    }
-    let width = 0;
-    this.children.forEach((child) => {
-      width = Math.max(width, child.realWidth);
-    });
-
+    const width = getWidth(this.children);
     this.children.forEach((child) => {
       child.rect.width(width);
     });
@@ -85,15 +112,8 @@ export default class ChildrenBox<C extends NormalRect<ChildrenBox<C, P>>, P>
   }
 
   setHeight() {
-    if (this.children.size === 0) {
-      this.rect.height(30);
-      return;
-    }
-    let height = 0;
-    this.children.forEach((child) => {
-      height += child.boundary.height;
-    });
-    this.rect.height(height + PADDING_Y * 2 + GAP * (this.children.size - 1));
+    const height = getHeight(this.children);
+    this.rect.height(height);
   }
 
   move(x: number, y: number) {

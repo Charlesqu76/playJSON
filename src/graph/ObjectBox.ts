@@ -35,7 +35,20 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
   };
 
   constructor({ x, y, value }: Props, graph: Graph) {
-    super({ x, y, width: 0, height: 0 }, graph);
+    const children = Object.entries(value).map(
+      ([key, value]) =>
+        new KeyValueBox(
+          {
+            x: 0,
+            y: 0,
+            key: key,
+            value: value,
+          },
+          graph
+        )
+    );
+
+    super({ children, x, y }, graph);
     this.graph.emit(EVENT_CREATE, { item: this });
     this.isArray = Array.isArray(value);
     this.rect.attr({

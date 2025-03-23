@@ -35,6 +35,19 @@ interface Props {
  *
  */
 
+function calculateHeight(valueBox: ValueEdit) {
+  return valueBox.height + PADDING_Y * 2;
+}
+
+function calculateWidth(
+  keyBox: KeyEditor,
+  valueBox: ValueEdit,
+  isArray: boolean
+) {
+  const width = isArray ? valueBox.width : keyBox.width + valueBox.width;
+  return width + PADDING_X * 2;
+}
+
 export default class KeyValueBox extends DraggableRect<ObjectBox> {
   defaultStyles = {
     fill: BG_COLOR,
@@ -55,15 +68,22 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
   line: LinkLine | null = null;
 
   constructor({ x, y, key, value }: Props, graph: Graph, parent: ObjectBox) {
-    super({ x, y, width: 0, height: 0 }, graph);
+    const keyBox = new KeyEditor(key, 0, 0, graph);
+    const valueBox = new ValueEdit(value, 0, 0, graph);
+    const height = calculateHeight(valueBox);
+    const width = calculateWidth(keyBox, valueBox, false);
+    super({ x, y, width: width, height }, graph);
+    this.keyBox = keyBox;
+    // this.key.parent = this;
+    this.valueBox = valueBox;
     this.rect.attr(this.defaultStyles);
     this.graph.emit(EVENT_CREATE, { item: this });
     this.setParent(parent);
 
-    this.keyBox = new KeyEditor(key, x, y, graph, this);
+    this.keyBox = new KeyEditor(key, x, y, graph);
     this.changeMode();
 
-    this.valueBox = new ValueEdit(value, 0, 0, graph, this);
+    this.valueBox = new ValueEdit(value, 0, 0, graph);
 
     if (this.valueBox.valueType !== "string") {
       this.child = new ObjectBox(
@@ -83,7 +103,7 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
   }
 
   get key() {
-    return this.keyBox.value;
+    return String(this.keyBox.value);
   }
 
   get value() {
@@ -97,6 +117,11 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
     return {
       [this.key]: this.value,
     };
+  }
+
+  render() {
+    this.keyBox.render(this.x, this.y);
+    this.valueBox.render(this.x, this.y);
   }
 
   changed() {
@@ -199,25 +224,18 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
     this.emit(EVENT_MOVE);
   }
 
-  calculateWidth() {
-    const width = this.parent?.isArray
-      ? this.valueBox.boundary.width
-      : this.keyBox.boundary.width + this.valueBox.boundary.width;
-    return width + PADDING_X * 2;
-  }
-
   setWidth() {
-    const width = this.calculateWidth();
+    const width = calculateWidth(
+      this.keyBox,
+      this.valueBox,
+      this.parent?.isArray || false
+    );
     super.setWidth(width);
     this.realWidth = width;
   }
 
-  calculateHeight() {
-    return this.valueBox.boundary.height + PADDING_Y * 2;
-  }
-
   setHeight() {
-    const height = this.calculateHeight();
+    const height = calculateHeight(this.valueBox);
     super.setHeight(height);
   }
 

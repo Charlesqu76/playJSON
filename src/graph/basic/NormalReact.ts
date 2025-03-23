@@ -13,13 +13,21 @@ interface Props {
 
 export default class NormalRect<P> extends Basic<P> implements Box {
   rect: Rect;
+  width: number;
+  height: number;
+  x: number;
+  y: number;
 
-  constructor({ x, y, width, height }: Props, graph: Graph) {
+  constructor({ x = 0, y = 0, width, height }: Props, graph: Graph) {
     super(graph);
     this.graph = graph;
+    this.width = width;
+    this.height = height;
+    this.x = x;
+    this.y = y;
     this.rect = this.canvas
       ?.rect(width, height)
-      .move(x, y)
+      .move(this.x, this.y)
       .attr({ fill: "none" });
   }
 
@@ -29,6 +37,8 @@ export default class NormalRect<P> extends Basic<P> implements Box {
   }
 
   move(x: number, y: number) {
+    this.x = x;
+    this.y = y;
     this.rect.move(x, y);
   }
 
@@ -37,10 +47,12 @@ export default class NormalRect<P> extends Basic<P> implements Box {
   }
 
   setWidth(width: number) {
+    this.width = width;
     this.rect.width(width);
   }
 
   setHeight(height: number) {
+    this.height = height;
     this.rect.height(height);
   }
 
@@ -56,7 +68,7 @@ export default class NormalRect<P> extends Basic<P> implements Box {
     this.rect.remove();
   }
 
-  render() {}
+  render(x: number, y: number) {}
 
   select() {
     highlightRect(this.rect);

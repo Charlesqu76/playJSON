@@ -18,6 +18,8 @@ export const textPosition = (x: number, y: number) => {
 interface Props {
   x: number;
   y: number;
+  width: number;
+  height: number;
   text: string;
   style?: {
     color: string;
@@ -28,9 +30,9 @@ const size = "16px";
 
 export default class TextBox<P> extends NormalRect<P> implements Box {
   text: EditText;
-  constructor({ x, y, text, style }: Props, graph: Graph) {
+  constructor({ x, y, text, style, width, height }: Props, graph: Graph) {
     // const position = textPosition(x, y);
-    super({ width: 0, height: 0, x, y }, graph);
+    super({ width, height, x, y }, graph);
     this.text = new EditText({ style, element: graph.container });
     this.text
       .move(x, y)
