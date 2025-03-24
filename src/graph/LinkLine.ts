@@ -10,13 +10,15 @@ import {
   EVENT_UPDATE,
 } from "@/graph/event";
 import KeyValueBox from "./keyvalueBox";
+import { TKeyvalueBox } from "./basic2/KeyValueBox";
+import { TObjectBox } from "./basic2/ObjectBox";
 
 export default class LinkLine extends Line {
-  keyValueBox: KeyValueBox;
-  objectBox: ObjectBox;
+  keyValueBox: TKeyvalueBox;
+  objectBox: TObjectBox;
   graph: Graph;
 
-  constructor(keyValueBox: KeyValueBox, objectBox: ObjectBox, graph: Graph) {
+  constructor(keyValueBox: TKeyvalueBox, objectBox: TObjectBox, graph: Graph) {
     super({}, graph);
     this.graph = graph;
     this.keyValueBox = keyValueBox;
@@ -39,6 +41,8 @@ export default class LinkLine extends Line {
       this.graph.emit(EVENT_MOUSEOUT, { item: this });
     });
   }
+
+  render() {}
 
   update = () => {
     this.path.plot(getControlPoints(this.keyValueBox, this.objectBox));

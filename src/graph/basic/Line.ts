@@ -36,11 +36,11 @@ export default class Line extends Basic {
     this.path.hide();
   }
 
-  select() {
+  highlight() {
     this.path.stroke({ color: "red" });
   }
 
-  unselect() {
+  unHighlight() {
     this.path.stroke({ color: this.settings.strokeColor });
   }
 

@@ -1,9 +1,10 @@
 import Graph from "@/graph";
 import TextBox from "./TextBox";
-import KeyEditor1 from "../keyvalueBox/KeyEditor";
+import KeyEditor1, { TKeyEditor } from "../keyvalueBox/KeyEditor";
+import TB, { TTextBox } from "../basic/TextBox";
 
 export default class KeyEditor extends TextBox {
-  keyEditor?: KeyEditor1;
+  textBox?: TTextBox;
   text: string;
   constructor(text: string, x: number, y: number, graph: Graph) {
     super({ text, x, y }, graph);
@@ -14,7 +15,8 @@ export default class KeyEditor extends TextBox {
     if (!this.graph) return;
     this.x = x ?? this.x;
     this.y = y ?? this.y;
-    this.keyEditor = new KeyEditor1(
+
+    this.textBox = new TB(
       {
         x: this.x,
         y: this.y,
@@ -24,5 +26,18 @@ export default class KeyEditor extends TextBox {
       },
       this.graph
     );
+  }
+
+  front() {
+    if (!this.textBox) return;
+    this.textBox.front();
+  }
+
+  back() {
+    if (!this.textBox) return;
+    this.textBox.back();
+  }
+  get value() {
+    return this.textBox?.text;
   }
 }

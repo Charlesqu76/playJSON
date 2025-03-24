@@ -1,12 +1,12 @@
 import { EVENT_UNLINK } from "../event";
 import Graph from "..";
-import KeyValueBox from "../keyvalueBox";
 import LinkLine from "../LinkLine";
-import ObjectBox from "../ObjectBox";
+import { TKeyvalueBox } from "../basic2/KeyValueBox";
+import { TObjectBox } from "../basic2/ObjectBox";
 
 export default function link(
   graph: Graph,
-  payload: { keyvalueBox: KeyValueBox; objectBox: ObjectBox }
+  payload: { keyvalueBox: TKeyvalueBox; objectBox: TObjectBox }
 ) {
   if (graph.canvas === null) return;
   const { keyvalueBox, objectBox } = payload;

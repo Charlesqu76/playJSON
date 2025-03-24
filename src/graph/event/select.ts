@@ -1,15 +1,16 @@
 import Graph from "..";
-import KeyValueBox from "../keyvalueBox";
+import { TKeyvalueBox } from "../basic2/KeyValueBox";
+import { TObjectBox } from "../basic2/ObjectBox";
 import LinkLine from "../LinkLine";
-import ObjectBox from "../ObjectBox";
 
 export default function select(
   graph: Graph,
-  item: LinkLine | KeyValueBox | ObjectBox
+  item: LinkLine | TKeyvalueBox | TObjectBox
 ) {
+  console.log("asdf");
   if (item !== graph.selectedItem) {
-    graph.selectedItem?.unselect();
+    graph.selectedItem?.unHighlight();
   }
-  item.select();
+  item.highlight();
   graph.selectedItem = item;
 }

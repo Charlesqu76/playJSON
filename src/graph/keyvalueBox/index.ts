@@ -102,23 +102,6 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
     this.setWidth();
   }
 
-  get key() {
-    return String(this.keyBox.value);
-  }
-
-  get value() {
-    if (this.child) {
-      return this.child.value;
-    }
-    return this.valueBox.value;
-  }
-
-  get entry() {
-    return {
-      [this.key]: this.value,
-    };
-  }
-
   render() {
     this.keyBox.render(this.x, this.y);
     this.valueBox.render(this.x, this.y);
@@ -131,18 +114,6 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
   }
 
   initEvnet() {
-    this.rect.on("mouseover", () => {
-      this.graph.emit(EVENT_MOUSEOVER, { item: this });
-    });
-
-    this.rect.on("mouseout", () => {
-      this.graph.emit(EVENT_MOUSEOUT, { item: this });
-    });
-
-    this.rect.on("click", () => {
-      this.graph.emit(EVENT_SELECT, { item: this });
-    });
-
     this.rect.on("dragstart", () => {
       this.origin = this.boundary;
       this.graph.isKeyvvalueBoxMoving = true;
@@ -239,23 +210,7 @@ export default class KeyValueBox extends DraggableRect<ObjectBox> {
     super.setHeight(height);
   }
 
-  link(line: LinkLine, objectBox: ObjectBox) {
-    this.line = line;
-    this.child = objectBox;
-    if (this.child.isArray) {
-      this.valueBox.updateText("[]");
-      this.valueBox.valueType = "array";
-    } else {
-      this.valueBox.updateText("{}");
-      this.valueBox.valueType = "object";
-    }
-  }
 
-  unlink() {
-    this.line = null;
-    this.child = null;
-    this.valueBox.updateText("null");
-  }
 
   front() {
     super.front();

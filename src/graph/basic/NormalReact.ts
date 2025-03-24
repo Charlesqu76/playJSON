@@ -28,7 +28,7 @@ export default class NormalRect<P> extends Basic<P> implements Box {
     this.rect = this.canvas
       ?.rect(width, height)
       .move(this.x, this.y)
-      .attr({ fill: "none" });
+      .attr({ fill: "none", stroke: "black" });
   }
 
   get boundary() {
@@ -62,6 +62,10 @@ export default class NormalRect<P> extends Basic<P> implements Box {
 
   hide() {
     this.rect.hide();
+  }
+
+  back() {
+    this.rect.back();
   }
 
   remove() {

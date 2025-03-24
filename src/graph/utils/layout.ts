@@ -20,7 +20,6 @@ export const layoutTree = (root: ObjectBox) => {
       .forEach(({ child }) => groupByLevels(child, level + 1));
   };
 
-  // Calculate max width for each level
   const levelWidths: number[] = [];
   const calculateWidths = () => {
     levels.forEach((nodes, level) => {
@@ -59,6 +58,7 @@ export const layoutTree = (root: ObjectBox) => {
       nodes.forEach((node) => {
         node.x = x;
         node.y = y;
+
         y += node.height + VERTICAL_SPACING;
 
         // Array.from(node.children)

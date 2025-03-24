@@ -1,9 +1,9 @@
 import NormalRect from "./NormalReact";
 import EditText from "./TextEditor";
-import { Box } from "./box";
 import Graph from "..";
 import { EVENT_MOVE } from "@/graph/event";
 import convertStringValue from "../utils/convertStringValue";
+import { G } from "@svgdotjs/svg.js";
 
 const PADDING_X = 2;
 const PADDING_Y = 2;
@@ -28,25 +28,45 @@ interface Props {
 
 const size = "16px";
 
-export default class TextBox<P> extends NormalRect<P> implements Box {
+export type TTextBox = TextBox;
+
+export default class TextBox {
+  group: G;
   text: EditText;
+  container: NormalRect<any>;
   constructor({ x, y, text, style, width, height }: Props, graph: Graph) {
-    // const position = textPosition(x, y);
-    super({ width, height, x, y }, graph);
-    this.text = new EditText({ style, element: graph.container });
-    this.text
-      .move(x, y)
+    if (!graph.canvas) throw new Error("canvas not found");
+    this.group = graph.canvas?.group();
+
+    this.container = new NormalRect(
+      {
+        x,
+        y,
+        width: width + PADDING_X * 2,
+        height: height + PADDING_Y * 2,
+      },
+      graph
+    );
+
+    this.container.rect.attr({
+      stroke: "none",
+    });
+
+    this.group.add(this.container.rect);
+
+    // this.container({ width, height, x, y }, graph);
+    this.text = new EditText({ style })
       .attr({
         "font-size": size,
         "line-height": "1",
         "font-family": "Arial, Helvetica, sans-serif",
       })
       .fill(style?.color || "black");
-
+    this.group.add(this.text);
     this.text.updateText(text);
-    this.canvas.add(this.text);
-    this.text.width(this.boundary.width);
-    this.text.height(this.boundary.height);
+    // this.g.add(this.text);
+
+    this.text.move(x + PADDING_X, y + PADDING_Y);
   }
 
   get boundary() {
@@ -66,33 +86,39 @@ export default class TextBox<P> extends NormalRect<P> implements Box {
 
   updateText(newText: string) {
     this.text.updateText(newText);
-    this.rect.width(this.boundary.width);
-    this.rect.height(this.boundary.height);
+    // this.container.width(this.boundary.width);
+    // this.container.height(this.boundary.height);
   }
 
   move(x: number, y: number) {
-    this.rect.move(x, y);
+    this.container.move(x, y);
     const position = textPosition(x, y);
     this.text.move(position.x, position.y);
-    this.emit(EVENT_MOVE);
+    // this.emit(EVENT_MOVE);
   }
 
   show() {
     this.text.show();
-    super.show();
+    this.container.show();
   }
 
   hide() {
     this.text.hide();
-    super.hide();
+    this.container.hide();
   }
 
   front() {
+    this.group.front();
+    this.container.front();
     this.text.front();
-    super.front();
+  }
+  back() {
+    this.group.back();
+    this.container.back();
+    this.text.back();
   }
 
   delete() {
-    this.text.remove();
+    this.group.remove();
   }
 }

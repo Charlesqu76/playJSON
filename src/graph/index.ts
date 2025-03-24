@@ -1,7 +1,7 @@
 import { SVG } from "@svgdotjs/svg.js";
 import "@svgdotjs/svg.draggable.js";
 import "@svgdotjs/svg.panzoom.js";
-import ObjectBox from "./basic2/ObjectBox";
+import ObjectBox, { TObjectBox } from "./basic2/ObjectBox";
 import { Svg } from "@svgdotjs/svg.js";
 import KeyValueBox from "./keyvalueBox";
 import LinkLine from "./LinkLine";
@@ -11,6 +11,7 @@ import { EVENT_SELECT } from "@/graph/event";
 import keydown from "./event/keydown";
 
 import { events } from "./event/index";
+import { TKeyvalueBox } from "./basic2/KeyValueBox";
 
 interface IProps {
   zoomCallback?: (zoom: number) => void;
@@ -23,10 +24,10 @@ class Graph extends EventEmitter {
   canvas: Svg | null = null;
   zoomCallback: ((zoom: number) => void) | null = null;
   valueChanged: ((value: any) => void) | null = null;
-  objectBoxes: ObjectBox[] = [];
+  objectBoxes: TObjectBox[] = [];
   keyValueBoxes: KeyValueBox[] = [];
   linkLines: WeakSet<LinkLine> = new WeakSet([]);
-  selectedItem: LinkLine | KeyValueBox | ObjectBox | null = null;
+  selectedItem: LinkLine | TKeyvalueBox | TObjectBox | null = null;
   mouseX: number = 0;
   mouseY: number = 0;
   isLinking: boolean = false;
@@ -100,7 +101,7 @@ class Graph extends EventEmitter {
     });
   };
 
-  addObjectBox = (box: ObjectBox) => {
+  addObjectBox = (box: TObjectBox) => {
     this.objectBoxes.push(box);
   };
 

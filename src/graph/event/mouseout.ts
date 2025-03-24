@@ -1,16 +1,12 @@
 import Graph from "..";
-import KeyValueBox from "../keyvalueBox";
+import { TKeyvalueBox } from "../basic2/KeyValueBox";
+import { TObjectBox } from "../basic2/ObjectBox";
 import LinkLine from "../LinkLine";
-import ObjectBox from "../ObjectBox";
 
 export default function mouseout(
   graph: Graph,
-  item: LinkLine | KeyValueBox | ObjectBox
+  item: LinkLine | TKeyvalueBox | TObjectBox
 ) {
   if (graph.selectedItem === item) return;
-  if (item instanceof LinkLine) {
-    item.path.attr({ cursor: "pointer", "stroke-width": 1, stroke: "black" });
-  } else {
-    item.rect.attr({ "stroke-width": 1, stroke: "black" });
-  }
+  item.unHighlight();
 }

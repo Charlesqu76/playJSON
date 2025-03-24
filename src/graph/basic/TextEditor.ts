@@ -19,9 +19,6 @@ export default class EditText extends Text {
   constructor({ maxWidth }: Props) {
     super();
     this.maxWidth = maxWidth || DEFAULT_MAX_WIDTH;
-    this.attr({
-      
-    })
     this.build(true);
 
     this.on("dblclick", () => {

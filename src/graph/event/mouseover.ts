@@ -1,18 +1,17 @@
 import Graph from "..";
-import KeyValueBox from "../keyvalueBox";
+import { TKeyvalueBox } from "../basic2/KeyValueBox";
+import { TObjectBox } from "../basic2/ObjectBox";
 import LinkLine from "../LinkLine";
-import ObjectBox from "../ObjectBox";
 
 export default function mouseover(
   graph: Graph,
-  item: LinkLine | KeyValueBox | ObjectBox
+  item: LinkLine | TKeyvalueBox | TObjectBox
 ) {
   if (graph.isLinking || graph.isKeyvvalueBoxMoving) return;
+  item.highlight();
   if (item instanceof LinkLine) {
     item.path.attr({ cursor: "pointer" });
-    item.path.stroke({ color: "red", width: 3 });
   } else {
     item.front();
-    item.rect.attr({ cursor: "pointer", "stroke-width": 3, stroke: "red" });
   }
 }

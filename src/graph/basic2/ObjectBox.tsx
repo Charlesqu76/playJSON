@@ -2,6 +2,8 @@ import KeyValueBox from "./KeyValueBox";
 import Graph from "..";
 import ChildrenBox from "./ChildrenBox";
 import LinkLine from "../LinkLine";
+import { EVENT_MOUSEOUT, EVENT_MOUSEOVER, EVENT_SELECT } from "../event";
+import { highlightRect, unHighlightRect } from "../utils/rect";
 
 interface Props {
   x: number;
@@ -16,6 +18,7 @@ const ARRAY_COLOR = "#dbeafe";
  * exact one parent - keyValueBox
  * children - KeyValueBoxes
  */
+export type TObjectBox = ObjectBox;
 
 export default class ObjectBox extends ChildrenBox {
   isArray = false;
@@ -44,6 +47,9 @@ export default class ObjectBox extends ChildrenBox {
 
     super({ children, x, y }, graph);
     graph.addObjectBox(this);
+    children.forEach((child) => {
+      child.parent = this;
+    });
     this.isArray = isArray;
   }
 
@@ -61,6 +67,40 @@ export default class ObjectBox extends ChildrenBox {
     });
     return m;
   }
-}
 
-export type TObjectBox = ObjectBox;
+  render() {
+    super.render(this.x, this.y);
+    this.container?.rect.attr({
+      fill: this.isArray ? ARRAY_COLOR : OBJECT_COLOR,
+    });
+
+    if (!this.group || !this.graph) return;
+    this.group.on("mouseover", () => {
+      this.graph.emit(EVENT_MOUSEOVER, { item: this });
+    });
+
+    this.group.on("mouseout", () => {
+      this.graph.emit(EVENT_MOUSEOUT, { item: this });
+    });
+
+    this.group.on(
+      "click",
+      () => {
+        this.graph.emit(EVENT_SELECT, { item: this });
+      },
+      { passive: true }
+    );
+    
+    
+  }
+  highlight() {
+    if (this.container) {
+      highlightRect(this.container?.rect);
+    }
+  }
+  unHighlight() {
+    if (this.container) {
+      unHighlightRect(this.container?.rect);
+    }
+  }
+}

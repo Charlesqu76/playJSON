@@ -69,22 +69,7 @@ export default class ObjectBox extends ChildrenBox<KeyValueBox, KeyValueBox> {
       );
       this.addChildren(keyValueBox);
     });
-    this.initEvent();
   }
-
-  initEvent = () => {
-    this.rect.on("mouseover", () => {
-      this.graph.emit(EVENT_MOUSEOVER, { item: this });
-    });
-
-    this.rect.on("mouseout", () => {
-      this.graph.emit(EVENT_MOUSEOUT, { item: this });
-    });
-
-    this.rect.on("click", () => {
-      this.graph.emit(EVENT_SELECT, { item: this });
-    });
-  };
 
   get value() {
     if (this.isArray) {

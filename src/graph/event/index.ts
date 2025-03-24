@@ -60,7 +60,7 @@ export function events(graph: Graph) {
   graph.canvas?.click((event: Event) => {
     if (event.target === graph.canvas?.node) {
       if (graph.selectedItem) {
-        graph.selectedItem.unselect();
+        graph.selectedItem.unHighlight();
         graph.selectedItem = null;
       }
     }
