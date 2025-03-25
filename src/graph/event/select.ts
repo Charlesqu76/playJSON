@@ -1,13 +1,12 @@
 import Graph from "..";
+import { TLine } from "../basic/Line";
 import { TKeyvalueBox } from "../basic2/KeyValueBox";
 import { TObjectBox } from "../basic2/ObjectBox";
-import LinkLine from "../LinkLine";
 
 export default function select(
   graph: Graph,
-  item: LinkLine | TKeyvalueBox | TObjectBox
+  item: TLine | TKeyvalueBox | TObjectBox
 ) {
-  console.log("asdf");
   if (item !== graph.selectedItem) {
     graph.selectedItem?.unHighlight();
   }

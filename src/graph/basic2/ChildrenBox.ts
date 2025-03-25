@@ -1,46 +1,15 @@
 import Box from "./index";
 import Graph from "..";
-import { G } from "@svgdotjs/svg.js";
-import NormalRect from "../basic/NormalReact";
+import {
+  childrenPostion,
+  getHeight,
+  getWidth,
+  setChildrenWidth,
+} from "@/graph/utils/ChildBox";
+import { TKeyvalueBox } from "./KeyValueBox";
+import { EVENT_MOVE } from "../event";
+import GroupRect from "./GroupRect";
 
-const PADDING_X = 5;
-const PADDING_Y = 5;
-const GAP = 5;
-const MIN_WIDTH = 100;
-
-function getWidth(children: Set<any>) {
-  if (children.size === 0) {
-    return MIN_WIDTH;
-  }
-  let width = 0;
-  children.forEach((child) => {
-    width = Math.max(width, child.width);
-  });
-
-  return width + PADDING_X * 2;
-}
-
-function getHeight(children: Set<any>) {
-  if (children.size === 0) {
-    return 30;
-  }
-  let height = 0;
-  children.forEach((child) => {
-    height += child.height;
-  });
-  return height + PADDING_Y * 2 + GAP * (children.size - 1);
-}
-
-function childrenPostion(children: Set<any>, x: number, y: number) {
-  children.forEach((child) => {
-    if (!child.group) {
-      child.render(x + PADDING_X, y + PADDING_Y);
-    } else {
-      child.move(x + PADDING_X, y + PADDING_Y);
-    }
-    y += child.height + GAP;
-  });
-}
 interface Props {
   x: number;
   y: number;
@@ -48,9 +17,8 @@ interface Props {
 }
 
 export default class ChildrenBox extends Box {
-  group?: G;
-  children: Set<any> = new Set([]);
-  container?: NormalRect<any>;
+  groupRect?: GroupRect;
+  children: Set<TKeyvalueBox> = new Set([]);
   constructor(props: Props, graph: Graph) {
     const { children } = props;
     const setChildren = new Set(children);
@@ -64,11 +32,16 @@ export default class ChildrenBox extends Box {
     this.x = x ?? this.x;
     this.y = y ?? this.y;
 
-    if (!this.graph?.canvas) return;
-    this.group = this.graph.canvas.group();
-    this.group?.draggable();
+    if (!this.group) {
+      this.init();
+    } else {
+      this.move(this.x, this.y);
+    }
+  }
 
-    this.container = new NormalRect(
+  init() {
+    if (!this.graph?.canvas) return;
+    this.groupRect = new GroupRect(
       {
         x: this.x,
         y: this.y,
@@ -77,26 +50,39 @@ export default class ChildrenBox extends Box {
       },
       this.graph
     );
-    this.container.rect.attr({
-      stroke: "black",
-      "stroke-width": 1,
-      rx: 5,
-      ry: 5,
-    });
+
     childrenPostion(this.children, this.x, this.y);
-    this.group.add(this.container.rect);
-    this.addToGroup();
-    this.group.on("dragend", (e) => {
+    setChildrenWidth(this.children, this.width);
+
+    this.children.forEach((child) => {
+      child.group && this.group?.add(child.group);
+    });
+    this.group?.on("dragend", (e) => {
       const { box } = (e as CustomEvent).detail;
       this.move(box.x, box.y);
     });
+
+    this.group?.on("dragmove", (e) => {
+      this.emit(EVENT_MOVE);
+      this.children.forEach((child) => {
+        child.emit(EVENT_MOVE);
+      });
+    });
   }
 
-  addToGroup() {
-    if (!this.group) return;
-    this.children.forEach((child) => {
-      this.group?.add(child.group);
-    });
+  get container() {
+    return this.groupRect?.container;
+  }
+
+  get group() {
+    return this.groupRect?.group;
+  }
+
+  move(x: number, y: number) {
+    this.x = x ?? this.x;
+    this.y = y ?? this.y;
+    this.group?.move(this.x, this.y);
+    childrenPostion(this.children, this.x, this.y);
   }
 
   arrangeChildren() {
@@ -106,32 +92,26 @@ export default class ChildrenBox extends Box {
     this.container?.setHeight(this.height);
     const { x, y } = this.boundary;
     childrenPostion(this.children, x, y);
+    setChildrenWidth(this.children, this.width);
   }
 
-  addChildren(children: C | C[]) {
+  addChildren(children: TKeyvalueBox | TKeyvalueBox[]) {
     if (!Array.isArray(children)) {
       children = [children];
     }
     children.forEach((child) => {
-      if (this.group) {
+      if (this.group && child.group) {
         this.group.add(child.group);
       }
       this.children.add(child);
+      // @ts-ignore
       child.setParent(this);
       // child.changeMode();
     });
-
     this.arrangeChildren();
   }
 
-  move(x: number, y: number) {
-    this.x = x;
-    this.y = y;
-    this.group?.move(x, y);
-    childrenPostion(this.children, x, y);
-  }
-
-  removeChildren(child: C) {
+  removeChildren(child: TKeyvalueBox) {
     this.children.delete(child);
     child.setParent(null);
     this.arrangeChildren();

@@ -1,22 +1,25 @@
 import ObjectBox, { TObjectBox } from "./ObjectBox";
 import Graph from "..";
 import isOverlapping from "@/graph/utils/isOverlapping";
-import LinkLine from "../LinkLine";
-import KeyEditor from "./KeyEditor";
-import ValueEdit from "./ValueEditor";
+import KeyEditor, { TKeyEditor } from "./KeyEditor";
+import ValueEdit, { TValueEditor } from "./ValueEditor";
 import { highlightRect, unHighlightRect } from "../utils/rect";
 import Box from ".";
-import NormalRect from "../basic/NormalReact";
-import { G } from "@svgdotjs/svg.js";
 import {
-  EVENT_LINK,
+  EVENT_CREATE,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
+  EVENT_MOVE,
   EVENT_SELECT,
+  EVENT_UPDATE,
 } from "../event";
-
-const PADDING_Y = 5;
-const PADDING_X = 10;
+import {
+  calculateHeight,
+  calculatePosition,
+  calculateWidth,
+} from "../utils/keyValueBox";
+import GroupRect, { TGroupRect } from "./GroupRect";
+import { EVENT_EDITING } from "./TextEditor";
 
 const BG_COLOR = "#fff";
 
@@ -35,67 +38,16 @@ interface Props {
  *
  */
 
-function calculatePosition({
-  x,
-  y,
-  keyBox,
-  isArray,
-}: {
-  x: number;
-  y: number;
-  keyBox: KeyEditor;
-  isArray: boolean;
-}) {
-  const keyPostion = {
-    x: x + PADDING_X,
-    y: y + PADDING_Y,
-  };
-  const valuePosition = {
-    x: x + (isArray ? 0 : keyBox.width) + PADDING_X + 4 + 4,
-    y: y + PADDING_Y,
-  };
-  return {
-    keyPostion,
-    valuePosition,
-  };
-}
-
-function calculateHeight(valueBox: ValueEdit) {
-  return valueBox.height + PADDING_Y * 2 + 4;
-}
-
-function calculateWidth(
-  keyBox: KeyEditor,
-  valueBox: ValueEdit,
-  isArray: boolean
-) {
-  const width = isArray ? valueBox.width : keyBox.width + valueBox.width;
-  return width + PADDING_X * 2 + 8 + 4;
-}
-
 export type TKeyvalueBox = KeyValueBox;
 
 export default class KeyValueBox extends Box {
-  container?: NormalRect<any>;
-  defaultStyles = {
-    fill: BG_COLOR,
-    stroke: "black",
-    "stroke-width": 1,
-    rx: 5,
-    ry: 5,
-  };
-  keyBox: KeyEditor;
-  valueBox: ValueEdit;
-  group?: G;
-
-  public origin: { x: number; y: number } | null = null;
-  realWidth = 0;
-
+  groupRect?: TGroupRect;
+  keyBox: TKeyEditor;
+  valueBox: TValueEditor;
+  parent: TObjectBox | null = null;
   child: TObjectBox | null = null;
   showChild: boolean = true;
-
-  line: LinkLine | null = null;
-
+  private origin: { x: number; y: number } | null = null;
   constructor({ key, value, isArray }: Props, graph: Graph) {
     const keyBox = new KeyEditor(key, 0, 0, graph);
     const valueBox = new ValueEdit(value, 0, 0, graph);
@@ -110,47 +62,77 @@ export default class KeyValueBox extends Box {
           x: 0,
           y: 0,
           value,
+          parent: this,
         },
         graph
       );
-      this.graph.emit(EVENT_LINK, { keyvalueBox: this, objectBox: this.child });
     }
+    this.graph.emit(EVENT_CREATE, { item: this });
   }
 
   render(x: number, y: number) {
-    if (!this.graph?.canvas) return;
     this.x = x ?? this.x;
     this.y = y ?? this.y;
-    this.group = this.graph.canvas.group();
-    this.group?.draggable();
+    if (!this.group) {
+      this.init();
+    } else {
+      this.move(this.x, this.y);
+    }
+  }
 
-    this.container = new NormalRect(
-      { x, y, width: this.width, height: this.height },
+  init() {
+    if (!this.graph?.canvas) return;
+    this.groupRect = new GroupRect(
+      {
+        x: this.x,
+        y: this.y,
+        width: this.width,
+        height: this.height,
+        style: {
+          fill: BG_COLOR,
+        },
+      },
       this.graph
     );
-    this.container.rect.attr(this.defaultStyles);
+
+    if (this.child) {
+      this.child.render();
+    }
+
     const { keyPostion, valuePosition } = calculatePosition({
       x: this.x,
       y: this.y,
       keyBox: this.keyBox,
-      isArray: false,
+      isArray: this.parent?.isArray,
     });
-    this.keyBox.render(keyPostion.x, keyPostion.y);
+    if (!this.parent?.isArray) {
+      this.keyBox.render(keyPostion.x, keyPostion.y);
+    }
     this.valueBox.render(valuePosition.x, valuePosition.y);
 
-    this.group?.add(this.container.rect);
-    this.keyBox.keyEditor && this.group?.add(this.keyBox.keyEditor?.group);
-    this.valueBox.ValueEditor &&
-      this.group?.add(this.valueBox.ValueEditor?.group);
+    this.keyBox?.textBox?.group && this.group?.add(this.keyBox.textBox.group);
+    this.valueBox.textBox?.group &&
+      this.group?.add(this.valueBox.textBox?.group);
 
-    this.group.on("dragstart", () => {
+    this.valueBox?.textBox?.text?.on(EVENT_EDITING, () => {
+      this.width = calculateWidth(this.keyBox, this.valueBox, false);
+      this.height = calculateHeight(this.valueBox);
+      this.parent?.arrangeChildren();
+
+      this.graph.emit(EVENT_UPDATE, {
+        name: "updateText",
+      });
+    });
+
+    this.group?.on("dragstart", () => {
       this.origin = this.boundary;
       this.graph.isKeyvvalueBoxMoving = true;
     });
 
-    this.group.on(
+    this.group?.on(
       "dragmove",
       (event) => {
+        this.emit(EVENT_MOVE);
         const { box } = (event as CustomEvent).detail;
         const overlapItem = this.graph.objectBoxes.find((objectBox) => {
           return (
@@ -159,16 +141,16 @@ export default class KeyValueBox extends Box {
         });
         this.graph.objectBoxes.forEach((objectBox) => {
           if (overlapItem === objectBox) {
-            highlightRect(objectBox.container?.rect);
+            objectBox.highlight();
           } else {
-            unHighlightRect(objectBox.container?.rect);
+            objectBox.unHighlight();
           }
         });
       },
       { passive: true }
     );
 
-    this.group.on(
+    this.group?.on(
       "dragend",
       (event) => {
         const { box } = (event as CustomEvent).detail;
@@ -189,59 +171,68 @@ export default class KeyValueBox extends Box {
           return;
         }
 
-        overlapItem.group?.add(this.group);
-        // unHighlightRect(overlapItem.rect);
+        this.group && overlapItem.group?.add(this.group);
         this.parent?.removeChildren(this);
         overlapItem.addChildren(this);
       },
       { passive: true }
     );
 
-    this.group.on("mouseover", () => {
-      this.graph.emit(EVENT_MOUSEOVER, { item: this });
-    });
-    this.group.on("mouseout", () => {
+    this.group?.on(
+      "mouseenter",
+      () => {
+        this.graph.emit(EVENT_MOUSEOVER, { item: this });
+      },
+      { passive: true }
+    );
+    this.group?.on("mouseleave", () => {
       this.graph.emit(EVENT_MOUSEOUT, { item: this });
     });
 
-    this.group.on(
+    this.group?.on(
       "click",
-      () => {
+      (event) => {
         this.graph.emit(EVENT_SELECT, { item: this });
+        event.stopPropagation();
       },
       { passive: true }
     );
   }
+
   move(x: number, y: number) {
     this.group?.move(x, y);
     this.x = x;
     this.y = y;
+    this.emit(EVENT_MOVE);
   }
+
   front() {
     this.group?.front();
     this.container?.front();
     this.keyBox?.front();
     this.valueBox?.front();
   }
+
   back() {
     this.group?.back();
     this.container?.back();
     this.keyBox?.back();
     this.valueBox?.back();
   }
+
   highlight() {
     if (this.container) {
       highlightRect(this.container?.rect);
     }
   }
+
   unHighlight() {
     if (this.container) {
       unHighlightRect(this.container?.rect);
     }
   }
 
-  link(line: LinkLine, objectBox: ObjectBox) {
-    this.line = line;
+  link(objectBox: TObjectBox) {
     this.child = objectBox;
     if (this.child.isArray) {
       this.valueBox.updateText("[]");
@@ -253,9 +244,20 @@ export default class KeyValueBox extends Box {
   }
 
   unlink() {
-    this.line = null;
     this.child = null;
     this.valueBox.updateText("null");
+  }
+
+  setParent(parent: TObjectBox | null) {
+    this.parent = parent;
+  }
+
+  get container() {
+    return this.groupRect?.container;
+  }
+
+  get group() {
+    return this.groupRect?.group;
   }
 
   get key() {
@@ -273,5 +275,15 @@ export default class KeyValueBox extends Box {
     return {
       [this.key]: this.value,
     };
+  }
+
+  delete() {
+    if (this.child) {
+      this.child.unlink();
+    }
+    this.parent?.removeChildren(this);
+    this.parent = null;
+    this.groupRect?.delete();
+    this.groupRect = undefined;
   }
 }

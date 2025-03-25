@@ -1,16 +1,16 @@
-import ObjectBox from "../ObjectBox";
+import { TObjectBox } from "../basic2/ObjectBox";
 
 const HORIZONTAL_SPACING = 50;
 const VERTICAL_SPACING = 30;
 
-export const layoutTree = (root: ObjectBox) => {
+export const layoutTree = (root: TObjectBox) => {
   const { x, y } = root.boundary;
   const initialX = x;
   const initialY = y;
   // Group nodes by levels
-  const levels: ObjectBox[][] = [];
+  const levels: TObjectBox[][] = [];
 
-  const groupByLevels = (node: ObjectBox | null, level: number) => {
+  const groupByLevels = (node: TObjectBox | null, level: number) => {
     if (node === null) return;
     if (!levels[level]) levels[level] = [];
     levels[level].push(node);

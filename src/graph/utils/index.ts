@@ -1,32 +1,39 @@
-import { Box } from "../basic/box";
+import { TKeyvalueBox } from "../basic2/KeyValueBox";
+import { TObjectBox } from "../basic2/ObjectBox";
 
-export interface Point {
-  x: number;
-  y: number;
-}
+// export interface Point {
+//   x: number;
+//   y: number;
+// }
 
-export function isPointInBox(point: Point, box: Box): boolean {
-  const { boundary } = box;
-  return (
-    point.x >= boundary.x &&
-    point.x <= boundary.x + boundary.width &&
-    point.y >= boundary.y &&
-    point.y <= boundary.y + boundary.height
-  );
-}
+// export function isPointInBox(point: Point, box: Box): boolean {
+//   const { boundary } = box;
+//   return (
+//     point.x >= boundary.x &&
+//     point.x <= boundary.x + boundary.width &&
+//     point.y >= boundary.y &&
+//     point.y <= boundary.y + boundary.height
+//   );
+// }
 
-export const getRightMid = (box: Box): Point => {
-  const { boundary } = box;
-  const { x, y, width, height } = boundary;
-  return {
-    x: x + width / 2,
-    y: y + height / 2,
-  };
-};
+// export const getRightMid = (box: Box): Point => {
+//   const { boundary } = box;
+//   const { x, y, width, height } = boundary;
+//   return {
+//     x: x + width / 2,
+//     y: y + height / 2,
+//   };
+// };
 
-export const getControlPoints = (start: Box, end: Box, curveHeight = 0) => {
-  const { boundary: startBoundary } = start;
-  const { boundary: endBoundary } = end;
+export const getControlPoints = (
+  start: TKeyvalueBox,
+  end: TObjectBox,
+  curveHeight = 0
+) => {
+  const { boundary: startBoundary } = start.container || {};
+  const { boundary: endBoundary } = end.container || {};
+
+  if (!endBoundary || !startBoundary) return;
   const startPoint = {
     x: startBoundary.x + startBoundary.width,
     y: startBoundary.y + startBoundary.height / 2,

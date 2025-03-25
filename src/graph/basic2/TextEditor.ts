@@ -34,7 +34,7 @@ export default class EditText extends Text {
   updateText(text: string) {
     const words = String(text)?.split(" ");
     let currentLine = "";
-
+    this.clear();
     words.forEach((word, index) => {
       const testLine = currentLine ? currentLine + " " + word : word;
       const t = new Text();

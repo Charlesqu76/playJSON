@@ -1,11 +1,11 @@
 import Graph from "..";
+import { TLine } from "../basic/Line";
 import { TKeyvalueBox } from "../basic2/KeyValueBox";
 import { TObjectBox } from "../basic2/ObjectBox";
-import LinkLine from "../LinkLine";
 
 export default function mouseout(
   graph: Graph,
-  item: LinkLine | TKeyvalueBox | TObjectBox
+  item: TLine | TKeyvalueBox | TObjectBox
 ) {
   if (graph.selectedItem === item) return;
   item.unHighlight();

@@ -1,7 +1,8 @@
 import Graph from "@/graph";
 import TextBox from "./TextBox";
-import KeyEditor1, { TKeyEditor } from "../keyvalueBox/KeyEditor";
 import TB, { TTextBox } from "../basic/TextBox";
+
+export type TKeyEditor = KeyEditor;
 
 export default class KeyEditor extends TextBox {
   textBox?: TTextBox;
@@ -38,6 +39,6 @@ export default class KeyEditor extends TextBox {
     this.textBox.back();
   }
   get value() {
-    return this.textBox?.text;
+    return this.textBox?.value;
   }
 }

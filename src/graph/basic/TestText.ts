@@ -1,4 +1,4 @@
-import EditText from "./TextEditor";
+import EditText from "../basic2/TextEditor";
 
 const size = "16px";
 interface Props {

@@ -1,8 +1,8 @@
 import { Rect } from "@svgdotjs/svg.js";
-import { Box } from "./box";
 import Graph from "..";
-import Basic from "./basic";
 import { highlightRect, unHighlightRect } from "../utils/rect";
+import { Svg } from "@svgdotjs/svg.js";
+import EventEmitter from "../utils/EventEmitter";
 
 interface Props {
   x: number;
@@ -11,15 +11,22 @@ interface Props {
   height: number;
 }
 
-export default class NormalRect<P> extends Basic<P> implements Box {
+export default class NormalRect extends EventEmitter {
   rect: Rect;
   width: number;
   height: number;
   x: number;
   y: number;
+  graph: Graph;
+  canvas: Svg;
 
   constructor({ x = 0, y = 0, width, height }: Props, graph: Graph) {
-    super(graph);
+    if (!graph || !graph.canvas) {
+      throw new Error("graph is required");
+    }
+    super();
+    this.graph = graph;
+    this.canvas = graph.canvas;
     this.graph = graph;
     this.width = width;
     this.height = height;
@@ -71,8 +78,6 @@ export default class NormalRect<P> extends Basic<P> implements Box {
   remove() {
     this.rect.remove();
   }
-
-  render(x: number, y: number) {}
 
   select() {
     highlightRect(this.rect);

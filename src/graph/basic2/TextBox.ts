@@ -30,8 +30,6 @@ interface Props {
   };
 }
 
-const size = "16px";
-
 export type TTextBox = TextBox;
 export default class TextBox extends Box {
   style: any;

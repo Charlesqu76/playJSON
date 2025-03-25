@@ -1,8 +1,7 @@
 import Graph from "..";
-import KeyValueBox from "../keyvalueBox";
-import ObjectBox from "../ObjectBox";
-export default function create(graph: Graph, item: ObjectBox | KeyValueBox) {
-  // console.log("create", item.constructor.name);
+import KeyValueBox, { TKeyvalueBox } from "../basic2/KeyValueBox";
+import ObjectBox, { TObjectBox } from "../basic2/ObjectBox";
+export default function create(graph: Graph, item: TObjectBox | TKeyvalueBox) {
   if (item instanceof ObjectBox) {
     graph.addObjectBox(item);
   }

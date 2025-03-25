@@ -1,4 +1,5 @@
 import Graph from "..";
+import { TObjectBox } from "../basic2/ObjectBox";
 import {
   EVENT_CREATE,
   EVENT_DELETE,
@@ -9,7 +10,6 @@ import {
   EVENT_UNLINK,
   EVENT_UPDATE,
 } from "../event";
-import ObjectBox from "../ObjectBox";
 import debounce from "../utils/debounce";
 import create from "./create";
 import deleteItem from "./delete";
@@ -20,7 +20,7 @@ import select from "./select";
 import unlink from "./unlink";
 
 export function events(graph: Graph) {
-  const update = debounce((data: ObjectBox[]) => {
+  const update = debounce((data: TObjectBox[]) => {
     const d = data.map((item) => item.value);
     graph.valueChanged && graph.valueChanged(d);
   }, 200);

@@ -1,8 +1,8 @@
 import { EVENT_DELETE } from "../event";
 import Graph from "..";
-import KeyValueBox from "../keyvalueBox";
-import ObjectBox from "../ObjectBox";
 import { layoutTree } from "../utils/layout";
+import KeyValueBox from "../basic2/KeyValueBox";
+import ObjectBox from "../basic2/ObjectBox";
 
 export default function keydown(e: KeyboardEvent, graph: Graph) {
   if (e.ctrlKey || e.metaKey) {
@@ -54,7 +54,8 @@ async function handlePaste(graph: Graph) {
       },
       graph
     );
-    layoutTree(newNode);
+    layoutTree(newNode, cursor.x, cursor.y);
+    newNode.render();
   } catch (err) {
     console.error("Failed to paste:", err);
   }
@@ -73,9 +74,9 @@ function addChildren(graph: Graph) {
       y: 0,
       key,
       value,
+      isArray: graph.selectedItem.isArray,
     },
-    graph,
-    graph.selectedItem
+    graph
   );
   graph.selectedItem.addChildren(keyvaluebox);
 }

@@ -1,9 +1,7 @@
-import NormalRect from "./NormalReact";
-import EditText from "./TextEditor";
+import EditText from "../basic2/TextEditor";
 import Graph from "..";
-import { EVENT_MOVE } from "@/graph/event";
 import convertStringValue from "../utils/convertStringValue";
-import { G } from "@svgdotjs/svg.js";
+import GroupRect from "../basic2/GroupRect";
 
 const PADDING_X = 2;
 const PADDING_Y = 2;
@@ -28,44 +26,40 @@ interface Props {
 
 const size = "16px";
 
+const defaultStyle = {
+  "font-size": size,
+  "line-height": "1",
+  "font-family": "Arial, Helvetica, sans-serif",
+};
+
 export type TTextBox = TextBox;
 
-export default class TextBox {
-  group: G;
+export default class TextBox extends GroupRect {
   text: EditText;
-  container: NormalRect<any>;
   constructor({ x, y, text, style, width, height }: Props, graph: Graph) {
     if (!graph.canvas) throw new Error("canvas not found");
-    this.group = graph.canvas?.group();
-
-    this.container = new NormalRect(
+    super(
       {
         x,
         y,
         width: width + PADDING_X * 2,
         height: height + PADDING_Y * 2,
+        style: {
+          stroke: "none",
+        },
       },
       graph
     );
 
-    this.container.rect.attr({
-      stroke: "none",
+    this.group.draggable(false);
+
+    this.text = new EditText({}).attr({
+      ...defaultStyle,
+      fill: style?.color || "black",
     });
 
-    this.group.add(this.container.rect);
-
-    // this.container({ width, height, x, y }, graph);
-    this.text = new EditText({ style })
-      .attr({
-        "font-size": size,
-        "line-height": "1",
-        "font-family": "Arial, Helvetica, sans-serif",
-      })
-      .fill(style?.color || "black");
     this.group.add(this.text);
     this.text.updateText(text);
-    // this.g.add(this.text);
-
     this.text.move(x + PADDING_X, y + PADDING_Y);
   }
 
@@ -86,15 +80,14 @@ export default class TextBox {
 
   updateText(newText: string) {
     this.text.updateText(newText);
-    // this.container.width(this.boundary.width);
-    // this.container.height(this.boundary.height);
+    this.container.setWidth(this.boundary.width);
+    this.container.setHeight(this.boundary.height);
   }
 
   move(x: number, y: number) {
     this.container.move(x, y);
     const position = textPosition(x, y);
     this.text.move(position.x, position.y);
-    // this.emit(EVENT_MOVE);
   }
 
   show() {
