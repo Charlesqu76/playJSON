@@ -1,29 +1,38 @@
 import { TKeyvalueBox } from "../basic2/KeyValueBox";
 import { TObjectBox } from "../basic2/ObjectBox";
 
-// export interface Point {
-//   x: number;
-//   y: number;
-// }
+export interface Box {
+  boundary: {
+    x: number;
+    y: number;
+    width: number;
+    height: number;
+  };
+}
 
-// export function isPointInBox(point: Point, box: Box): boolean {
-//   const { boundary } = box;
-//   return (
-//     point.x >= boundary.x &&
-//     point.x <= boundary.x + boundary.width &&
-//     point.y >= boundary.y &&
-//     point.y <= boundary.y + boundary.height
-//   );
-// }
+export interface Point {
+  x: number;
+  y: number;
+}
 
-// export const getRightMid = (box: Box): Point => {
-//   const { boundary } = box;
-//   const { x, y, width, height } = boundary;
-//   return {
-//     x: x + width / 2,
-//     y: y + height / 2,
-//   };
-// };
+export function isPointInBox(point: Point, box: Box): boolean {
+  const { boundary } = box;
+  return (
+    point.x >= boundary.x &&
+    point.x <= boundary.x + boundary.width &&
+    point.y >= boundary.y &&
+    point.y <= boundary.y + boundary.height
+  );
+}
+
+export const getRightMid = (box: Box): Point => {
+  const { boundary } = box;
+  const { x, y, width, height } = boundary;
+  return {
+    x: x + width / 2,
+    y: y + height / 2,
+  };
+};
 
 export const getControlPoints = (
   start: TKeyvalueBox,
