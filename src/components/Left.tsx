@@ -6,7 +6,7 @@ import "react18-json-view/src/style.css";
 export default function Left() {
   const { jsons } = useStore((state) => state);
   return (
-    <div className="flex-1 space-y-4 overflow-y-scroll bg-slate-100">
+    <div className="flex-1 relative h-full p-2 border-2 rounded-md shadow-md">
       {jsons.map((json, i) => (
         <JsonView src={json} key={i} className="p-2 " />
       ))}

@@ -11,7 +11,7 @@ const App = () => {
     <>
       <Header />
       <main className="flex-1 overflow-hidden flex space-x-2 p-2">
-        {/* {!isFull && <Left />} */}
+        {!isFull && <Left />}
         <Graph />
       </main>
     </>
