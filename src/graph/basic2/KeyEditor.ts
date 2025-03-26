@@ -29,6 +29,16 @@ export default class KeyEditor extends TextBox {
     );
   }
 
+  hide() {
+    if (!this.textBox) return;
+    this.textBox.hide();
+  }
+
+  show() {
+    if (!this.textBox) return;
+    this.textBox.show();
+  }
+
   front() {
     if (!this.textBox) return;
     this.textBox.front();
@@ -40,5 +50,10 @@ export default class KeyEditor extends TextBox {
   }
   get value() {
     return this.textBox?.value;
+  }
+
+  get group() {
+    if (!this.textBox) return;
+    return this.textBox.group;
   }
 }

@@ -45,8 +45,7 @@ export function childrenPostion(
 
 export function setChildrenWidth(children: Set<TKeyvalueBox>, width: number) {
   children.forEach((child) => {
-    child.container?.setWidth(width - PADDING_X * 2);
+    child.setWidthUnderParent(width - PADDING_X * 2);
     child.container?.setHeight(child.height);
   });
 }
-

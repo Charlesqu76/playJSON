@@ -7,10 +7,8 @@ import { highlightRect, unHighlightRect } from "../utils/rect";
 import Box from ".";
 import {
   EVENT_CREATE,
-  EVENT_LINK,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
-  EVENT_MOVE,
   EVENT_SELECT,
   EVENT_UPDATE,
 } from "../event";
@@ -22,8 +20,8 @@ import {
 import GroupRect, { TGroupRect } from "./GroupRect";
 import { EVENT_EDITING } from "./TextEditor";
 import Sign, { TSign } from "./Sign";
-import { Line } from "@svgdotjs/svg.js";
-import { getRightMid, isPointInBox } from "../utils";
+import { link } from "../event/keyvaluebox/sign";
+import { EVENT_LINE_UPDATE } from "../basic/Line";
 
 const BG_COLOR = "#fff";
 
@@ -85,6 +83,15 @@ export default class KeyValueBox extends Box {
     }
   }
 
+  setWidthUnderParent(width: number) {
+    if (!this.container) return;
+    this.container?.setWidth(width);
+    this.sign?.move(
+      this.x + this.container.width - 4,
+      this.y + this.container.height / 2 - 4
+    );
+  }
+
   init() {
     if (!this.graph?.canvas) return;
     this.groupRect = new GroupRect(
@@ -110,9 +117,11 @@ export default class KeyValueBox extends Box {
       keyBox: this.keyBox,
       isArray: this.parent?.isArray,
     });
-    if (!this.parent?.isArray) {
-      this.keyBox.render(keyPostion.x, keyPostion.y);
-    }
+    this.keyBox.render(keyPostion.x, keyPostion.y);
+    this.valueBox.render(valuePosition.x, valuePosition.y);
+    this.groupRect.add(this.keyBox.group);
+    this.groupRect.add(this.valueBox.group);
+    this.keyBoxState();
 
     this.sign = new Sign(
       {
@@ -123,12 +132,6 @@ export default class KeyValueBox extends Box {
     );
 
     this.group?.add(this.sign.sign);
-
-    this.valueBox.render(valuePosition.x, valuePosition.y);
-
-    this.keyBox?.textBox?.group && this.group?.add(this.keyBox.textBox.group);
-    this.valueBox.textBox?.group &&
-      this.group?.add(this.valueBox.textBox?.group);
 
     this.valueBox?.textBox?.text?.on(EVENT_EDITING, () => {
       this.width = calculateWidth(this.keyBox, this.valueBox, false);
@@ -148,7 +151,7 @@ export default class KeyValueBox extends Box {
     this.group?.on(
       "dragmove",
       (event) => {
-        this.emit(EVENT_MOVE);
+        this.emit(EVENT_LINE_UPDATE);
         const { box } = (event as CustomEvent).detail;
         const overlapItem = this.graph.objectBoxes.find((objectBox) => {
           return (
@@ -194,13 +197,10 @@ export default class KeyValueBox extends Box {
       { passive: true }
     );
 
-    this.group?.on(
-      "mouseenter",
-      () => {
-        this.graph.emit(EVENT_MOUSEOVER, { item: this });
-      },
-      { passive: true }
-    );
+    this.group?.on("mouseenter", () => {
+      this.graph.emit(EVENT_MOUSEOVER, { item: this });
+    });
+
     this.group?.on("mouseleave", () => {
       this.graph.emit(EVENT_MOUSEOUT, { item: this });
     });
@@ -213,76 +213,25 @@ export default class KeyValueBox extends Box {
       },
       { passive: true }
     );
-    this.sign?.sign.on(
-      "mousedown",
-      (event) => {
-        if (!this.parent || !this.graph.canvas || !this.sign) return;
-        event = event as MouseEvent;
-        event.stopPropagation();
-        this.graph.isLinking = true;
-        let tempLine: Line | null = null;
-        const svgPoint = (
-          this.graph?.canvas?.node as SVGSVGElement
-        ).createSVGPoint();
-        const startPos = getRightMid(this.sign);
-        tempLine = this.graph.canvas
-          .line(startPos.x, startPos.y, startPos.x, startPos.y)
-          .stroke({ width: 2, color: "#000" });
-        const mousemove = (e: MouseEvent) => {
-          e.preventDefault();
-          svgPoint.x = e.clientX;
-          svgPoint.y = e.clientY;
-          const cursor = svgPoint.matrixTransform(
-            (this.graph.canvas?.node as SVGSVGElement).getScreenCTM()?.inverse()
-          );
-          tempLine?.plot(startPos.x, startPos.y, cursor.x, cursor.y);
-          for (const objectBox of this.graph.objectBoxes) {
-            if (
-              isPointInBox({ x: cursor.x, y: cursor.y }, objectBox) &&
-              objectBox !== this.parent
-            ) {
-              objectBox.highlight();
-            } else {
-              objectBox.unHighlight();
-            }
-          }
-          tempLine?.front();
-        };
-        const mouseup = (e: MouseEvent) => {
-          this.graph.isLinking = false;
-          const cursor = svgPoint.matrixTransform(
-            (this.graph.canvas?.node as SVGSVGElement).getScreenCTM()?.inverse()
-          );
-          const objectBox = this.graph.objectBoxes.find((box) =>
-            isPointInBox({ x: cursor.x, y: cursor.y }, box)
-          );
-          if (objectBox) {
-            objectBox.unHighlight();
-          }
-          if (objectBox && this.child !== objectBox) {
-            this.graph.emit(EVENT_LINK, {
-              keyvalueBox: this,
-              objectBox: objectBox,
-            });
-            objectBox.line?.render();
-          }
-          tempLine?.remove();
-          tempLine = null;
-          document.removeEventListener("mousemove", mousemove);
-          document.removeEventListener("mouseup", mouseup);
-        };
-        document.addEventListener("mousemove", mousemove);
-        document.addEventListener("mouseup", mouseup);
-      },
-      { passive: true }
-    );
+
+    this.sign?.sign.on("mousedown", (event) => {
+      link(event as MouseEvent, this);
+    });
+  }
+
+  keyBoxState() {
+    if (this.parent?.isArray) {
+      this.keyBox.hide();
+    } else {
+      this.keyBox.show();
+    }
   }
 
   move(x: number, y: number) {
     this.group?.move(x, y);
     this.x = x;
     this.y = y;
-    this.emit(EVENT_MOVE);
+    this.emit(EVENT_LINE_UPDATE);
   }
 
   front() {
@@ -321,15 +270,28 @@ export default class KeyValueBox extends Box {
       this.valueBox.updateText("{}");
       this.valueBox.valueType = "object";
     }
+    this.parent?.arrangeChildren();
   }
 
   unlink() {
     this.child = null;
     this.valueBox.updateText("null");
+    this.parent?.arrangeChildren();
   }
 
   setParent(parent: TObjectBox | null) {
     this.parent = parent;
+    this.keyBoxState();
+  }
+
+  delete() {
+    if (this.child) {
+      this.child.unlink();
+    }
+    this.parent?.removeChildren(this);
+    this.parent = null;
+    this.groupRect?.delete();
+    this.groupRect = undefined;
   }
 
   get container() {
@@ -355,15 +317,5 @@ export default class KeyValueBox extends Box {
     return {
       [this.key]: this.value,
     };
-  }
-
-  delete() {
-    if (this.child) {
-      this.child.unlink();
-    }
-    this.parent?.removeChildren(this);
-    this.parent = null;
-    this.groupRect?.delete();
-    this.groupRect = undefined;
   }
 }

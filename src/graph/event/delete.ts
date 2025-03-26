@@ -1,15 +1,15 @@
 import Graph from "..";
+import Line, { TLine } from "../basic/Line";
 import { TKeyvalueBox } from "../basic2/KeyValueBox";
-import Link, { TLink } from "../basic2/Link";
 import { TObjectBox } from "../basic2/ObjectBox";
 import { EVENT_UNLINK } from "../event";
 
 export default function deleteItem(
   graph: Graph,
-  item: TLink | TObjectBox | TKeyvalueBox
+  item: TLine | TObjectBox | TKeyvalueBox
 ) {
   if (!item) return;
-  if (item instanceof Link) {
+  if (item instanceof Line) {
     graph.emit(EVENT_UNLINK, { line: item });
   } else {
     item.delete();

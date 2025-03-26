@@ -5,7 +5,6 @@ import { TObjectBox } from "../basic2/ObjectBox";
 import {
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
-  EVENT_MOVE,
   EVENT_SELECT,
   EVENT_UPDATE,
 } from "@/graph/event";
@@ -21,6 +20,8 @@ const defaultOptions = {
 
 export type TLine = Line;
 
+export const EVENT_LINE_UPDATE = Symbol("EVENT_LINE_UPDATE");
+
 export default class Line extends EventEmitter {
   keyValueBox: TKeyvalueBox;
   objectBox: TObjectBox;
@@ -32,7 +33,7 @@ export default class Line extends EventEmitter {
 
   constructor(keyValueBox: TKeyvalueBox, objectBox: TObjectBox, graph: Graph) {
     super();
-    if (!graph || !graph.canvas) {
+    if (!graph.canvas) {
       throw new Error("graph is required");
     }
     this.graph = graph;
@@ -99,15 +100,15 @@ export default class Line extends EventEmitter {
   };
 
   link() {
-    this.keyValueBox.on(EVENT_MOVE, this.update);
-    this.objectBox.on(EVENT_MOVE, this.update);
-    this.graph.emit(EVENT_UPDATE, { name: "link" });
+    this.keyValueBox.on(EVENT_LINE_UPDATE, this.update);
+    this.objectBox.on(EVENT_LINE_UPDATE, this.update);
+    // this.graph.emit(EVENT_UPDATE, { name: "link" });
   }
 
   unlink() {
-    this.keyValueBox.off(EVENT_MOVE, this.update);
-    this.objectBox.off(EVENT_MOVE, this.update);
-    this.graph.emit(EVENT_UPDATE, { name: "unlink" });
+    this.keyValueBox.off(EVENT_LINE_UPDATE, this.update);
+    this.objectBox.off(EVENT_LINE_UPDATE, this.update);
     this.delete();
+    // this.graph.emit(EVENT_UPDATE, { name: "unlink" });
   }
 }

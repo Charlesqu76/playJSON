@@ -7,8 +7,8 @@ import {
   setChildrenWidth,
 } from "@/graph/utils/ChildBox";
 import { TKeyvalueBox } from "./KeyValueBox";
-import { EVENT_MOVE } from "../event";
 import GroupRect from "./GroupRect";
+import { EVENT_LINE_UPDATE } from "../basic/Line";
 
 interface Props {
   x: number;
@@ -63,9 +63,9 @@ export default class ChildrenBox extends Box {
     });
 
     this.group?.on("dragmove", (e) => {
-      this.emit(EVENT_MOVE);
+      this.emit(EVENT_LINE_UPDATE);
       this.children.forEach((child) => {
-        child.emit(EVENT_MOVE);
+        child.emit(EVENT_LINE_UPDATE);
       });
     });
   }
@@ -83,6 +83,7 @@ export default class ChildrenBox extends Box {
     this.y = y ?? this.y;
     this.group?.move(this.x, this.y);
     childrenPostion(this.children, this.x, this.y);
+    this.emit(EVENT_LINE_UPDATE);
   }
 
   arrangeChildren() {

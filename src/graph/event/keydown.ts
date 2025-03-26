@@ -13,6 +13,10 @@ export default function keydown(e: KeyboardEvent, graph: Graph) {
       handlePaste(graph);
     }
     if (e.key === "k") {
+      if (graph.selectedItem instanceof ObjectBox) {
+        graph.selectedItem.layout();
+        return;
+      }
       graph.layout();
     }
     if (e.key === "Delete" || e.key === "Backspace") {

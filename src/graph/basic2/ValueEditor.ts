@@ -3,6 +3,7 @@ import { getDataType } from "../utils";
 import TextBox from "./TextBox";
 import TB, { TTextBox as TTTextBox } from "../basic/TextBox";
 import { EVENT_EDITING } from "./TextEditor";
+import { EVENT_UPDATE } from "../event";
 
 const VALUE_COLOR = "green";
 export type TValueEditor = ValueEditor;
@@ -54,7 +55,11 @@ export default class ValueEditor extends TextBox {
       this.graph
     );
 
-    this.initEvnet();
+    this.textBox?.text.on(EVENT_EDITING, (event) => {
+      const { width = 0, height = 0 } = this.textBox?.boundary || {};
+      this.width = width;
+      this.height = height;
+    });
   }
 
   front() {
@@ -66,18 +71,15 @@ export default class ValueEditor extends TextBox {
     this.textBox.back();
   }
 
+  updateText(newText: string): void {
+    this.textBox?.text.updateText(newText);
+  }
+
   get value() {
     return this.textBox?.value;
   }
-  initEvnet() {
-    this.textBox?.text.on(EVENT_EDITING, (event) => {
-      const { width = 0, height = 0 } = this.textBox?.boundary || {};
-      this.width = width;
-      this.height = height;
-    });
-  }
 
-  updateText(newText: string): void {
-    this.textBox?.text.updateText(newText);
+  get group() {
+    return this.textBox?.group;
   }
 }

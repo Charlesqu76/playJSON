@@ -24,9 +24,7 @@ export default class EditText extends Text {
     this.on("dblclick", () => {
       const value = p(this.text());
       this.updateText(value);
-      this.fire(EVENT_EDITING, {
-        text: value,
-      });
+
       return;
     });
   }
@@ -52,6 +50,10 @@ export default class EditText extends Text {
       if (index === words.length - 1) {
         this.tspan(currentLine).newLine();
       }
+    });
+
+    this.fire(EVENT_EDITING, {
+      text: text,
     });
   }
 

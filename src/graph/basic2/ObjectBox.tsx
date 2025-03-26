@@ -3,13 +3,13 @@ import Graph from "..";
 import ChildrenBox from "./ChildrenBox";
 import {
   EVENT_CREATE,
-  EVENT_LINK,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_SELECT,
 } from "../event";
 import { highlightRect, unHighlightRect } from "../utils/rect";
-import { TLink } from "./Link";
+import Line, { TLine } from "../basic/Line";
+import { layoutTree } from "../utils/layout";
 
 interface Props {
   x: number;
@@ -29,7 +29,7 @@ export type TObjectBox = ObjectBox;
 
 export default class ObjectBox extends ChildrenBox {
   isArray = false;
-  line: TLink | null = null;
+  line: TLine | null = null;
   parent: TKeyvalueBox | null = null;
 
   constructor({ x, y, value, parent = null }: Props, graph: Graph) {
@@ -51,11 +51,7 @@ export default class ObjectBox extends ChildrenBox {
     children.forEach((child) => {
       child.parent = this;
     });
-    this.parent &&
-      this.graph.emit(EVENT_LINK, {
-        keyvalueBox: this.parent,
-        objectBox: this,
-      });
+
     this.graph.emit(EVENT_CREATE, { item: this });
   }
 
@@ -75,15 +71,13 @@ export default class ObjectBox extends ChildrenBox {
   }
 
   render(x: number = this.x, y: number = this.y) {
-    super.render(this.x, this.y);
-    if (this.parent) {
-      this.line?.render();
-    }
+    super.render(x, y);
+    this.parent && this.link(this.parent);
     this.container?.rect.attr({
       fill: this.isArray ? ARRAY_COLOR : OBJECT_COLOR,
     });
 
-    if (!this.group || !this.graph) return;
+    if (!this.group) return;
     this.group.on("mouseenter", () => {
       this.graph.emit(EVENT_MOUSEOVER, { item: this });
     });
@@ -92,14 +86,10 @@ export default class ObjectBox extends ChildrenBox {
       this.graph.emit(EVENT_MOUSEOUT, { item: this });
     });
 
-    this.group.on(
-      "click",
-      (event) => {
-        this.graph.emit(EVENT_SELECT, { item: this });
-        event.stopPropagation();
-      },
-      { passive: true }
-    );
+    this.group.on("click", (event) => {
+      this.graph.emit(EVENT_SELECT, { item: this });
+      event.stopPropagation();
+    });
   }
 
   highlight() {
@@ -124,9 +114,10 @@ export default class ObjectBox extends ChildrenBox {
     }
   }
 
-  link(line: TLink, keyValueBox: TKeyvalueBox) {
-    this.line = line;
+  link(keyValueBox: TKeyvalueBox) {
+    if (!keyValueBox) return;
     this.parent = keyValueBox;
+    this.line = new Line(this.parent, this, this.graph);
   }
 
   unlink() {
@@ -149,5 +140,9 @@ export default class ObjectBox extends ChildrenBox {
     });
     this.groupRect?.delete();
     this.groupRect = undefined;
+  }
+
+  layout() {
+    layoutTree(this);
   }
 }

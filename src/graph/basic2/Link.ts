@@ -15,8 +15,8 @@ export default class Link {
     this.graph = graph;
     this.keyValueBox = keyValueBox;
     this.objectBox = objectBox;
-    this.keyValueBox.link(this.objectBox);
-    this.objectBox.link(this, this.keyValueBox);
+    // this.keyValueBox.link(this.objectBox);
+    // this.objectBox.link(this, this.keyValueBox);
   }
   render() {
     this.line = new Line(this.keyValueBox, this.objectBox, this.graph);

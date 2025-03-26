@@ -39,6 +39,7 @@ export default class GroupRect {
     this.group.add(this.container.rect);
   }
   add(SVGElement: any) {
+    if (!SVGElement) return;
     this.group?.add(SVGElement);
   }
   move(x: number, y: number) {

@@ -30,6 +30,10 @@ export default class Sign {
     this.sign.front();
   }
 
+  move(x: number, y: number) {
+    this.sign.move(x, y);
+  }
+
   get boundary() {
     return this.sign.bbox();
   }

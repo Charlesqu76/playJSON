@@ -3,14 +3,12 @@ import "@svgdotjs/svg.draggable.js";
 import "@svgdotjs/svg.panzoom.js";
 import ObjectBox, { TObjectBox } from "./basic2/ObjectBox";
 import { Svg } from "@svgdotjs/svg.js";
-import { layoutTree } from "./utils/layout";
 import EventEmitter from "./utils/EventEmitter";
 import { EVENT_SELECT } from "@/graph/event";
 import keydown from "./event/keydown";
 
 import { events } from "./event/index";
 import { TKeyvalueBox } from "./basic2/KeyValueBox";
-import { TLink } from "./basic2/Link";
 import { TLine } from "./basic/Line";
 
 interface IProps {
@@ -26,7 +24,7 @@ class Graph extends EventEmitter {
   valueChanged: ((value: any) => void) | null = null;
   objectBoxes: TObjectBox[] = [];
   keyValueBoxes: TKeyvalueBox[] = [];
-  linkLines: WeakSet<TLink> = new WeakSet([]);
+  linkLines: WeakSet<TLine> = new WeakSet([]);
   selectedItem: TLine | TKeyvalueBox | TObjectBox | null = null;
   mouseX: number = 0;
   mouseY: number = 0;
@@ -93,10 +91,7 @@ class Graph extends EventEmitter {
 
   layout = () => {
     this.getAllIsolateObjectBox().forEach((box) => {
-      layoutTree(box);
-    });
-
-    this.getAllIsolateObjectBox().forEach((box) => {
+      box.layout();
       box.render();
     });
   };
@@ -109,7 +104,7 @@ class Graph extends EventEmitter {
     this.keyValueBoxes.push(box);
   };
 
-  addLinkLine = (linkline: TLink) => {
+  addLinkLine = (linkline: TLine) => {
     this.linkLines.add(linkline);
   };
 

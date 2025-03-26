@@ -57,6 +57,7 @@ export const layoutTree = (root: TObjectBox, x: number = 0, y: number = 0) => {
       nodes.forEach((node) => {
         node.x = x;
         node.y = y;
+        node.move(x, y);
 
         y += node.height + VERTICAL_SPACING;
 
