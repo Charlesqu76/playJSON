@@ -48,6 +48,11 @@ export default class KeyEditor extends TextBox {
     if (!this.textBox) return;
     this.textBox.back();
   }
+
+  updateText(newText: string) {
+    this.textBox?.updateText(newText);
+  }
+
   get value() {
     return this.textBox?.value;
   }

@@ -2,13 +2,13 @@ import Box from "./index";
 import Graph from "..";
 import {
   childrenPostion,
-  getHeight,
-  getWidth,
+  getWidthAndHeight,
   setChildrenWidth,
 } from "@/graph/utils/ChildBox";
 import { TKeyvalueBox } from "./KeyValueBox";
 import GroupRect from "./GroupRect";
 import { EVENT_LINE_UPDATE } from "../basic/Line";
+import { highlightRect, unHighlightRect } from "../utils/rect";
 
 interface Props {
   x: number;
@@ -22,8 +22,7 @@ export default class ChildrenBox extends Box {
   constructor(props: Props, graph: Graph) {
     const { children } = props;
     const setChildren = new Set(children);
-    const width = getWidth(setChildren);
-    const height = getHeight(setChildren);
+    const { width, height } = getWidthAndHeight(setChildren);
     super({ width, height, graph });
     this.children = setChildren;
   }
@@ -57,16 +56,17 @@ export default class ChildrenBox extends Box {
     this.children.forEach((child) => {
       child.group && this.group?.add(child.group);
     });
-    this.group?.on("dragend", (e) => {
-      const { box } = (e as CustomEvent).detail;
-      this.move(box.x, box.y);
-    });
 
     this.group?.on("dragmove", (e) => {
       this.emit(EVENT_LINE_UPDATE);
       this.children.forEach((child) => {
         child.emit(EVENT_LINE_UPDATE);
       });
+    });
+
+    this.group?.on("dragend", (e) => {
+      const { box } = (e as CustomEvent).detail;
+      this.move(box.x, box.y);
     });
   }
 
@@ -86,30 +86,30 @@ export default class ChildrenBox extends Box {
     this.emit(EVENT_LINE_UPDATE);
   }
 
+  setWidth(width: number): void {
+    this.width = width;
+    this.groupRect?.setWidth(this.width);
+  }
+
+  setHeight(height: number): void {
+    this.height = height;
+    this.groupRect?.setHeight(this.height);
+  }
+
   arrangeChildren() {
-    this.width = getWidth(this.children);
-    this.height = getHeight(this.children);
-    this.container?.setWidth(this.width);
-    this.container?.setHeight(this.height);
+    const { width, height } = getWidthAndHeight(this.children);
+    this.setHeight(height);
+    this.setWidth(width);
     const { x, y } = this.boundary;
     childrenPostion(this.children, x, y);
     setChildrenWidth(this.children, this.width);
+    this.children.forEach((child) => {
+      child.emit(EVENT_LINE_UPDATE);
+    });
   }
 
   addChildren(children: TKeyvalueBox | TKeyvalueBox[]) {
-    if (!Array.isArray(children)) {
-      children = [children];
-    }
-    children.forEach((child) => {
-      if (this.group && child.group) {
-        this.group.add(child.group);
-      }
-      this.children.add(child);
-      // @ts-ignore
-      child.setParent(this);
-      // child.changeMode();
-    });
-    this.arrangeChildren();
+
   }
 
   removeChildren(child: TKeyvalueBox) {
@@ -119,10 +119,19 @@ export default class ChildrenBox extends Box {
   }
 
   front() {
-    this.group?.front();
-    this.container?.rect.front();
+    this.groupRect?.front();
     this.children.forEach((child) => {
       child.front();
     });
+  }
+
+  highlight() {
+    if (!this.container) return;
+    highlightRect(this.container?.rect);
+  }
+
+  unHighlight() {
+    if (!this.container) return;
+    unHighlightRect(this.container?.rect);
   }
 }

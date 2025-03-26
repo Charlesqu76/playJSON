@@ -46,8 +46,20 @@ export default class GroupRect {
     this.group?.move(x, y);
   }
 
+  setWidth(width: number) {
+    this.container.setWidth(width);
+  }
+  setHeight(height: number) {
+    this.container.setHeight(height);
+  }
+
   delete() {
     this.group.remove();
     this.container.remove();
+  }
+
+  front() {
+    this.group.front();
+    this.container.front();
   }
 }

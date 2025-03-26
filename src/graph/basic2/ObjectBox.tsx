@@ -92,26 +92,33 @@ export default class ObjectBox extends ChildrenBox {
     });
   }
 
-  highlight() {
-    if (this.container) {
-      highlightRect(this.container?.rect);
-    }
-  }
-
   addChildren(children: TKeyvalueBox | TKeyvalueBox[]) {
     super.addChildren(children);
-    this.line?.update();
+    if (!Array.isArray(children)) {
+      children = [children];
+    }
+
+    children.forEach((child, index) => {
+      if (this.group && child.group) {
+        this.group.add(child.group);
+      }
+      this.children.add(child);
+      child.setParent(this);
+    });
+
+    if (this.isArray) {
+      let index = 0;
+      this.children.forEach((child) => {
+        child.keyBox.updateText(index.toString());
+        index += 1;
+      });
+    }
+    this.arrangeChildren();
   }
 
   removeChildren(children: TKeyvalueBox) {
     super.removeChildren(children);
     this.line?.update();
-  }
-
-  unHighlight() {
-    if (this.container) {
-      unHighlightRect(this.container?.rect);
-    }
   }
 
   link(keyValueBox: TKeyvalueBox) {

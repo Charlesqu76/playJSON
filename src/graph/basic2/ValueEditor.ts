@@ -72,7 +72,7 @@ export default class ValueEditor extends TextBox {
   }
 
   updateText(newText: string): void {
-    this.textBox?.text.updateText(newText);
+    this.textBox?.updateText(newText);
   }
 
   get value() {

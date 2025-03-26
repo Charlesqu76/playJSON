@@ -3,6 +3,12 @@ import { EVENT_LINK } from "@/graph/event";
 import { getRightMid, isPointInBox } from "@/graph/utils";
 import { Line } from "@svgdotjs/svg.js";
 
+export function signLink(keyvalueBox: TKeyvalueBox) {
+  keyvalueBox.sign?.sign.on("mousedown", (event) => {
+    link(event as MouseEvent, keyvalueBox);
+  });
+}
+
 export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
   if (!keyvalueBox.parent || !keyvalueBox.graph.canvas || !keyvalueBox.sign)
     return;

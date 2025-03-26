@@ -1,6 +1,5 @@
 import ObjectBox, { TObjectBox } from "./ObjectBox";
 import Graph from "..";
-import isOverlapping from "@/graph/utils/isOverlapping";
 import KeyEditor, { TKeyEditor } from "./KeyEditor";
 import ValueEdit, { TValueEditor } from "./ValueEditor";
 import { highlightRect, unHighlightRect } from "../utils/rect";
@@ -13,15 +12,15 @@ import {
   EVENT_UPDATE,
 } from "../event";
 import {
-  calculateHeight,
   calculatePosition,
-  calculateWidth,
+  calculateWidthAndHeight,
 } from "../utils/keyValueBox";
 import GroupRect, { TGroupRect } from "./GroupRect";
 import { EVENT_EDITING } from "./TextEditor";
 import Sign, { TSign } from "./Sign";
-import { link } from "../event/keyvaluebox/sign";
+import { signLink } from "../event/keyvaluebox/sign";
 import { EVENT_LINE_UPDATE } from "../basic/Line";
+import { dragEnd, dragMove, dragStart } from "../event/keyvaluebox/drag";
 
 const BG_COLOR = "#fff";
 
@@ -50,12 +49,11 @@ export default class KeyValueBox extends Box {
   parent: TObjectBox | null = null;
   child: TObjectBox | null = null;
   showChild: boolean = true;
-  private origin: { x: number; y: number } | null = null;
-  constructor({ key, value, isArray }: Props, graph: Graph) {
+  origin: { x: number; y: number } | null = null;
+  constructor({ key, value }: Props, graph: Graph) {
     const keyBox = new KeyEditor(key, 0, 0, graph);
     const valueBox = new ValueEdit(value, 0, 0, graph);
-    const height = calculateHeight(valueBox);
-    const width = calculateWidth(keyBox, valueBox, isArray);
+    const { width, height } = calculateWidthAndHeight(keyBox, valueBox);
     super({ width, height, graph });
     this.keyBox = keyBox;
     this.valueBox = valueBox;
@@ -85,11 +83,21 @@ export default class KeyValueBox extends Box {
 
   setWidthUnderParent(width: number) {
     if (!this.container) return;
-    this.container?.setWidth(width);
+    this.container.setWidth(width);
     this.sign?.move(
       this.x + this.container.width - 4,
       this.y + this.container.height / 2 - 4
     );
+  }
+
+  setWidth(width: number): void {
+    this.width = width;
+    this.groupRect?.setWidth(this.width);
+  }
+
+  setHeight(height: number): void {
+    this.height = height;
+    this.groupRect?.setHeight(this.height);
   }
 
   init() {
@@ -107,21 +115,15 @@ export default class KeyValueBox extends Box {
       this.graph
     );
 
-    if (this.child) {
-      this.child.render();
-    }
-
     const { keyPostion, valuePosition } = calculatePosition({
       x: this.x,
       y: this.y,
       keyBox: this.keyBox,
-      isArray: this.parent?.isArray,
     });
     this.keyBox.render(keyPostion.x, keyPostion.y);
     this.valueBox.render(valuePosition.x, valuePosition.y);
     this.groupRect.add(this.keyBox.group);
     this.groupRect.add(this.valueBox.group);
-    this.keyBoxState();
 
     this.sign = new Sign(
       {
@@ -134,8 +136,12 @@ export default class KeyValueBox extends Box {
     this.group?.add(this.sign.sign);
 
     this.valueBox?.textBox?.text?.on(EVENT_EDITING, () => {
-      this.width = calculateWidth(this.keyBox, this.valueBox, false);
-      this.height = calculateHeight(this.valueBox);
+      const { width, height } = calculateWidthAndHeight(
+        this.keyBox,
+        this.valueBox
+      );
+      this.width = width;
+      this.height = height;
       this.parent?.arrangeChildren();
 
       this.graph.emit(EVENT_UPDATE, {
@@ -143,59 +149,11 @@ export default class KeyValueBox extends Box {
       });
     });
 
-    this.group?.on("dragstart", () => {
-      this.origin = this.boundary;
-      this.graph.isKeyvvalueBoxMoving = true;
-    });
+    dragStart(this);
 
-    this.group?.on(
-      "dragmove",
-      (event) => {
-        this.emit(EVENT_LINE_UPDATE);
-        const { box } = (event as CustomEvent).detail;
-        const overlapItem = this.graph.objectBoxes.find((objectBox) => {
-          return (
-            isOverlapping(box, objectBox.boundary) && objectBox !== this.parent
-          );
-        });
-        this.graph.objectBoxes.forEach((objectBox) => {
-          if (overlapItem === objectBox) {
-            objectBox.highlight();
-          } else {
-            objectBox.unHighlight();
-          }
-        });
-      },
-      { passive: true }
-    );
+    dragMove(this);
 
-    this.group?.on(
-      "dragend",
-      (event) => {
-        const { box } = (event as CustomEvent).detail;
-
-        setTimeout(() => {
-          this.graph.isKeyvvalueBoxMoving = false;
-        }, 10);
-
-        const overlapItem = this.graph.objectBoxes.find((objectBox) => {
-          const is = isOverlapping(box, objectBox.boundary);
-          return is && objectBox !== this.parent;
-        });
-
-        if (!overlapItem) {
-          if (this.origin) {
-            this.move(this.origin.x, this.origin.y);
-          }
-          return;
-        }
-
-        this.group && overlapItem.group?.add(this.group);
-        this.parent?.removeChildren(this);
-        overlapItem.addChildren(this);
-      },
-      { passive: true }
-    );
+    dragEnd(this);
 
     this.group?.on("mouseenter", () => {
       this.graph.emit(EVENT_MOUSEOVER, { item: this });
@@ -214,16 +172,14 @@ export default class KeyValueBox extends Box {
       { passive: true }
     );
 
-    this.sign?.sign.on("mousedown", (event) => {
-      link(event as MouseEvent, this);
-    });
+    signLink(this);
+
+    this.renderChild();
   }
 
-  keyBoxState() {
-    if (this.parent?.isArray) {
-      this.keyBox.hide();
-    } else {
-      this.keyBox.show();
+  renderChild() {
+    if (this.child) {
+      this.child.render();
     }
   }
 
@@ -242,23 +198,14 @@ export default class KeyValueBox extends Box {
     this.sign?.front();
   }
 
-  back() {
-    this.group?.back();
-    this.container?.back();
-    this.keyBox?.back();
-    this.valueBox?.back();
-  }
-
   highlight() {
-    if (this.container) {
-      highlightRect(this.container?.rect);
-    }
+    if (!this.container) return;
+    highlightRect(this.container.rect);
   }
 
   unHighlight() {
-    if (this.container) {
-      unHighlightRect(this.container?.rect);
-    }
+    if (!this.container) return;
+    unHighlightRect(this.container?.rect);
   }
 
   link(objectBox: TObjectBox) {
@@ -270,7 +217,6 @@ export default class KeyValueBox extends Box {
       this.valueBox.updateText("{}");
       this.valueBox.valueType = "object";
     }
-    this.parent?.arrangeChildren();
   }
 
   unlink() {
@@ -281,7 +227,6 @@ export default class KeyValueBox extends Box {
 
   setParent(parent: TObjectBox | null) {
     this.parent = parent;
-    this.keyBoxState();
   }
 
   delete() {

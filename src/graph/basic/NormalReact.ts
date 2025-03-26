@@ -1,7 +1,6 @@
 import { Rect } from "@svgdotjs/svg.js";
 import Graph from "..";
 import { highlightRect, unHighlightRect } from "../utils/rect";
-import { Svg } from "@svgdotjs/svg.js";
 import EventEmitter from "../utils/EventEmitter";
 
 interface Props {
@@ -13,28 +12,15 @@ interface Props {
 
 export default class NormalRect extends EventEmitter {
   rect: Rect;
-  width: number;
-  height: number;
-  x: number;
-  y: number;
-  graph: Graph;
-  canvas: Svg;
 
   constructor({ x = 0, y = 0, width, height }: Props, graph: Graph) {
-    if (!graph || !graph.canvas) {
-      throw new Error("graph is required");
+    if (!graph.canvas) {
+      throw new Error("canvas is required");
     }
     super();
-    this.graph = graph;
-    this.canvas = graph.canvas;
-    this.graph = graph;
-    this.width = width;
-    this.height = height;
-    this.x = x;
-    this.y = y;
-    this.rect = this.canvas
+    this.rect = graph.canvas
       ?.rect(width, height)
-      .move(this.x, this.y)
+      .move(x, y)
       .attr({ fill: "none", stroke: "black" });
   }
 
@@ -43,24 +29,28 @@ export default class NormalRect extends EventEmitter {
     return { x, y, width, height };
   }
 
+  get width() {
+    return this.rect.bbox().width;
+  }
+
+  get height() {
+    return this.rect.bbox().height;
+  }
+
+  setWidth(width: number) {
+    this.rect.width(width);
+  }
+
+  setHeight(height: number) {
+    this.rect.height(height);
+  }
+
   move(x: number, y: number) {
-    this.x = x;
-    this.y = y;
     this.rect.move(x, y);
   }
 
   front() {
     this.rect.front();
-  }
-
-  setWidth(width: number) {
-    this.width = width;
-    this.rect.width(width);
-  }
-
-  setHeight(height: number) {
-    this.height = height;
-    this.rect.height(height);
   }
 
   show() {
@@ -79,11 +69,11 @@ export default class NormalRect extends EventEmitter {
     this.rect.remove();
   }
 
-  select() {
+  highlight() {
     highlightRect(this.rect);
   }
 
-  unselect() {
+  unHighlight() {
     unHighlightRect(this.rect);
   }
 }

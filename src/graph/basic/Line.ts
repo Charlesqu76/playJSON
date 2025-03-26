@@ -106,6 +106,7 @@ export default class Line extends EventEmitter {
   }
 
   unlink() {
+    console.log("unlink");
     this.keyValueBox.off(EVENT_LINE_UPDATE, this.update);
     this.objectBox.off(EVENT_LINE_UPDATE, this.update);
     this.delete();
