@@ -1,14 +1,10 @@
-import { TKeyvalueBox } from "../basic2/KeyValueBox";
+import { TKeyvalueBox } from "../basic2/keyValueBox/KeyValueBox";
 import { TObjectBox } from "../basic2/ObjectBox";
 
-export default function linkVerify(
+export default function checkCircle(
   keyValueBox: TKeyvalueBox,
   ObjectBox: TObjectBox
 ) {
-  if (ObjectBox.parent) {
-    alert("already linked");
-    return false;
-  }
   let noCircle = true;
   const check = (keyValueBox: TKeyvalueBox, ObjectBox: TObjectBox) => {
     if (!noCircle) return;

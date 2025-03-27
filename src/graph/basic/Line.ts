@@ -1,6 +1,6 @@
 import { Path } from "@svgdotjs/svg.js";
 import Graph from "..";
-import { TKeyvalueBox } from "../basic2/KeyValueBox";
+import { TKeyvalueBox } from "../basic2/keyValueBox/KeyValueBox";
 import { TObjectBox } from "../basic2/ObjectBox";
 import {
   EVENT_MOUSEOUT,
@@ -54,6 +54,7 @@ export default class Line extends EventEmitter {
 
     this.initEvent();
   }
+
   initEvent() {
     this.path.on("click", () => {
       this.graph.emit(EVENT_SELECT, { item: this });
@@ -80,20 +81,6 @@ export default class Line extends EventEmitter {
     this.path.hide();
   }
 
-  highlight() {
-    this.front();
-    this.path.stroke({ color: "red" });
-  }
-
-  unHighlight() {
-    this.path.stroke({ color: this.settings.strokeColor });
-  }
-
-  delete() {
-    this.path.remove();
-    this.graph.emit(EVENT_UPDATE, { name: "delete" });
-  }
-
   update = () => {
     // @ts-ignore
     this.path.plot(getControlPoints(this.keyValueBox, this.objectBox));
@@ -102,14 +89,29 @@ export default class Line extends EventEmitter {
   link() {
     this.keyValueBox.on(EVENT_LINE_UPDATE, this.update);
     this.objectBox.on(EVENT_LINE_UPDATE, this.update);
+    this.objectBox.line = this;
+    this.objectBox.parent = this.keyValueBox;
+    this.keyValueBox.child = this.objectBox;
     // this.graph.emit(EVENT_UPDATE, { name: "link" });
   }
 
   unlink() {
-    console.log("unlink");
     this.keyValueBox.off(EVENT_LINE_UPDATE, this.update);
     this.objectBox.off(EVENT_LINE_UPDATE, this.update);
-    this.delete();
+    this.objectBox.line = null;
+    this.objectBox.parent = null;
+    this.keyValueBox.child = null;
+    this.path.remove();
+    this.graph.emit(EVENT_UPDATE, { name: "delete" });
     // this.graph.emit(EVENT_UPDATE, { name: "unlink" });
+  }
+
+  highlight() {
+    this.front();
+    this.path.stroke({ color: "red" });
+  }
+
+  unHighlight() {
+    this.path.stroke({ color: this.settings.strokeColor });
   }
 }

@@ -1,5 +1,5 @@
 import { EVENT_LINE_UPDATE } from "@/graph/basic/Line";
-import { TKeyvalueBox } from "@/graph/basic2/KeyValueBox";
+import { TKeyvalueBox } from "@/graph/basic2/keyValueBox/KeyValueBox";
 import isOverlapping from "@/graph/utils/isOverlapping";
 
 export function dragStart(keyvalyeBox: TKeyvalueBox) {

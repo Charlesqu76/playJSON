@@ -1,6 +1,6 @@
 import Graph from "@/graph";
-import TextBox from "./TextBox";
-import TB, { TTextBox } from "../basic/TextBox";
+import TextBox from "../TextBox";
+import TB, { TTextBox } from "../../basic/TextBox";
 
 export type TKeyEditor = KeyEditor;
 
@@ -49,7 +49,7 @@ export default class KeyEditor extends TextBox {
     this.textBox.back();
   }
 
-  updateText(newText: string) {
+  updateText(newText: string | number) {
     this.textBox?.updateText(newText);
   }
 

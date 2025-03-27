@@ -1,6 +1,5 @@
 import { Rect } from "@svgdotjs/svg.js";
 import Graph from "..";
-import { highlightRect, unHighlightRect } from "../utils/rect";
 import EventEmitter from "../utils/EventEmitter";
 
 interface Props {
@@ -70,10 +69,10 @@ export default class NormalRect extends EventEmitter {
   }
 
   highlight() {
-    highlightRect(this.rect);
+    this.rect.attr({ "stroke-width": 3, stroke: "red" });
   }
 
   unHighlight() {
-    unHighlightRect(this.rect);
+    this.rect.attr({ "stroke-width": 1, stroke: "black" });
   }
 }

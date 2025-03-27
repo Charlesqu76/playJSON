@@ -8,7 +8,7 @@ import { EVENT_SELECT } from "@/graph/event";
 import keydown from "./event/keydown";
 
 import { events } from "./event/index";
-import { TKeyvalueBox } from "./basic2/KeyValueBox";
+import { TKeyvalueBox } from "./basic2/keyValueBox/KeyValueBox";
 import { TLine } from "./basic/Line";
 
 interface IProps {

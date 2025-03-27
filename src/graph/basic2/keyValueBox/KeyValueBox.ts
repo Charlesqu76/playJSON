@@ -1,26 +1,25 @@
-import ObjectBox, { TObjectBox } from "./ObjectBox";
-import Graph from "..";
+import ObjectBox, { TObjectBox } from "../ObjectBox";
+import Graph from "../..";
 import KeyEditor, { TKeyEditor } from "./KeyEditor";
 import ValueEdit, { TValueEditor } from "./ValueEditor";
-import { highlightRect, unHighlightRect } from "../utils/rect";
-import Box from ".";
+import Box from "../../basic/Box";
 import {
   EVENT_CREATE,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_SELECT,
   EVENT_UPDATE,
-} from "../event";
+} from "../../event";
 import {
   calculatePosition,
   calculateWidthAndHeight,
-} from "../utils/keyValueBox";
-import GroupRect, { TGroupRect } from "./GroupRect";
-import { EVENT_EDITING } from "./TextEditor";
+} from "../../utils/keyValueBox";
+import GroupRect, { TGroupRect } from "../../basic/GroupRect";
+import { EVENT_EDITING } from "../../basic/TextEditor";
 import Sign, { TSign } from "./Sign";
-import { signLink } from "../event/keyvaluebox/sign";
-import { EVENT_LINE_UPDATE } from "../basic/Line";
-import { dragEnd, dragMove, dragStart } from "../event/keyvaluebox/drag";
+import { signLink } from "../../event/keyvaluebox/sign";
+import { EVENT_LINE_UPDATE } from "../../basic/Line";
+import { dragEnd, dragMove, dragStart } from "../../event/keyvaluebox/drag";
 
 const BG_COLOR = "#fff";
 
@@ -46,8 +45,8 @@ export default class KeyValueBox extends Box {
   sign?: TSign;
   keyBox: TKeyEditor;
   valueBox: TValueEditor;
-  parent: TObjectBox | null = null;
-  child: TObjectBox | null = null;
+  private _parent: TObjectBox | null = null;
+  private _child: TObjectBox | null = null;
   showChild: boolean = true;
   origin: { x: number; y: number } | null = null;
   constructor({ key, value }: Props, graph: Graph) {
@@ -58,7 +57,7 @@ export default class KeyValueBox extends Box {
     this.keyBox = keyBox;
     this.valueBox = valueBox;
     if (this.valueBox.valueType !== "string") {
-      this.child = new ObjectBox(
+      this._child = new ObjectBox(
         {
           x: 0,
           y: 0,
@@ -98,6 +97,40 @@ export default class KeyValueBox extends Box {
   setHeight(height: number): void {
     this.height = height;
     this.groupRect?.setHeight(this.height);
+  }
+
+  get child() {
+    return this._child;
+  }
+
+  set child(child: TObjectBox | null) {
+    this._child = child;
+    if (!child) {
+      this.valueBox.updateText("null");
+      return;
+    }
+    if (child.isArray) {
+      this.valueBox.updateText("[]");
+      this.valueBox.valueType = "array";
+    } else {
+      this.valueBox.updateText("{}");
+      this.valueBox.valueType = "object";
+    }
+  }
+
+  get parent() {
+    return this._parent;
+  }
+
+  set parent(parent: TObjectBox | null) {
+    this._parent = parent;
+    if (!parent) {
+      return;
+    }
+    if (parent.isArray) {
+      this.keyBox.updateText(parent.children.size - 1);
+      this.parent?.arrangeChildren();
+    }
   }
 
   init() {
@@ -173,60 +206,34 @@ export default class KeyValueBox extends Box {
     );
 
     signLink(this);
-
     this.renderChild();
   }
 
   renderChild() {
-    if (this.child) {
-      this.child.render();
-    }
+    if (!this.child) return;
+    this.child.render();
   }
 
   move(x: number, y: number) {
-    this.group?.move(x, y);
+    this.groupRect?.move(x, y);
     this.x = x;
     this.y = y;
     this.emit(EVENT_LINE_UPDATE);
   }
 
   front() {
-    this.group?.front();
-    this.container?.front();
+    this.groupRect?.front();
     this.keyBox?.front();
     this.valueBox?.front();
     this.sign?.front();
   }
 
   highlight() {
-    if (!this.container) return;
-    highlightRect(this.container.rect);
+    this.groupRect?.highlight();
   }
 
   unHighlight() {
-    if (!this.container) return;
-    unHighlightRect(this.container?.rect);
-  }
-
-  link(objectBox: TObjectBox) {
-    this.child = objectBox;
-    if (this.child.isArray) {
-      this.valueBox.updateText("[]");
-      this.valueBox.valueType = "array";
-    } else {
-      this.valueBox.updateText("{}");
-      this.valueBox.valueType = "object";
-    }
-  }
-
-  unlink() {
-    this.child = null;
-    this.valueBox.updateText("null");
-    this.parent?.arrangeChildren();
-  }
-
-  setParent(parent: TObjectBox | null) {
-    this.parent = parent;
+    this.groupRect?.unHighlight();
   }
 
   delete() {

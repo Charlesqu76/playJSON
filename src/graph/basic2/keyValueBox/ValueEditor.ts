@@ -1,9 +1,8 @@
-import Graph from "..";
-import { getDataType } from "../utils";
-import TextBox from "./TextBox";
-import TB, { TTextBox as TTTextBox } from "../basic/TextBox";
-import { EVENT_EDITING } from "./TextEditor";
-import { EVENT_UPDATE } from "../event";
+import { getDataType } from "../../utils";
+import TextBox from "../TextBox";
+import TB, { TTextBox as TTTextBox } from "../../basic/TextBox";
+import { EVENT_EDITING } from "../../basic/TextEditor";
+import Graph from "@/graph";
 
 const VALUE_COLOR = "green";
 export type TValueEditor = ValueEditor;

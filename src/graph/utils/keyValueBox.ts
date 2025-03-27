@@ -1,5 +1,5 @@
-import { TKeyEditor } from "../basic2/KeyEditor";
-import { TValueEditor } from "../basic2/ValueEditor";
+import { TKeyEditor } from "../basic2/keyValueBox/KeyEditor";
+import { TValueEditor } from "../basic2/keyValueBox/ValueEditor";
 
 const PADDING_Y = 5;
 const PADDING_X = 10;
