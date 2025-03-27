@@ -5,6 +5,11 @@ import KeyValueBox from "../basic2/keyValueBox/KeyValueBox";
 import ObjectBox from "../basic2/ObjectBox";
 
 export default function keydown(e: KeyboardEvent, graph: Graph) {
+  if (e.key === "Tab") {
+    e.preventDefault();
+    addKayValueBox(graph);
+  }
+
   if (e.ctrlKey || e.metaKey) {
     if (e.key === "c") {
       handleCopy(graph);
@@ -12,21 +17,25 @@ export default function keydown(e: KeyboardEvent, graph: Graph) {
     if (e.key === "v") {
       handlePaste(graph);
     }
-    if (e.key === "k") {
+    if (e.key === "l") {
+      e.preventDefault();
+
       if (graph.selectedItem instanceof ObjectBox) {
         graph.selectedItem.layout();
         return;
       }
       graph.layout();
     }
+
+    // if (e.key === "r") {
+    //   showJson(graph);
+    //   e.preventDefault();
+    // }
     if (e.key === "Delete" || e.key === "Backspace") {
+      e.preventDefault();
+
       graph.emit(EVENT_DELETE, { item: graph.selectedItem });
     }
-  }
-
-  if (e.key === "Tab") {
-    e.preventDefault();
-    addChildren(graph);
   }
 }
 
@@ -65,7 +74,7 @@ async function handlePaste(graph: Graph) {
   }
 }
 
-function addChildren(graph: Graph) {
+function addKayValueBox(graph: Graph) {
   if (!(graph.selectedItem instanceof ObjectBox) || !graph.canvas) return;
   let key = "key";
   let value = "value";
@@ -83,4 +92,11 @@ function addChildren(graph: Graph) {
     graph
   );
   graph.selectedItem.addChildren(keyvaluebox);
+}
+
+function showJson(graph: Graph) {
+  if (graph.selectedItem instanceof ObjectBox) {
+    console.log(JSON.stringify(graph.selectedItem.value, null, 2));
+  } else {
+  }
 }

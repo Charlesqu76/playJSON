@@ -18,14 +18,6 @@ export default function Graph() {
       ref={containerRef}
     >
       <div ref={ref} className="h-full"></div>
-      {/* <div
-        className="absolute top-4 right-4"
-        onClick={() => {
-          setFull(!isFull);
-        }}
-      >
-        {isFull ? <Shrink /> : <Expand />}
-      </div> */}
     </div>
   );
 }
