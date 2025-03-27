@@ -1,4 +1,4 @@
-import { TKeyvalueBox } from "../basic2/keyValueBox/KeyValueBox";
+import { TKeyvalueBox } from "../basic2/keyValueBox";
 import { TObjectBox } from "../basic2/ObjectBox";
 
 export interface Box {

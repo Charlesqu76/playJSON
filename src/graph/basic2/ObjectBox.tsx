@@ -1,4 +1,4 @@
-import KeyValueBox, { TKeyvalueBox } from "./keyValueBox/KeyValueBox";
+import KeyValueBox, { TKeyvalueBox } from "./keyValueBox";
 import Graph from "..";
 import {
   EVENT_CREATE,
@@ -37,7 +37,7 @@ export type TObjectBox = ObjectBox;
 export default class ObjectBox extends Box {
   isArray = false;
   private _line: TLine | null = null;
-  parent: TKeyvalueBox | null = null;
+  private _parent: TKeyvalueBox | null = null;
   children: Set<TKeyvalueBox> = new Set([]);
   groupRect?: GroupRect;
 
@@ -70,6 +70,25 @@ export default class ObjectBox extends Box {
 
   get value() {
     return value(this);
+  }
+
+  get keyChain() {
+    if (!this.parent) return [];
+    return this.parent.keyChain;
+  }
+
+  get parent() {
+    return this._parent;
+  }
+
+  set parent(parent: TKeyvalueBox | null) {
+    console.log("objectBox setParent", parent);
+    if (!parent) {
+      this.graph.noParentObjectBoxes.add(this);
+    } else {
+      this.graph.noParentObjectBoxes.delete(this);
+    }
+    this._parent = parent;
   }
 
   render(x: number = this.x, y: number = this.y) {

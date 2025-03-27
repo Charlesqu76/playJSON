@@ -1,6 +1,6 @@
 import { Path } from "@svgdotjs/svg.js";
 import Graph from "..";
-import { TKeyvalueBox } from "../basic2/keyValueBox/KeyValueBox";
+import { TKeyvalueBox } from "../basic2/keyValueBox";
 import { TObjectBox } from "../basic2/ObjectBox";
 import {
   EVENT_MOUSEOUT,

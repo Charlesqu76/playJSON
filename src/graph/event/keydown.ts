@@ -1,7 +1,7 @@
 import { EVENT_DELETE } from "../event";
 import Graph from "..";
 import { layoutTree } from "../utils/layout";
-import KeyValueBox from "../basic2/keyValueBox/KeyValueBox";
+import KeyValueBox from "../basic2/keyValueBox";
 import ObjectBox from "../basic2/ObjectBox";
 
 export default function keydown(e: KeyboardEvent, graph: Graph) {

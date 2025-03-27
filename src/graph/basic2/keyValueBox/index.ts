@@ -70,6 +70,12 @@ export default class KeyValueBox extends Box {
     this.graph.emit(EVENT_CREATE, { item: this });
   }
 
+  get keyChain(): Array<string> {
+    if (!this.parent) return [];
+    const key = this.parent.isArray ? `[${this.key}]` : this.key;
+    return [...this.parent.keyChain, key];
+  }
+
   render(x: number, y: number) {
     this.x = x ?? this.x;
     this.y = y ?? this.y;
@@ -255,14 +261,14 @@ export default class KeyValueBox extends Box {
   }
 
   get key() {
-    return String(this.keyBox.value);
+    return String(this.keyBox.text);
   }
 
   get value() {
     if (this.child) {
       return this.child.value;
     }
-    return this.valueBox.value;
+    return this.valueBox.text;
   }
 
   get entry() {

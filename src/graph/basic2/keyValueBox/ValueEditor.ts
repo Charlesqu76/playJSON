@@ -54,7 +54,9 @@ export default class ValueEditor extends TextBox {
       this.graph
     );
 
-    this.textBox?.text.on(EVENT_EDITING, (event) => {
+    this.textBox?.text.on(EVENT_EDITING, (e) => {
+      // @ts-ignore
+      this.text = this.textBox?.value;
       const { width = 0, height = 0 } = this.textBox?.boundary || {};
       this.width = width;
       this.height = height;
@@ -72,6 +74,7 @@ export default class ValueEditor extends TextBox {
 
   updateText(newText: string): void {
     this.textBox?.updateText(newText);
+    this.text = newText;
   }
 
   get value() {

@@ -4,12 +4,13 @@ import "@svgdotjs/svg.panzoom.js";
 import ObjectBox, { TObjectBox } from "./basic2/ObjectBox";
 import { Svg } from "@svgdotjs/svg.js";
 import EventEmitter from "./utils/EventEmitter";
-import { EVENT_SELECT } from "@/graph/event";
 import keydown from "./event/keydown";
-
-import { events } from "./event/index";
-import { TKeyvalueBox } from "./basic2/keyValueBox/KeyValueBox";
+import { graphEvent } from "./event/index";
+import { TKeyvalueBox } from "./basic2/keyValueBox";
 import { TLine } from "./basic/Line";
+
+const MAX_ZOOM = 3;
+const MIN_ZOOM = 0.3;
 
 interface IProps {
   zoomCallback?: (zoom: number) => void;
@@ -22,6 +23,8 @@ class Graph extends EventEmitter {
   canvas: Svg | null = null;
   zoomCallback: ((zoom: number) => void) | null = null;
   valueChanged: ((value: any) => void) | null = null;
+
+  noParentObjectBoxes = new Set<TObjectBox>([]);
   objectBoxes: TObjectBox[] = [];
   keyValueBoxes: TKeyvalueBox[] = [];
   linkLines: WeakSet<TLine> = new WeakSet([]);
@@ -30,6 +33,7 @@ class Graph extends EventEmitter {
   mouseY: number = 0;
   isLinking: boolean = false;
   isKeyvvalueBoxMoving: boolean = false;
+  isObjectBoxMoving: boolean = false;
 
   constructor(props: IProps) {
     super();
@@ -44,7 +48,6 @@ class Graph extends EventEmitter {
       this.container = document.querySelector(id);
     }
     if (!this.container) return;
-
     this.container.style.position = "relative";
 
     const { width, height } = this.container.getBoundingClientRect();
@@ -52,7 +55,7 @@ class Graph extends EventEmitter {
       .addTo(id)
       .size("100%", "100%")
       .viewbox(`0 0 ${width} ${height}`)
-      .panZoom({ zoomMin: 0.1, zoomMax: 5 });
+      .panZoom({ zoomMin: MIN_ZOOM, zoomMax: MAX_ZOOM });
 
     this.initEvent();
   };
@@ -69,7 +72,7 @@ class Graph extends EventEmitter {
       this.mouseY = e.clientY;
     });
 
-    events(this);
+    graphEvent(this);
   };
 
   initData = (data: Object | Object[]) => {
@@ -90,63 +93,57 @@ class Graph extends EventEmitter {
   };
 
   layout = () => {
-    this.getAllIsolateObjectBox().forEach((box) => {
+    this.getAllIsolateObjectBox.forEach((box) => {
       box.layout();
       box.render();
     });
-  };
-
-  addObjectBox = (box: TObjectBox) => {
-    this.objectBoxes.push(box);
   };
 
   addKeyValueBox = (box: TKeyvalueBox) => {
     this.keyValueBoxes.push(box);
   };
 
+  addObjectBox = (box: TObjectBox) => {
+    this.objectBoxes.push(box);
+  };
+
   addLinkLine = (linkline: TLine) => {
     this.linkLines.add(linkline);
   };
 
-  getAllIsolateObjectBox = () => {
-    return this.objectBoxes.filter((box) => !box.parent);
-  };
+  get getAllIsolateObjectBox() {
+    return Array.from(this.noParentObjectBoxes);
+  }
 
-  centerViewOn = (x: number, y: number) => {
+  centerViewOn({
+    x,
+    y,
+    item,
+  }: {
+    x?: number;
+    y?: number;
+    item?: TKeyvalueBox;
+  }) {
     if (!this.canvas) return;
+
     const viewbox = this.canvas.viewbox();
-    const newX = x - viewbox.width / 2;
-    const newY = y - viewbox.height / 2;
+    let newX = x || 0;
+    let newY = y || 0;
+    if (item) {
+      const { x, y } = item.boundary;
+      newX = x;
+      newY = y;
+    }
+    newX -= viewbox.width / 2;
+    newY -= viewbox.height / 2;
     this.canvas
       .animate(200)
       .viewbox(newX, newY, viewbox.width, viewbox.height)
       .zoom(0.8);
-  };
-
-  findMatchingObjects = (searchText: string) => {
-    if (!searchText.trim()) return null;
-
-    const match = this.keyValueBoxes.find((box) => {
-      const keyValue = box.key;
-      const valueValue = box.value;
-      if (typeof valueValue === "string") {
-        return valueValue.includes(searchText) || keyValue.includes(searchText);
-      }
-      return keyValue.includes(searchText);
-    });
-
-    if (!match) return null;
-
-    this.emit(EVENT_SELECT, { item: match });
-
-    const { x, y } = match.boundary;
-    this.centerViewOn(x, y);
-
-    return null;
-  };
+  }
 
   get value() {
-    const values = this.getAllIsolateObjectBox().map((item) => item.value);
+    const values = this.getAllIsolateObjectBox.map((item) => item.value);
     return values;
   }
 
