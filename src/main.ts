@@ -6,6 +6,11 @@ const main = () => {
   graph.initCanvas("#app");
   graph.initData([data]);
   graph.layout();
+  setTimeout(() => {
+    graph.keyValueBoxes.forEach((keyValueBox) => {
+      console.log(keyValueBox.keyChain);
+    });
+  }, 100);
 };
 
 main();

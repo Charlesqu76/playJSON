@@ -1,4 +1,4 @@
-import { TKeyvalueBox } from "@/graph/basic2/keyValueBox/KeyValueBox";
+import { TKeyvalueBox } from "@/graph/basic2/keyValueBox";
 import { getRightMid, isPointInBox } from "@/graph/utils";
 import { Line } from "@svgdotjs/svg.js";
 

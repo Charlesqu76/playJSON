@@ -1,6 +1,7 @@
 import Graph from "@/graph";
 import TextBox from "../TextBox";
 import TB, { TTextBox } from "../../basic/TextBox";
+import { EVENT_EDITING } from "@/graph/basic/TextEditor";
 
 export type TKeyEditor = KeyEditor;
 
@@ -27,6 +28,13 @@ export default class KeyEditor extends TextBox {
       },
       this.graph
     );
+    this.textBox?.text.on(EVENT_EDITING, (e) => {
+      // @ts-ignore
+      this.text = this.textBox?.value;
+      const { width = 0, height = 0 } = this.textBox?.boundary || {};
+      this.width = width;
+      this.height = height;
+    });
   }
 
   hide() {
@@ -51,6 +59,7 @@ export default class KeyEditor extends TextBox {
 
   updateText(newText: string | number) {
     this.textBox?.updateText(newText);
+    this.text = newText.toString();
   }
 
   get value() {

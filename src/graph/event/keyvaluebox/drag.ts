@@ -1,5 +1,5 @@
 import { EVENT_LINE_UPDATE } from "@/graph/basic/Line";
-import { TKeyvalueBox } from "@/graph/basic2/keyValueBox/KeyValueBox";
+import { TKeyvalueBox } from "@/graph/basic2/keyValueBox";
 import isOverlapping from "@/graph/utils/isOverlapping";
 
 export function dragStart(keyvalyeBox: TKeyvalueBox) {
@@ -43,7 +43,11 @@ export function dragEnd(keyvalyeBox: TKeyvalueBox) {
 
     const overlapItem = keyvalyeBox.graph.objectBoxes.find((objectBox) => {
       const is = isOverlapping(box, objectBox.boundary);
-      return is && objectBox !== keyvalyeBox.parent;
+      return (
+        is &&
+        objectBox !== keyvalyeBox.parent &&
+        keyvalyeBox.child !== objectBox
+      );
     });
 
     if (!overlapItem) {

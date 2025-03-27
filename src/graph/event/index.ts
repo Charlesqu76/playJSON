@@ -15,14 +15,14 @@ import mouseout from "./mouseout";
 import mouseover from "./mouseover";
 import select from "./select";
 
-export function events(graph: Graph) {
+export function graphEvent(graph: Graph) {
   const update = debounce((data: TObjectBox[]) => {
     const d = data.map((item) => item.value);
     graph.valueChanged && graph.valueChanged(d);
   }, 200);
 
   graph.on(EVENT_UPDATE, (data) => {
-    update(graph.getAllIsolateObjectBox());
+    update(graph.getAllIsolateObjectBox);
   });
 
   graph.on(EVENT_DELETE, ({ item }) => {

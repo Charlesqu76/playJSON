@@ -1,6 +1,6 @@
 import Graph from "..";
 import { TLine } from "../basic/Line";
-import { TKeyvalueBox } from "../basic2/keyValueBox/KeyValueBox";
+import { TKeyvalueBox } from "../basic2/keyValueBox";
 import { TObjectBox } from "../basic2/ObjectBox";
 
 export default function select(

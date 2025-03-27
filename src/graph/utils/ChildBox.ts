@@ -1,4 +1,4 @@
-import { TKeyvalueBox } from "../basic2/keyValueBox/KeyValueBox";
+import { TKeyvalueBox } from "../basic2/keyValueBox";
 
 const PADDING_X = 5;
 const PADDING_Y = 5;
