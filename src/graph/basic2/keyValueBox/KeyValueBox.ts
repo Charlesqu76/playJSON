@@ -1,27 +1,25 @@
-import ObjectBox, { TObjectBox } from "./ObjectBox";
-import Graph from "..";
-import isOverlapping from "@/graph/utils/isOverlapping";
+import ObjectBox, { TObjectBox } from "../ObjectBox";
+import Graph from "../..";
 import KeyEditor, { TKeyEditor } from "./KeyEditor";
 import ValueEdit, { TValueEditor } from "./ValueEditor";
-import { highlightRect, unHighlightRect } from "../utils/rect";
-import Box from ".";
+import Box from "../../basic/Box";
 import {
   EVENT_CREATE,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_SELECT,
   EVENT_UPDATE,
-} from "../event";
+} from "../../event";
 import {
-  calculateHeight,
   calculatePosition,
-  calculateWidth,
-} from "../utils/keyValueBox";
-import GroupRect, { TGroupRect } from "./GroupRect";
-import { EVENT_EDITING } from "./TextEditor";
+  calculateWidthAndHeight,
+} from "../../utils/keyValueBox";
+import GroupRect, { TGroupRect } from "../../basic/GroupRect";
+import { EVENT_EDITING } from "../../basic/TextEditor";
 import Sign, { TSign } from "./Sign";
-import { link } from "../event/keyvaluebox/sign";
-import { EVENT_LINE_UPDATE } from "../basic/Line";
+import { signLink } from "../../event/keyvaluebox/sign";
+import { EVENT_LINE_UPDATE } from "../../basic/Line";
+import { dragEnd, dragMove, dragStart } from "../../event/keyvaluebox/drag";
 
 const BG_COLOR = "#fff";
 
@@ -47,20 +45,19 @@ export default class KeyValueBox extends Box {
   sign?: TSign;
   keyBox: TKeyEditor;
   valueBox: TValueEditor;
-  parent: TObjectBox | null = null;
-  child: TObjectBox | null = null;
+  private _parent: TObjectBox | null = null;
+  private _child: TObjectBox | null = null;
   showChild: boolean = true;
-  private origin: { x: number; y: number } | null = null;
-  constructor({ key, value, isArray }: Props, graph: Graph) {
+  origin: { x: number; y: number } | null = null;
+  constructor({ key, value }: Props, graph: Graph) {
     const keyBox = new KeyEditor(key, 0, 0, graph);
     const valueBox = new ValueEdit(value, 0, 0, graph);
-    const height = calculateHeight(valueBox);
-    const width = calculateWidth(keyBox, valueBox, isArray);
+    const { width, height } = calculateWidthAndHeight(keyBox, valueBox);
     super({ width, height, graph });
     this.keyBox = keyBox;
     this.valueBox = valueBox;
     if (this.valueBox.valueType !== "string") {
-      this.child = new ObjectBox(
+      this._child = new ObjectBox(
         {
           x: 0,
           y: 0,
@@ -85,11 +82,55 @@ export default class KeyValueBox extends Box {
 
   setWidthUnderParent(width: number) {
     if (!this.container) return;
-    this.container?.setWidth(width);
+    this.container.setWidth(width);
     this.sign?.move(
       this.x + this.container.width - 4,
       this.y + this.container.height / 2 - 4
     );
+  }
+
+  setWidth(width: number): void {
+    this.width = width;
+    this.groupRect?.setWidth(this.width);
+  }
+
+  setHeight(height: number): void {
+    this.height = height;
+    this.groupRect?.setHeight(this.height);
+  }
+
+  get child() {
+    return this._child;
+  }
+
+  set child(child: TObjectBox | null) {
+    this._child = child;
+    if (!child) {
+      this.valueBox.updateText("null");
+      return;
+    }
+    if (child.isArray) {
+      this.valueBox.updateText("[]");
+      this.valueBox.valueType = "array";
+    } else {
+      this.valueBox.updateText("{}");
+      this.valueBox.valueType = "object";
+    }
+  }
+
+  get parent() {
+    return this._parent;
+  }
+
+  set parent(parent: TObjectBox | null) {
+    this._parent = parent;
+    if (!parent) {
+      return;
+    }
+    if (parent.isArray) {
+      this.keyBox.updateText(parent.children.size - 1);
+      this.parent?.arrangeChildren();
+    }
   }
 
   init() {
@@ -107,21 +148,15 @@ export default class KeyValueBox extends Box {
       this.graph
     );
 
-    if (this.child) {
-      this.child.render();
-    }
-
     const { keyPostion, valuePosition } = calculatePosition({
       x: this.x,
       y: this.y,
       keyBox: this.keyBox,
-      isArray: this.parent?.isArray,
     });
     this.keyBox.render(keyPostion.x, keyPostion.y);
     this.valueBox.render(valuePosition.x, valuePosition.y);
     this.groupRect.add(this.keyBox.group);
     this.groupRect.add(this.valueBox.group);
-    this.keyBoxState();
 
     this.sign = new Sign(
       {
@@ -134,8 +169,12 @@ export default class KeyValueBox extends Box {
     this.group?.add(this.sign.sign);
 
     this.valueBox?.textBox?.text?.on(EVENT_EDITING, () => {
-      this.width = calculateWidth(this.keyBox, this.valueBox, false);
-      this.height = calculateHeight(this.valueBox);
+      const { width, height } = calculateWidthAndHeight(
+        this.keyBox,
+        this.valueBox
+      );
+      this.width = width;
+      this.height = height;
       this.parent?.arrangeChildren();
 
       this.graph.emit(EVENT_UPDATE, {
@@ -143,59 +182,11 @@ export default class KeyValueBox extends Box {
       });
     });
 
-    this.group?.on("dragstart", () => {
-      this.origin = this.boundary;
-      this.graph.isKeyvvalueBoxMoving = true;
-    });
+    dragStart(this);
 
-    this.group?.on(
-      "dragmove",
-      (event) => {
-        this.emit(EVENT_LINE_UPDATE);
-        const { box } = (event as CustomEvent).detail;
-        const overlapItem = this.graph.objectBoxes.find((objectBox) => {
-          return (
-            isOverlapping(box, objectBox.boundary) && objectBox !== this.parent
-          );
-        });
-        this.graph.objectBoxes.forEach((objectBox) => {
-          if (overlapItem === objectBox) {
-            objectBox.highlight();
-          } else {
-            objectBox.unHighlight();
-          }
-        });
-      },
-      { passive: true }
-    );
+    dragMove(this);
 
-    this.group?.on(
-      "dragend",
-      (event) => {
-        const { box } = (event as CustomEvent).detail;
-
-        setTimeout(() => {
-          this.graph.isKeyvvalueBoxMoving = false;
-        }, 10);
-
-        const overlapItem = this.graph.objectBoxes.find((objectBox) => {
-          const is = isOverlapping(box, objectBox.boundary);
-          return is && objectBox !== this.parent;
-        });
-
-        if (!overlapItem) {
-          if (this.origin) {
-            this.move(this.origin.x, this.origin.y);
-          }
-          return;
-        }
-
-        this.group && overlapItem.group?.add(this.group);
-        this.parent?.removeChildren(this);
-        overlapItem.addChildren(this);
-      },
-      { passive: true }
-    );
+    dragEnd(this);
 
     this.group?.on("mouseenter", () => {
       this.graph.emit(EVENT_MOUSEOVER, { item: this });
@@ -214,74 +205,35 @@ export default class KeyValueBox extends Box {
       { passive: true }
     );
 
-    this.sign?.sign.on("mousedown", (event) => {
-      link(event as MouseEvent, this);
-    });
+    signLink(this);
+    this.renderChild();
   }
 
-  keyBoxState() {
-    if (this.parent?.isArray) {
-      this.keyBox.hide();
-    } else {
-      this.keyBox.show();
-    }
+  renderChild() {
+    if (!this.child) return;
+    this.child.render();
   }
 
   move(x: number, y: number) {
-    this.group?.move(x, y);
+    this.groupRect?.move(x, y);
     this.x = x;
     this.y = y;
     this.emit(EVENT_LINE_UPDATE);
   }
 
   front() {
-    this.group?.front();
-    this.container?.front();
+    this.groupRect?.front();
     this.keyBox?.front();
     this.valueBox?.front();
     this.sign?.front();
   }
 
-  back() {
-    this.group?.back();
-    this.container?.back();
-    this.keyBox?.back();
-    this.valueBox?.back();
-  }
-
   highlight() {
-    if (this.container) {
-      highlightRect(this.container?.rect);
-    }
+    this.groupRect?.highlight();
   }
 
   unHighlight() {
-    if (this.container) {
-      unHighlightRect(this.container?.rect);
-    }
-  }
-
-  link(objectBox: TObjectBox) {
-    this.child = objectBox;
-    if (this.child.isArray) {
-      this.valueBox.updateText("[]");
-      this.valueBox.valueType = "array";
-    } else {
-      this.valueBox.updateText("{}");
-      this.valueBox.valueType = "object";
-    }
-    this.parent?.arrangeChildren();
-  }
-
-  unlink() {
-    this.child = null;
-    this.valueBox.updateText("null");
-    this.parent?.arrangeChildren();
-  }
-
-  setParent(parent: TObjectBox | null) {
-    this.parent = parent;
-    this.keyBoxState();
+    this.groupRect?.unHighlight();
   }
 
   delete() {

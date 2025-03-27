@@ -1,5 +1,5 @@
 import { G } from "@svgdotjs/svg.js";
-import NormalRect from "../basic/NormalReact";
+import NormalRect from "./NormalReact";
 import Graph from "..";
 
 interface IProps {
@@ -36,6 +36,7 @@ export default class GroupRect {
       ry: 5,
       ...style,
     });
+
     this.group.add(this.container.rect);
   }
   add(SVGElement: any) {
@@ -46,8 +47,28 @@ export default class GroupRect {
     this.group?.move(x, y);
   }
 
+  setWidth(width: number) {
+    this.container.setWidth(width);
+  }
+  setHeight(height: number) {
+    this.container.setHeight(height);
+  }
+
   delete() {
     this.group.remove();
     this.container.remove();
+  }
+
+  front() {
+    this.group.front();
+    this.container.front();
+  }
+
+  highlight() {
+    this.container.highlight();
+  }
+
+  unHighlight() {
+    this.container.unHighlight();
   }
 }

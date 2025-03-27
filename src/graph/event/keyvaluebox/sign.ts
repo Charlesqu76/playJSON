@@ -1,7 +1,12 @@
-import { TKeyvalueBox } from "@/graph/basic2/KeyValueBox";
-import { EVENT_LINK } from "@/graph/event";
+import { TKeyvalueBox } from "@/graph/basic2/keyValueBox/KeyValueBox";
 import { getRightMid, isPointInBox } from "@/graph/utils";
 import { Line } from "@svgdotjs/svg.js";
+
+export function signLink(keyvalueBox: TKeyvalueBox) {
+  keyvalueBox.sign?.sign.on("mousedown", (event) => {
+    link(event as MouseEvent, keyvalueBox);
+  });
+}
 
 export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
   if (!keyvalueBox.parent || !keyvalueBox.graph.canvas || !keyvalueBox.sign)
@@ -56,10 +61,7 @@ export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
       objectBox.unHighlight();
     }
     if (objectBox && keyvalueBox.child !== objectBox) {
-      keyvalueBox.graph.emit(EVENT_LINK, {
-        keyvalueBox: keyvalueBox,
-        objectBox: objectBox,
-      });
+      objectBox.link(keyvalueBox);
     }
 
     document.removeEventListener("mousemove", mousemove);

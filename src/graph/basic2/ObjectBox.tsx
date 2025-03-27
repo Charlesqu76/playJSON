@@ -1,15 +1,22 @@
-import KeyValueBox, { TKeyvalueBox } from "./KeyValueBox";
+import KeyValueBox, { TKeyvalueBox } from "./keyValueBox/KeyValueBox";
 import Graph from "..";
-import ChildrenBox from "./ChildrenBox";
 import {
   EVENT_CREATE,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_SELECT,
 } from "../event";
-import { highlightRect, unHighlightRect } from "../utils/rect";
-import Line, { TLine } from "../basic/Line";
+import Line, { EVENT_LINE_UPDATE, TLine } from "../basic/Line";
 import { layoutTree } from "../utils/layout";
+import GroupRect from "../basic/GroupRect";
+import {
+  childrenPostion,
+  getWidthAndHeight,
+  setChildrenWidth,
+} from "../utils/ChildBox";
+import Box from "../basic/Box";
+import { value } from "../utils/ObjectBox";
+import checkCircle from "../utils/linkVerify";
 
 interface Props {
   x: number;
@@ -27,10 +34,12 @@ const ARRAY_COLOR = "#dbeafe";
  */
 export type TObjectBox = ObjectBox;
 
-export default class ObjectBox extends ChildrenBox {
+export default class ObjectBox extends Box {
   isArray = false;
-  line: TLine | null = null;
+  private _line: TLine | null = null;
   parent: TKeyvalueBox | null = null;
+  children: Set<TKeyvalueBox> = new Set([]);
+  groupRect?: GroupRect;
 
   constructor({ x, y, value, parent = null }: Props, graph: Graph) {
     const isArray = Array.isArray(value);
@@ -45,39 +54,71 @@ export default class ObjectBox extends ChildrenBox {
           graph
         )
     );
-    super({ children, x, y }, graph);
-    this.isArray = isArray;
-    this.parent = parent;
+    const setChildren = new Set(children);
+    const { width, height } = getWidthAndHeight(setChildren);
+
+    super({ width, height, graph });
+    // ?
+    this.children = setChildren;
     children.forEach((child) => {
       child.parent = this;
     });
-
+    this.isArray = isArray;
+    this.parent = parent;
     this.graph.emit(EVENT_CREATE, { item: this });
   }
 
   get value() {
-    if (this.isArray) {
-      const m = [] as any;
-      this.children.forEach((child) => {
-        m.push(child.value);
-      });
-      return m;
-    }
-    const m = {};
-    this.children.forEach((child) => {
-      Object.assign(m, child.entry);
-    });
-    return m;
+    return value(this);
   }
 
   render(x: number = this.x, y: number = this.y) {
-    super.render(x, y);
+    this.x = x ?? this.x;
+    this.y = y ?? this.y;
+    if (!this.groupRect) {
+      this.init();
+    } else {
+      this.move(this.x, this.y);
+    }
     this.parent && this.link(this.parent);
-    this.container?.rect.attr({
-      fill: this.isArray ? ARRAY_COLOR : OBJECT_COLOR,
+  }
+
+  init() {
+    if (!this.graph?.canvas) throw new Error("canvas is not initialized");
+    this.groupRect = new GroupRect(
+      {
+        x: this.x,
+        y: this.y,
+        width: this.width,
+        height: this.height,
+        style: {
+          fill: this.isArray ? ARRAY_COLOR : OBJECT_COLOR,
+        },
+      },
+      this.graph
+    );
+
+    if (!this.group || !this.container) return;
+
+    childrenPostion(this.children, this.x, this.y);
+    setChildrenWidth(this.children, this.width);
+
+    this.children.forEach((child) => {
+      child.group && this.group?.add(child.group);
     });
 
-    if (!this.group) return;
+    this.group?.on("dragmove", (e) => {
+      this.emit(EVENT_LINE_UPDATE);
+      this.children.forEach((child) => {
+        child.emit(EVENT_LINE_UPDATE);
+      });
+    });
+
+    this.group?.on("dragend", (e) => {
+      const { box } = (e as CustomEvent).detail;
+      this.move(box.x, box.y);
+    });
+
     this.group.on("mouseenter", () => {
       this.graph.emit(EVENT_MOUSEOVER, { item: this });
     });
@@ -92,49 +133,88 @@ export default class ObjectBox extends ChildrenBox {
     });
   }
 
-  highlight() {
-    if (this.container) {
-      highlightRect(this.container?.rect);
-    }
+  move(x: number, y: number) {
+    this.x = x ?? this.x;
+    this.y = y ?? this.y;
+    this.groupRect?.move(this.x, this.y);
+    childrenPostion(this.children, this.x, this.y);
+    this.emit(EVENT_LINE_UPDATE);
+  }
+
+  setWidth(width: number): void {
+    this.width = width;
+    this.groupRect?.setWidth(this.width);
+  }
+
+  setHeight(height: number): void {
+    this.height = height;
+    this.groupRect?.setHeight(this.height);
+  }
+
+  arrangeChildren() {
+    const { width, height } = getWidthAndHeight(this.children);
+    this.setHeight(height);
+    this.setWidth(width);
+    const { x, y } = this.boundary;
+    childrenPostion(this.children, x, y);
+    setChildrenWidth(this.children, this.width);
+    this.children.forEach((child) => {
+      child.emit(EVENT_LINE_UPDATE);
+    });
   }
 
   addChildren(children: TKeyvalueBox | TKeyvalueBox[]) {
-    super.addChildren(children);
-    this.line?.update();
-  }
-
-  removeChildren(children: TKeyvalueBox) {
-    super.removeChildren(children);
-    this.line?.update();
-  }
-
-  unHighlight() {
-    if (this.container) {
-      unHighlightRect(this.container?.rect);
+    if (!Array.isArray(children)) {
+      children = [children];
     }
+
+    children.forEach((child, index) => {
+      if (this.group && child.group) {
+        this.group.add(child.group);
+      }
+      this.children.add(child);
+      child.parent = this;
+    });
+
+    this.arrangeChildren();
+  }
+
+  removeChildren(child: TKeyvalueBox) {
+    this.children.delete(child);
+    child.parent = null;
+    this.arrangeChildren();
+    this.line?.update();
+  }
+
+  get line() {
+    return this._line;
+  }
+
+  set line(line: TLine | null) {
+    this._line = line;
   }
 
   link(keyValueBox: TKeyvalueBox) {
-    if (!keyValueBox) return;
-    this.parent = keyValueBox;
-    this.line = new Line(this.parent, this, this.graph);
+    if (!keyValueBox || !checkCircle(keyValueBox, this)) return;
+    if (this.line) {
+      this.unlink();
+    }
+    if (keyValueBox.child) {
+      keyValueBox.child.unlink();
+    }
+    this.line = new Line(keyValueBox, this, this.graph);
   }
 
   unlink() {
     this.line?.unlink();
-    this.line = null;
-    this.parent = null;
+  }
+
+  layout() {
+    layoutTree(this);
   }
 
   delete() {
-    if (this.line) {
-      this.line.delete();
-    }
-    this.line = null;
-    if (this.parent) {
-      this.parent.child = null;
-      this.parent = null;
-    }
+    if (this.line) this.unlink();
     this.children.forEach((child) => {
       child.delete();
     });
@@ -142,7 +222,26 @@ export default class ObjectBox extends ChildrenBox {
     this.groupRect = undefined;
   }
 
-  layout() {
-    layoutTree(this);
+  front() {
+    this.groupRect?.front();
+    this.children.forEach((child) => {
+      child.front();
+    });
+  }
+
+  highlight() {
+    this.groupRect?.highlight();
+  }
+
+  unHighlight() {
+    this.groupRect?.unHighlight();
+  }
+
+  get container() {
+    return this.groupRect?.container;
+  }
+
+  get group() {
+    return this.groupRect?.group;
   }
 }

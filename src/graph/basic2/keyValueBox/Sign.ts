@@ -1,5 +1,5 @@
 import { Circle } from "@svgdotjs/svg.js";
-import Graph from "..";
+import Graph from "../..";
 
 interface IProps {
   x: number;

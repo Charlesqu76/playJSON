@@ -1,4 +1,4 @@
-import Box from "./index";
+import Box from "../basic/Box";
 import Graph from "..";
 import TestText from "../basic/TestText";
 

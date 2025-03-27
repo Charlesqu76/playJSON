@@ -1,7 +1,7 @@
-import EditText from "../basic2/TextEditor";
+import EditText from "./TextEditor";
 import Graph from "..";
 import convertStringValue from "../utils/convertStringValue";
-import GroupRect from "../basic2/GroupRect";
+import GroupRect from "./GroupRect";
 
 const PADDING_X = 2;
 const PADDING_Y = 2;
@@ -78,7 +78,7 @@ export default class TextBox extends GroupRect {
     return convertStringValue(value);
   }
 
-  updateText(newText: string) {
+  updateText(newText: string | number) {
     this.text.updateText(newText);
     this.container.setWidth(this.boundary.width);
     this.container.setHeight(this.boundary.height);

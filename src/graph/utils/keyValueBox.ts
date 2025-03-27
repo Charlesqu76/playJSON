@@ -1,5 +1,5 @@
-import { TKeyEditor } from "../basic2/KeyEditor";
-import { TValueEditor } from "../basic2/ValueEditor";
+import { TKeyEditor } from "../basic2/keyValueBox/KeyEditor";
+import { TValueEditor } from "../basic2/keyValueBox/ValueEditor";
 
 const PADDING_Y = 5;
 const PADDING_X = 10;
@@ -7,19 +7,17 @@ export function calculatePosition({
   x,
   y,
   keyBox,
-  isArray,
 }: {
   x: number;
   y: number;
   keyBox: TKeyEditor;
-  isArray?: boolean;
 }) {
   const keyPostion = {
     x: x + PADDING_X,
     y: y + PADDING_Y,
   };
   const valuePosition = {
-    x: x + (isArray ? 0 : keyBox.width) + PADDING_X + 4 + 4,
+    x: x + keyBox.width + PADDING_X + 4 + 4,
     y: y + PADDING_Y,
   };
   return {
@@ -28,15 +26,14 @@ export function calculatePosition({
   };
 }
 
-export function calculateHeight(valueBox: TValueEditor) {
-  return valueBox.height + PADDING_Y * 2 + 4;
-}
-
-export function calculateWidth(
+export function calculateWidthAndHeight(
   keyBox: TKeyEditor,
-  valueBox: TValueEditor,
-  isArray: boolean
+  valueBox: TValueEditor
 ) {
-  const width = isArray ? valueBox.width : keyBox.width + valueBox.width;
-  return width + PADDING_X * 2 + 8 + 4;
+  const width = keyBox.width + valueBox.width;
+  const height = Math.max(keyBox.height, valueBox.height);
+  return {
+    width: width + PADDING_X * 2 + 8 + 4,
+    height: height + PADDING_Y * 2 + 4,
+  };
 }

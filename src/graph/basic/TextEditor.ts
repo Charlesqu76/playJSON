@@ -29,7 +29,7 @@ export default class EditText extends Text {
     });
   }
 
-  updateText(text: string) {
+  updateText(text: string | number) {
     const words = String(text)?.split(" ");
     let currentLine = "";
     this.clear();

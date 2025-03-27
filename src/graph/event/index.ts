@@ -3,21 +3,17 @@ import { TObjectBox } from "../basic2/ObjectBox";
 import {
   EVENT_CREATE,
   EVENT_DELETE,
-  EVENT_LINK,
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_SELECT,
-  EVENT_UNLINK,
   EVENT_UPDATE,
 } from "../event";
 import debounce from "../utils/debounce";
 import create from "./create";
 import deleteItem from "./delete";
-import link from "./link";
 import mouseout from "./mouseout";
 import mouseover from "./mouseover";
 import select from "./select";
-import unlink from "./unlink";
 
 export function events(graph: Graph) {
   const update = debounce((data: TObjectBox[]) => {
@@ -27,14 +23,6 @@ export function events(graph: Graph) {
 
   graph.on(EVENT_UPDATE, (data) => {
     update(graph.getAllIsolateObjectBox());
-  });
-
-  graph.on(EVENT_LINK, ({ keyvalueBox, objectBox }) => {
-    link(graph, { keyvalueBox, objectBox });
-  });
-
-  graph.on(EVENT_UNLINK, ({ line }) => {
-    unlink(graph, line);
   });
 
   graph.on(EVENT_DELETE, ({ item }) => {

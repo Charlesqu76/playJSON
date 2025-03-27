@@ -1,8 +1,7 @@
 import Graph from "..";
 import Line, { TLine } from "../basic/Line";
-import { TKeyvalueBox } from "../basic2/KeyValueBox";
+import { TKeyvalueBox } from "../basic2/keyValueBox/KeyValueBox";
 import { TObjectBox } from "../basic2/ObjectBox";
-import { EVENT_UNLINK } from "../event";
 
 export default function deleteItem(
   graph: Graph,
@@ -10,7 +9,7 @@ export default function deleteItem(
 ) {
   if (!item) return;
   if (item instanceof Line) {
-    graph.emit(EVENT_UNLINK, { line: item });
+    item.unlink();
   } else {
     item.delete();
   }
