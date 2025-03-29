@@ -1,64 +1,166 @@
-import { Text } from "@svgdotjs/svg.js";
 import Graph from "..";
-import { p } from "../utils/input";
-export const EVENT_EDITING = "editing";
+import convertStringValue from "../utils/convertStringValue";
+import GroupRect from "./GroupRect";
+import { ForeignObject } from "@svgdotjs/svg.js";
+import { input } from "../utils/input";
 
+export const EVENT_EDITING = "textEditing";
+const PADDING_X = 2;
+const PADDING_Y = 2;
 const size = "16px";
 const DEFAULT_MAX_WIDTH = 400;
 
+export const textPosition = (x: number, y: number) => {
+  return {
+    x: x + PADDING_X,
+    y: y + PADDING_Y,
+  };
+};
+
 interface Props {
-  maxWidth?: number;
-  graph?: Graph;
+  x: number;
+  y: number;
+  width: number;
+  height: number;
+  text: string;
   style?: {
+    maxWidth: number;
     color: string;
   };
 }
 
-export default class EditText extends Text {
-  maxWidth = DEFAULT_MAX_WIDTH;
-  constructor({ maxWidth }: Props) {
-    super();
+export function text1(text: string) {
+  const span = document.createElement("span");
+  span.appendChild(document.createTextNode(text));
+  span.style.fontSize = size;
+  span.style.display = "inline-block";
+  span.style.lineHeight = "1";
+  span.style.fontFamily = "Arial, Helvetica, sans-serif";
+  span.style.visibility = "hidden";
+  span.style.maxWidth = "400px";
+  span.style.wordBreak = "break-word";
+  span.style.visibility = "hidden";
+  document.body.appendChild(span);
+  const { width, height } = span.getBoundingClientRect();
+  document.body.removeChild(span);
+  return { width, height };
+}
+
+const defaultStyle = {
+  "font-size": size,
+  "line-height": "1",
+  "font-family": "Arial, Helvetica, sans-serif",
+};
+
+export type TTextEditor = TextEditor;
+
+export default class TextEditor extends GroupRect {
+  text: string;
+  maxWidth: number;
+  span: HTMLSpanElement;
+  foreignObject: ForeignObject;
+  constructor({ x, y, text, style, width, height }: Props, graph: Graph) {
+    if (!graph.canvas) throw new Error("canvas not found");
+    const { maxWidth = DEFAULT_MAX_WIDTH } = style || {};
+    super(
+      {
+        x,
+        y,
+        width: width + PADDING_X * 2,
+        height: height + PADDING_Y * 2,
+        style: {
+          stroke: "none",
+        },
+      },
+      graph
+    );
+
+    this.text = text;
+    this.group.draggable(false);
+
     this.maxWidth = maxWidth || DEFAULT_MAX_WIDTH;
-    this.build(true);
+    const foreignObject = this.group.foreignObject(width, height).attr({
+      x: x + PADDING_X,
+      y: y + PADDING_Y,
+    });
 
-    this.on("dblclick", () => {
-      const value = p(this.text());
-      this.updateText(value);
+    this.foreignObject = foreignObject;
+    const span = document.createElement("span");
+    span.style.fontSize = size;
+    span.style.display = "inline-block";
+    span.style.lineHeight = "1";
+    span.style.fontFamily = "Arial, Helvetica, sans-serif";
+    span.style.wordBreak = "break-word";
+    span.style.maxWidth = `${this.maxWidth}px`;
+    span.style.color = style?.color || "black";
+    foreignObject.node.appendChild(span);
+    span.innerHTML = text;
+    this.span = span;
 
-      return;
+    this.group.on("dblclick", () => {
+      this.highlight();
+      const { x, y, width, height } = this.group.bbox();
+      input({
+        text: span.innerHTML,
+        top: y + PADDING_Y,
+        left: x + PADDING_X,
+        width: width,
+        height: height,
+        color: style?.color || "black",
+        onChange: ({ value }) => {
+          this.updateText(value);
+        },
+        maxWidth: this.maxWidth,
+        // @ts-ignore
+        container: graph.container,
+      });
     });
   }
 
   updateText(text: string | number) {
-    const words = String(text)?.split(" ");
-    let currentLine = "";
-    this.clear();
-    words.forEach((word, index) => {
-      const testLine = currentLine ? currentLine + " " + word : word;
-      const t = new Text();
-      t.text(testLine).font({ size: size });
-      const { width } = t.bbox();
-      t.remove();
-      if (width > this.maxWidth) {
-        if (currentLine) {
-          this.tspan(currentLine).newLine();
-        }
-        currentLine = word;
-      } else {
-        currentLine = testLine;
-      }
-      if (index === words.length - 1) {
-        this.tspan(currentLine).newLine();
-      }
-    });
+    const { width, height } = text1(text.toString());
+    this.foreignObject.width(width);
+    this.foreignObject.height(height + 4);
+    this.span.innerHTML = text.toString();
+    this.container.setWidth(width + PADDING_X * 2);
+    this.container.setHeight(height + 4 + PADDING_Y * 2);
+    this.group.fire(EVENT_EDITING, { text: text });
+  }
 
-    this.fire(EVENT_EDITING, {
-      text: text,
-    });
+  front() {
+    this.group.front();
+  }
+
+  move(x: number, y: number) {
+    this.group.move(x, y);
+    this.container.move(x, y);
+    const position = textPosition(x, y);
+  }
+
+  show() {
+    this.group.show();
+  }
+
+  hide() {
+    this.group.hide();
+  }
+
+  get value() {
+    const value = this.span.innerHTML;
+    return convertStringValue(value);
   }
 
   get boundary() {
-    const { width, height, x, y } = this.bbox();
-    return { x, y, width, height };
+    const { width, height, x, y } = this.group.bbox();
+    return {
+      width: width + PADDING_X * 2,
+      height: height + PADDING_Y * 2,
+      x,
+      y,
+    };
+  }
+
+  delete() {
+    this.group.remove();
   }
 }

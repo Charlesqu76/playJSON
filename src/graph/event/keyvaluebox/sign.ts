@@ -54,7 +54,7 @@ export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
         .getScreenCTM()
         ?.inverse()
     );
-    const objectBox = keyvalueBox.graph.objectBoxes.find((box) =>
+    const objectBox = Array.from(keyvalueBox.graph.objectBoxes).find((box) =>
       isPointInBox({ x: cursor.x, y: cursor.y }, box)
     );
     if (objectBox) {
