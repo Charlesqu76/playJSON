@@ -25,7 +25,7 @@ class Graph extends EventEmitter {
   valueChanged: ((value: any) => void) | null = null;
 
   noParentObjectBoxes = new Set<TObjectBox>([]);
-  objectBoxes: TObjectBox[] = [];
+  objectBoxes = new Set<TObjectBox>([]);
   keyValueBoxes: TKeyvalueBox[] = [];
   linkLines: WeakSet<TLine> = new WeakSet([]);
   selectedItem: TLine | TKeyvalueBox | TObjectBox | null = null;
@@ -93,6 +93,7 @@ class Graph extends EventEmitter {
   };
 
   layout = () => {
+    console.log(this.getAllIsolateObjectBox);
     this.getAllIsolateObjectBox.forEach((box) => {
       box.layout();
       box.render();
@@ -104,7 +105,7 @@ class Graph extends EventEmitter {
   };
 
   addObjectBox = (box: TObjectBox) => {
-    this.objectBoxes.push(box);
+    this.objectBoxes.add(box);
   };
 
   addLinkLine = (linkline: TLine) => {
@@ -112,7 +113,7 @@ class Graph extends EventEmitter {
   };
 
   get getAllIsolateObjectBox() {
-    return Array.from(this.noParentObjectBoxes);
+    return Array.from(this.objectBoxes).filter((box) => box.parent === null);
   }
 
   centerViewOn({

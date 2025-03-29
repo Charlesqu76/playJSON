@@ -1,5 +1,5 @@
-import ObjectBox, { TObjectBox } from "../ObjectBox";
 import Graph from "../..";
+import ObjectBox, { TObjectBox } from "../ObjectBox";
 import KeyEditor, { TKeyEditor } from "./KeyEditor";
 import ValueEdit, { TValueEditor } from "./ValueEditor";
 import Box from "../../basic/Box";
@@ -8,18 +8,18 @@ import {
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_SELECT,
-  EVENT_UPDATE,
 } from "../../event";
 import {
   calculatePosition,
   calculateWidthAndHeight,
+  isObject,
 } from "../../utils/keyValueBox";
 import GroupRect, { TGroupRect } from "../../basic/GroupRect";
-import { EVENT_EDITING } from "../../basic/TextEditor";
 import Sign, { TSign } from "./Sign";
 import { signLink } from "../../event/keyvaluebox/sign";
 import { EVENT_LINE_UPDATE } from "../../basic/Line";
 import { dragEnd, dragMove, dragStart } from "../../event/keyvaluebox/drag";
+import { EVENT_EDITING } from "@/graph/basic/TextEditor";
 
 const BG_COLOR = "#fff";
 
@@ -29,6 +29,7 @@ interface Props {
   key: string;
   value: string | Object;
   isArray: boolean;
+  parent: TObjectBox;
 }
 
 /**
@@ -45,18 +46,19 @@ export default class KeyValueBox extends Box {
   sign?: TSign;
   keyBox: TKeyEditor;
   valueBox: TValueEditor;
-  private _parent: TObjectBox | null = null;
+  private _parent: TObjectBox;
   private _child: TObjectBox | null = null;
   showChild: boolean = true;
   origin: { x: number; y: number } | null = null;
-  constructor({ key, value }: Props, graph: Graph) {
+  constructor({ key, value, parent }: Props, graph: Graph) {
     const keyBox = new KeyEditor(key, 0, 0, graph);
     const valueBox = new ValueEdit(value, 0, 0, graph);
     const { width, height } = calculateWidthAndHeight(keyBox, valueBox);
     super({ width, height, graph });
+    this._parent = parent;
     this.keyBox = keyBox;
     this.valueBox = valueBox;
-    if (this.valueBox.valueType !== "string") {
+    if (isObject(value)) {
       this._child = new ObjectBox(
         {
           x: 0,
@@ -117,10 +119,8 @@ export default class KeyValueBox extends Box {
     }
     if (child.isArray) {
       this.valueBox.updateText("[]");
-      this.valueBox.valueType = "array";
     } else {
       this.valueBox.updateText("{}");
-      this.valueBox.valueType = "object";
     }
   }
 
@@ -128,7 +128,7 @@ export default class KeyValueBox extends Box {
     return this._parent;
   }
 
-  set parent(parent: TObjectBox | null) {
+  set parent(parent: TObjectBox) {
     this._parent = parent;
     if (!parent) {
       return;
@@ -160,6 +160,19 @@ export default class KeyValueBox extends Box {
       keyBox: this.keyBox,
     });
     this.keyBox.render(keyPostion.x, keyPostion.y);
+    // this.keyBox.textBox?.text?.on(EVENT_EDITING, () => {
+    //   const { width, height } = calculateWidthAndHeight(
+    //     this.keyBox,
+    //     this.valueBox
+    //   );
+    //   this.width = width;
+    //   this.height = height;
+    //   this.parent?.arrangeChildren();
+    //   this.graph.emit(EVENT_UPDATE, {
+    //     name: "updateText",
+    //   });
+    // });
+
     this.valueBox.render(valuePosition.x, valuePosition.y);
     this.groupRect.add(this.keyBox.group);
     this.groupRect.add(this.valueBox.group);
@@ -174,19 +187,29 @@ export default class KeyValueBox extends Box {
 
     this.group?.add(this.sign.sign);
 
-    this.valueBox?.textBox?.text?.on(EVENT_EDITING, () => {
+    this.valueBox.group?.on(EVENT_EDITING, () => {
       const { width, height } = calculateWidthAndHeight(
         this.keyBox,
         this.valueBox
       );
-      this.width = width;
+    this.width = width;
       this.height = height;
       this.parent?.arrangeChildren();
-
-      this.graph.emit(EVENT_UPDATE, {
-        name: "updateText",
-      });
     });
+
+    // this.valueBox?.textBox?.text?.on(EVENT_EDITING, () => {
+    //   const { width, height } = calculateWidthAndHeight(
+    //     this.keyBox,
+    //     this.valueBox
+    //   );
+    //   this.width = width;
+    //   this.height = height;
+    //   this.parent?.arrangeChildren();
+
+    //   this.graph.emit(EVENT_UPDATE, {
+    //     name: "updateText",
+    //   });
+    // });
 
     dragStart(this);
 
@@ -247,7 +270,6 @@ export default class KeyValueBox extends Box {
       this.child.unlink();
     }
     this.parent?.removeChildren(this);
-    this.parent = null;
     this.groupRect?.delete();
     this.groupRect = undefined;
   }
