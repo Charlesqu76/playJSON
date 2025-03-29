@@ -1,16 +1,16 @@
 import { Path } from "@svgdotjs/svg.js";
 import Graph from "..";
-import { TKeyvalueBox } from "../basic2/keyValueBox";
-import { TObjectBox } from "../basic2/ObjectBox";
+import { Svg } from "@svgdotjs/svg.js";
+import { TKeyvalueBox } from "../component/keyValueBox";
+import { TObjectBox } from "../component/ObjectBox";
 import {
   EVENT_MOUSEOUT,
   EVENT_MOUSEOVER,
   EVENT_SELECT,
   EVENT_UPDATE,
-} from "@/event";
-import { getControlPoints } from "@/utils";
-import { Svg } from "@svgdotjs/svg.js";
-import EventEmitter from "@/utils/EventEmitter";
+} from "../event";
+import { getControlPoints } from "../utils";
+import EventEmitter from "../utils/EventEmitter";
 const defaultOptions = {
   curveHeight: 0,
   strokeColor: "black",

@@ -7,6 +7,7 @@ export default defineConfig({
   resolve: {
     alias: {
       "@": path.resolve(__dirname, "./src"),
+      "@charles/graph": path.resolve(__dirname, "../graph/src/"),
     },
   },
 });

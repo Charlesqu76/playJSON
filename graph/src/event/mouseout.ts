@@ -1,7 +1,7 @@
 import Graph from "..";
-import { TLine } from "@/basic/Line";
-import { TKeyvalueBox } from "@/basic2/keyValueBox";
-import { TObjectBox } from "@/basic2/ObjectBox";
+import { TLine } from "../basic/Line";
+import { TKeyvalueBox } from "../component/keyValueBox";
+import { TObjectBox } from "../component/ObjectBox";
 
 export default function mouseout(
   graph: Graph,

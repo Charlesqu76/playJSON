@@ -6,17 +6,17 @@ import {
   EVENT_MOUSEOVER,
   EVENT_SELECT,
 } from "../event";
-import Line, { EVENT_LINE_UPDATE, TLine } from "@/basic/Line";
-import { layoutTree } from "@/utils/layout";
-import GroupRect from "@/basic/GroupRect";
+import Line, { EVENT_LINE_UPDATE, TLine } from "../basic/Line";
+import { layoutTree } from "../utils/layout";
+import GroupRect from "../basic/GroupRect";
 import {
   childrenPostion,
   getWidthAndHeight,
   setChildrenWidth,
-} from "@/utils/ChildBox";
-import Box from "@/basic/Box";
-import { value } from "@/utils/ObjectBox";
-import checkCircle from "@/utils/linkVerify";
+} from "../utils/ObjectBox";
+import Box from "../basic/Box";
+import { value } from "../utils/ObjectBox";
+import checkCircle from "../utils/linkVerify";
 
 interface Props {
   x: number;
@@ -41,7 +41,7 @@ export default class ObjectBox extends Box {
   children: Set<TKeyvalueBox> = new Set([]);
   groupRect?: GroupRect;
 
-  constructor({ x, y, value, parent = null }: Props, graph: Graph) {
+  constructor({ value, parent = null }: Props, graph: Graph) {
     super({ width: 0, height: 0, graph });
     this.isArray = Array.isArray(value);
     const children = Object.entries(value).map(
@@ -183,8 +183,7 @@ export default class ObjectBox extends Box {
       children = [children];
     }
 
-    console.log("objectBox addChildren");
-    children.forEach((child, index) => {
+    children.forEach((child) => {
       if (this.group && child.group) {
         this.group.add(child.group);
       }

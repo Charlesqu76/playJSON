@@ -10,6 +10,9 @@
   },
   "devDependencies": {
     "typescript": "~5.7.2",
-    "vite": "^6.2.0"
+    "vite": "^6.2.0",
+    "@svgdotjs/svg.draggable.js": "^3.0.4",
+    "@svgdotjs/svg.js": "^3.2.4",
+    "@svgdotjs/svg.panzoom.js": "^2.1.2"
   }
 }

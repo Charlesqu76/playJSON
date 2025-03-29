@@ -1,7 +1,7 @@
 import { G } from "@svgdotjs/svg.js";
-import Graph from "..";
-import EventEmitter from "@/utils/EventEmitter";
 import { Rect } from "@svgdotjs/svg.js";
+import Graph from "..";
+import EventEmitter from "../utils/EventEmitter";
 
 interface IProps {
   x: number;

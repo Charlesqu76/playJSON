@@ -1,11 +1,10 @@
-import Box from "@/basic/Box";
+import Box from "../basic/Box";
 import Graph from "..";
-import TestText from "@/basic/TestText";
 import TextEditor, {
   EVENT_EDITING,
   text1,
   TTextEditor,
-} from "@/basic/TextEditor";
+} from "../basic/TextEditor";
 
 const PADDING_X = 2;
 const PADDING_Y = 2;
@@ -51,7 +50,14 @@ export default class TextBox extends Box {
     if (!this.graph.canvas) return;
     this.x = x ?? this.x;
     this.y = y ?? this.y;
+    if (!this.textBox) {
+      this.init();
+    } else {
+      this.move();
+    }
+  }
 
+  init() {
     this.textBox = new TextEditor(
       {
         x: this.x,
@@ -71,6 +77,11 @@ export default class TextBox extends Box {
       this.width = width;
       this.height = height;
     });
+  }
+
+  move() {
+    if (!this.textBox) return;
+    this.textBox.move(this.x, this.y);
   }
 
   updateText(newText: string | number) {

@@ -1,4 +1,4 @@
-import { TObjectBox } from "@/basic2/ObjectBox";
+import { TObjectBox } from "@/component/ObjectBox";
 
 const HORIZONTAL_SPACING = 50;
 const VERTICAL_SPACING = 30;

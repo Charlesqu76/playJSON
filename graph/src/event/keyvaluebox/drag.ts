@@ -1,6 +1,6 @@
-import { EVENT_LINE_UPDATE } from "@/basic/Line";
-import { TKeyvalueBox } from "@/basic2/keyValueBox";
-import isOverlapping from "@/utils/isOverlapping";
+import { EVENT_LINE_UPDATE } from "../../basic/Line";
+import { TKeyvalueBox } from "../../component/keyValueBox";
+import isOverlapping from "../../utils/isOverlapping";
 
 export function dragStart(keyvalyeBox: TKeyvalueBox) {
   keyvalyeBox.group?.on("dragstart", () => {

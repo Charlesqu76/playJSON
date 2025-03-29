@@ -1,5 +1,5 @@
 import Graph from "..";
-import EventEmitter from "@/utils/EventEmitter";
+import EventEmitter from "../utils/EventEmitter";
 
 interface IProps {
   x?: number;

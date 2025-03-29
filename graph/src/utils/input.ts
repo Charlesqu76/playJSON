@@ -42,6 +42,8 @@ export function input({
   div.style.maxWidth = `${maxWidth}px`;
   div.style.lineHeight = "1";
   div.style.color = color;
+  div.style.outline = "none";
+  div.style.wordBreak = "break-word";
 
   div.focus();
 
@@ -56,6 +58,8 @@ export function input({
   input.style.boxShadow = "0 0 0 0";
   input.style.overflow = "hidden";
   input.style.fontSize = "16px";
+  input.style.wordBreak = "break-word";
+
   input.style.lineHeight = "1";
   (input.style.fontFamily = "Arial, Helvetica, sans-serif"),
     container.appendChild(div);
@@ -69,9 +73,18 @@ export function input({
       value: input.textContent as string,
     });
 
-    container?.removeChild(div);
+    Array.from(container.childNodes).includes(div) &&
+      container?.removeChild(div);
   };
+
+  document.addEventListener("click", (e) => {
+    if (e.target !== div && e.target !== input) {
+      removeInput();
+    }
+    e.stopPropagation();
+  });
   div.addEventListener("input", (e) => {
+    console.log(input.textContent);
     onChange({
       value: input.textContent as string,
       width,

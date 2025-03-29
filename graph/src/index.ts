@@ -1,13 +1,14 @@
 import { SVG } from "@svgdotjs/svg.js";
 import "@svgdotjs/svg.draggable.js";
 import "@svgdotjs/svg.panzoom.js";
-import ObjectBox, { TObjectBox } from "@/basic2/ObjectBox";
 import { Svg } from "@svgdotjs/svg.js";
-import EventEmitter from "@/utils/EventEmitter";
-import keydown from "@/event/keydown";
-import { graphEvent } from "@/event/index";
-import { TKeyvalueBox } from "@/basic2/keyValueBox";
-import { TLine } from "@/basic/Line";
+
+import ObjectBox, { TObjectBox } from "./component/ObjectBox";
+import EventEmitter from "./utils/EventEmitter";
+import keydown from "./event/keydown";
+import { graphEvent } from "./event/index";
+import { TKeyvalueBox } from "./component/keyValueBox";
+import { TLine } from "./basic/Line";
 
 const MAX_ZOOM = 3;
 const MIN_ZOOM = 0.3;
@@ -93,7 +94,6 @@ class Graph extends EventEmitter {
   };
 
   layout = () => {
-    console.log(this.getAllIsolateObjectBox);
     this.getAllIsolateObjectBox.forEach((box) => {
       box.layout();
       box.render();

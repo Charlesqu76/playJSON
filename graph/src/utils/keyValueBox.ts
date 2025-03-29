@@ -1,5 +1,4 @@
-import { TKeyEditor } from "@/basic2/keyValueBox/KeyEditor";
-import { TValueEditor } from "@/basic2/keyValueBox/ValueEditor";
+import { TTextBox } from "@/component/TextBox";
 
 const PADDING_Y = 5;
 const PADDING_X = 10;
@@ -10,7 +9,7 @@ export function calculatePosition({
 }: {
   x: number;
   y: number;
-  keyBox: TKeyEditor;
+  keyBox: TTextBox;
 }) {
   const keyPostion = {
     x: x + PADDING_X,
@@ -26,10 +25,7 @@ export function calculatePosition({
   };
 }
 
-export function calculateWidthAndHeight(
-  keyBox: TKeyEditor,
-  valueBox: TValueEditor
-) {
+export function calculateWidthAndHeight(keyBox: TTextBox, valueBox: TTextBox) {
   const width = keyBox.width + valueBox.width;
   const height = Math.max(keyBox.height, valueBox.height);
   return {

@@ -1,7 +1,8 @@
+import { ForeignObject } from "@svgdotjs/svg.js";
+
 import Graph from "..";
 import convertStringValue from "../utils/convertStringValue";
 import GroupRect from "./GroupRect";
-import { ForeignObject } from "@svgdotjs/svg.js";
 import { input } from "../utils/input";
 
 export const EVENT_EDITING = "textEditing";
@@ -40,17 +41,12 @@ export function text1(text: string) {
   span.style.maxWidth = "400px";
   span.style.wordBreak = "break-word";
   span.style.visibility = "hidden";
+  span.style.whiteSpace = "nowrap";
   document.body.appendChild(span);
   const { width, height } = span.getBoundingClientRect();
   document.body.removeChild(span);
   return { width, height };
 }
-
-const defaultStyle = {
-  "font-size": size,
-  "line-height": "1",
-  "font-family": "Arial, Helvetica, sans-serif",
-};
 
 export type TTextEditor = TextEditor;
 
@@ -93,16 +89,21 @@ export default class TextEditor extends GroupRect {
     span.style.wordBreak = "break-word";
     span.style.maxWidth = `${this.maxWidth}px`;
     span.style.color = style?.color || "black";
+    span.style.whiteSpace = "nowrap";
+
     foreignObject.node.appendChild(span);
     span.innerHTML = text;
     this.span = span;
 
-    this.group.on("dblclick", () => {
-      this.highlight();
+    this.group.on("dblclick", (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+
+      // this.highlight();
       const { x, y, width, height } = this.group.bbox();
       input({
         text: span.innerHTML,
-        top: y + PADDING_Y,
+        top: y + PADDING_Y + 2,
         left: x + PADDING_X,
         width: width,
         height: height,
@@ -122,8 +123,8 @@ export default class TextEditor extends GroupRect {
     this.foreignObject.width(width);
     this.foreignObject.height(height + 4);
     this.span.innerHTML = text.toString();
-    this.container.setWidth(width + PADDING_X * 2);
-    this.container.setHeight(height + 4 + PADDING_Y * 2);
+    this.container.width(width + PADDING_X * 2);
+    this.container.height(height + 4 + PADDING_Y * 2);
     this.group.fire(EVENT_EDITING, { text: text });
   }
 
@@ -134,7 +135,6 @@ export default class TextEditor extends GroupRect {
   move(x: number, y: number) {
     this.group.move(x, y);
     this.container.move(x, y);
-    const position = textPosition(x, y);
   }
 
   show() {

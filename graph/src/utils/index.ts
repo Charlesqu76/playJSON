@@ -1,5 +1,5 @@
-import { TKeyvalueBox } from "@/basic2/keyValueBox";
-import { TObjectBox } from "@/basic2/ObjectBox";
+import { TKeyvalueBox } from "@/component/keyValueBox";
+import { TObjectBox } from "@/component/ObjectBox";
 
 export interface Box {
   boundary: {

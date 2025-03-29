@@ -1,14 +1,14 @@
-import Header from "./components/Header";
+import React from "react";
 import Graph from "./components/Graph";
-import { useStore } from "./store";
+import Header from "./components/Header";
+import "./styles/index.css";
 
 const App = () => {
-  const isFull = useStore((state) => state.isFull);
-
   return (
     <>
-      <Header />
-      <main className="flex-1 overflow-hidden flex space-x-2 p-2">
+      {/* <Header /> */}
+      <main className="flex-1 relative h-full p-2 border-2 rounded-md shadow-md">
+        <Header />
         <Graph />
       </main>
     </>

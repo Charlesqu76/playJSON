@@ -3,7 +3,7 @@ import {
   Popover,
   PopoverContent,
   PopoverTrigger,
-} from "web/components/ui/popover";
+} from "@/components/ui/popover";
 import { Button } from "./ui/button";
 const COMMAND_LIST = [
   {
@@ -36,7 +36,7 @@ export function Help() {
   return (
     <Popover>
       <PopoverTrigger asChild>
-        <Button>Help</Button>
+        <Button size="sm">Help</Button>
       </PopoverTrigger>
       <PopoverContent className="w-96">
         {COMMAND_LIST.map((item) => (

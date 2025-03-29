@@ -1,5 +1,5 @@
-import { TKeyvalueBox } from "@/basic2/keyValueBox";
-import { getRightMid, isPointInBox } from "@/utils";
+import { TKeyvalueBox } from "@/component/keyValueBox";
+import { getRightMid, isPointInBox } from "../../utils";
 import { Line } from "@svgdotjs/svg.js";
 
 export function signLink(keyvalueBox: TKeyvalueBox) {
@@ -11,7 +11,7 @@ export function signLink(keyvalueBox: TKeyvalueBox) {
 export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
   if (!keyvalueBox.parent || !keyvalueBox.graph.canvas || !keyvalueBox.sign)
     return;
-  event.stopPropagation();
+  // event.stopPropagation();
   keyvalueBox.graph.isLinking = true;
   let tempLine: Line | null = null;
   const svgPoint = (

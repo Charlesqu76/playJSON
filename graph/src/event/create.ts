@@ -1,6 +1,6 @@
 import Graph from "..";
-import KeyValueBox, { TKeyvalueBox } from "@/basic2/keyValueBox";
-import ObjectBox, { TObjectBox } from "@/basic2/ObjectBox";
+import KeyValueBox, { TKeyvalueBox } from "../component/keyValueBox";
+import ObjectBox, { TObjectBox } from "../component/ObjectBox";
 export default function create(graph: Graph, item: TObjectBox | TKeyvalueBox) {
   if (item instanceof ObjectBox) {
     graph.addObjectBox(item);

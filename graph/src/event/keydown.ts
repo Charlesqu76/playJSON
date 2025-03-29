@@ -1,8 +1,8 @@
-import { EVENT_DELETE } from "@/event";
+import { EVENT_DELETE } from "../event";
 import Graph from "..";
-import { layoutTree } from "@/utils/layout";
-import KeyValueBox from "@/basic2/keyValueBox";
-import ObjectBox from "@/basic2/ObjectBox";
+import { layoutTree } from "../utils/layout";
+import KeyValueBox from "../component/keyValueBox";
+import ObjectBox from "../component/ObjectBox";
 
 export default function keydown(e: KeyboardEvent, graph: Graph) {
   if (e.key === "Tab") {

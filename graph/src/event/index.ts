@@ -1,5 +1,5 @@
 import Graph from "..";
-import { TObjectBox } from "@/basic2/ObjectBox";
+import { TObjectBox } from "../component/ObjectBox";
 import {
   EVENT_CREATE,
   EVENT_DELETE,
@@ -7,8 +7,8 @@ import {
   EVENT_MOUSEOVER,
   EVENT_SELECT,
   EVENT_UPDATE,
-} from "@/event";
-import debounce from "@/utils/debounce";
+} from "../event";
+import debounce from "../utils/debounce";
 import create from "./create";
 import deleteItem from "./delete";
 import mouseout from "./mouseout";

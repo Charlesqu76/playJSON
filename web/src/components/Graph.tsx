@@ -1,7 +1,6 @@
 import { useStore } from "@/store";
 import React, { useEffect } from "react";
 export default function Graph() {
-  const containerRef = React.useRef<HTMLDivElement>(null);
   const ref = React.useRef<HTMLDivElement>(null);
   const { jsons, graph } = useStore((state) => state);
   useEffect(() => {
@@ -13,10 +12,7 @@ export default function Graph() {
   }, []);
 
   return (
-    <div
-      className="flex-1 relative h-full p-2 border-2 rounded-md shadow-md"
-      ref={containerRef}
-    >
+    <div className="flex-1 relative h-full  rounded-md shadow-md">
       <div ref={ref} className="h-full"></div>
     </div>
   );
