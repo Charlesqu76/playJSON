@@ -37,3 +37,19 @@ export function calculateWidthAndHeight(
     height: height + PADDING_Y * 2 + 4,
   };
 }
+
+export function isObject(value: any) {
+  return typeof value === "object" && value !== null;
+}
+
+export function getText(value: string | any[] | Object) {
+  if (Array.isArray(value)) {
+    return "[]";
+  }
+
+  if (typeof value === "object" && value !== null) {
+    return "{}";
+  }
+
+  return value;
+}

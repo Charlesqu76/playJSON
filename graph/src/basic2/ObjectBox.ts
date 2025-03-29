@@ -42,28 +42,24 @@ export default class ObjectBox extends Box {
   groupRect?: GroupRect;
 
   constructor({ x, y, value, parent = null }: Props, graph: Graph) {
-    const isArray = Array.isArray(value);
+    super({ width: 0, height: 0, graph });
+    this.isArray = Array.isArray(value);
     const children = Object.entries(value).map(
       ([key, value]) =>
         new KeyValueBox(
           {
-            isArray: isArray,
+            isArray: this.isArray,
             key: key,
             value: value,
+            parent: this,
           },
           graph
         )
     );
-    const setChildren = new Set(children);
-    const { width, height } = getWidthAndHeight(setChildren);
-
-    super({ width, height, graph });
-    // ?
-    this.children = setChildren;
-    children.forEach((child) => {
-      child.parent = this;
-    });
-    this.isArray = isArray;
+    this.children = new Set(children);
+    const { width, height } = getWidthAndHeight(this.children);
+    this.width = width;
+    this.height = height;
     this.parent = parent;
     this.graph.emit(EVENT_CREATE, { item: this });
   }
@@ -201,7 +197,6 @@ export default class ObjectBox extends Box {
 
   removeChildren(child: TKeyvalueBox) {
     this.children.delete(child);
-    child.parent = null;
     this.arrangeChildren();
     this.line?.update();
   }
@@ -240,6 +235,7 @@ export default class ObjectBox extends Box {
     });
     this.groupRect?.delete();
     this.groupRect = undefined;
+    this.graph.objectBoxes.delete(this);
   }
 
   front() {

@@ -15,12 +15,14 @@ export function dragMove(keyvalyeBox: TKeyvalueBox) {
     (event) => {
       keyvalyeBox.emit(EVENT_LINE_UPDATE);
       const { box } = (event as CustomEvent).detail;
-      const overlapItem = keyvalyeBox.graph.objectBoxes.find((objectBox) => {
-        return (
-          isOverlapping(box, objectBox.boundary) &&
-          objectBox !== keyvalyeBox.parent
-        );
-      });
+      const overlapItem = Array.from(keyvalyeBox.graph.objectBoxes).find(
+        (objectBox) => {
+          return (
+            isOverlapping(box, objectBox.boundary) &&
+            objectBox !== keyvalyeBox.parent
+          );
+        }
+      );
       keyvalyeBox.graph.objectBoxes.forEach((objectBox) => {
         if (overlapItem === objectBox) {
           objectBox.highlight();
@@ -41,14 +43,16 @@ export function dragEnd(keyvalyeBox: TKeyvalueBox) {
       keyvalyeBox.graph.isKeyvvalueBoxMoving = false;
     }, 10);
 
-    const overlapItem = keyvalyeBox.graph.objectBoxes.find((objectBox) => {
-      const is = isOverlapping(box, objectBox.boundary);
-      return (
-        is &&
-        objectBox !== keyvalyeBox.parent &&
-        keyvalyeBox.child !== objectBox
-      );
-    });
+    const overlapItem = Array.from(keyvalyeBox.graph.objectBoxes).find(
+      (objectBox) => {
+        const is = isOverlapping(box, objectBox.boundary);
+        return (
+          is &&
+          objectBox !== keyvalyeBox.parent &&
+          keyvalyeBox.child !== objectBox
+        );
+      }
+    );
 
     if (!overlapItem) {
       if (keyvalyeBox.origin) {
