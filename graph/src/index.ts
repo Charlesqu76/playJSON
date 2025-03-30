@@ -1,7 +1,7 @@
 import { SVG } from "@svgdotjs/svg.js";
+import { Svg } from "@svgdotjs/svg.js";
 import "@svgdotjs/svg.draggable.js";
 import "@svgdotjs/svg.panzoom.js";
-import { Svg } from "@svgdotjs/svg.js";
 
 import ObjectBox, { TObjectBox } from "./component/ObjectBox";
 import EventEmitter from "./utils/EventEmitter";
@@ -9,9 +9,10 @@ import keydown from "./event/keydown";
 import { graphEvent } from "./event/index";
 import { TKeyvalueBox } from "./component/keyValueBox";
 import { TLine } from "./basic/Line";
+import Input, { TInput } from "./basic/Input";
 
-const MAX_ZOOM = 3;
-const MIN_ZOOM = 0.3;
+const MAX_ZOOM = 2;
+const MIN_ZOOM = 0.1;
 
 interface IProps {
   zoomCallback?: (zoom: number) => void;
@@ -35,13 +36,25 @@ class Graph extends EventEmitter {
   isLinking: boolean = false;
   isKeyvvalueBoxMoving: boolean = false;
   isObjectBoxMoving: boolean = false;
+  inputText: TInput;
 
   constructor(props: IProps) {
     super();
     const { zoomCallback, valueChanged, json } = props || {};
     this.zoomCallback = zoomCallback || null;
     this.valueChanged = valueChanged || null;
+    this.inputText = new Input();
   }
+
+  updateInputPosition = () => {
+    const scale = this.zoom;
+    if (!this.canvas) return;
+    const { x, y } = this.viewpoint;
+
+    this.inputText.div.style.transform = `translate(${-x * scale}px, ${
+      -y * scale
+    }px) scale(${scale})`;
+  };
 
   initCanvas = (id: string | HTMLElement) => {
     this.container = id as HTMLElement;
@@ -50,19 +63,28 @@ class Graph extends EventEmitter {
     }
     if (!this.container) return;
     this.container.style.position = "relative";
+    this.inputText.render(this.container);
 
     const { width, height } = this.container.getBoundingClientRect();
     this.canvas = SVG()
       .addTo(id)
       .size("100%", "100%")
       .viewbox(`0 0 ${width} ${height}`)
-      .panZoom({ zoomMin: MIN_ZOOM, zoomMax: MAX_ZOOM });
+      .panZoom({ zoomMin: MIN_ZOOM, zoomMax: MAX_ZOOM, zoomFactor: 0.1 });
 
     this.initEvent();
   };
 
   initEvent = () => {
     if (!this.canvas) return;
+
+    this.canvas.on("zoom", (e) => {
+      this.updateInputPosition();
+    });
+
+    this.canvas.on("panning", (e) => {
+      this.updateInputPosition();
+    });
 
     document.addEventListener("keydown", (e) => {
       keydown(e, this);

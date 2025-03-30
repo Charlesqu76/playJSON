@@ -12,7 +12,7 @@ export default function Graph() {
   }, []);
 
   return (
-    <div className="flex-1 relative h-full  rounded-md shadow-md">
+    <div className="flex-1 relative h-full">
       <div ref={ref} className="h-full"></div>
     </div>
   );

@@ -111,6 +111,7 @@ export default class ObjectBox extends Box {
       },
       this.graph
     );
+    this.container?.attr("cursor", "move");
 
     if (!this.group || !this.container) return;
 
@@ -124,9 +125,6 @@ export default class ObjectBox extends Box {
     this.group?.on("dragmove", (e) => {
       const { box } = (e as CustomEvent).detail;
       this.move(box.x, box.y);
-      // this.children.forEach((child) => {
-      //   child.emit(EVENT_LINE_UPDATE);
-      // });
     });
 
     this.group?.on("dragend", (e) => {
@@ -142,9 +140,9 @@ export default class ObjectBox extends Box {
       this.graph.emit(EVENT_MOUSEOUT, { item: this });
     });
 
-    this.group.on("click", (event) => {
+    this.group.on("click", (e) => {
       this.graph.emit(EVENT_SELECT, { item: this });
-      event.stopPropagation();
+      e.stopPropagation();
     });
   }
 
@@ -176,6 +174,7 @@ export default class ObjectBox extends Box {
     this.children.forEach((child) => {
       child.emit(EVENT_LINE_UPDATE);
     });
+    this.emit(EVENT_LINE_UPDATE);
   }
 
   addChildren(children: TKeyvalueBox | TKeyvalueBox[]) {

@@ -1,9 +1,7 @@
-import { ForeignObject } from "@svgdotjs/svg.js";
-
 import Graph from "..";
+import { ForeignObject } from "@svgdotjs/svg.js";
 import convertStringValue from "../utils/convertStringValue";
 import GroupRect from "./GroupRect";
-import { input } from "../utils/input";
 
 export const EVENT_EDITING = "textEditing";
 const PADDING_X = 2;
@@ -30,24 +28,6 @@ interface Props {
   };
 }
 
-export function text1(text: string) {
-  const span = document.createElement("span");
-  span.appendChild(document.createTextNode(text));
-  span.style.fontSize = size;
-  span.style.display = "inline-block";
-  span.style.lineHeight = "1";
-  span.style.fontFamily = "Arial, Helvetica, sans-serif";
-  span.style.visibility = "hidden";
-  span.style.maxWidth = "400px";
-  span.style.wordBreak = "break-word";
-  span.style.visibility = "hidden";
-  span.style.whiteSpace = "nowrap";
-  document.body.appendChild(span);
-  const { width, height } = span.getBoundingClientRect();
-  document.body.removeChild(span);
-  return { width, height };
-}
-
 export type TTextEditor = TextEditor;
 
 export default class TextEditor extends GroupRect {
@@ -55,6 +35,7 @@ export default class TextEditor extends GroupRect {
   maxWidth: number;
   span: HTMLSpanElement;
   foreignObject: ForeignObject;
+  graph: Graph;
   constructor({ x, y, text, style, width, height }: Props, graph: Graph) {
     if (!graph.canvas) throw new Error("canvas not found");
     const { maxWidth = DEFAULT_MAX_WIDTH } = style || {};
@@ -71,25 +52,36 @@ export default class TextEditor extends GroupRect {
       graph
     );
 
+    this.graph = graph;
     this.text = text;
     this.group.draggable(false);
+    this.group?.attr("cursor", "text");
 
     this.maxWidth = maxWidth || DEFAULT_MAX_WIDTH;
-    const foreignObject = this.group.foreignObject(width, height).attr({
-      x: x + PADDING_X,
-      y: y + PADDING_Y,
-    });
+    const foreignObject = this.group
+      .foreignObject(width + PADDING_X, height)
+      .attr({
+        x: x + PADDING_X,
+        y: y + PADDING_Y,
+      });
 
     this.foreignObject = foreignObject;
+    this.foreignObject.attr({
+      margin: "0",
+      padding: "0",
+      overflow: "hidden",
+      "pointer-events": "none",
+    });
     const span = document.createElement("span");
     span.style.fontSize = size;
     span.style.display = "inline-block";
-    span.style.lineHeight = "1";
+    span.style.lineHeight = "normal";
     span.style.fontFamily = "Arial, Helvetica, sans-serif";
     span.style.wordBreak = "break-word";
     span.style.maxWidth = `${this.maxWidth}px`;
     span.style.color = style?.color || "black";
-    span.style.whiteSpace = "nowrap";
+    span.style.whiteSpace = "break-spaces";
+    span.style.overflowWrap = "break-word";
 
     foreignObject.node.appendChild(span);
     span.innerHTML = text;
@@ -99,32 +91,33 @@ export default class TextEditor extends GroupRect {
       e.preventDefault();
       e.stopPropagation();
 
-      // this.highlight();
       const { x, y, width, height } = this.group.bbox();
-      input({
-        text: span.innerHTML,
-        top: y + PADDING_Y + 2,
-        left: x + PADDING_X,
-        width: width,
-        height: height,
+      this.graph.inputText.show({
+        x: x + 2,
+        y: y + 2,
+        text: this.text,
         color: style?.color || "black",
-        onChange: ({ value }) => {
-          this.updateText(value);
+        onChange: (text, width, height) => {
+          this.updateText(text, width, height);
         },
-        maxWidth: this.maxWidth,
-        // @ts-ignore
-        container: graph.container,
       });
     });
   }
 
-  updateText(text: string | number) {
-    const { width, height } = text1(text.toString());
-    this.foreignObject.width(width);
-    this.foreignObject.height(height + 4);
+  updateText(text: string | number, width: number = 0, height: number = 0) {
+    if (!width || !height) {
+      const { width: w, height: h } = this.graph.inputText.testWidthAndHeight(
+        text.toString()
+      );
+      width = w;
+      height = h;
+    }
+    this.text = text.toString();
+    this.foreignObject.width(width + PADDING_X * 2);
+    this.foreignObject.height(height);
     this.span.innerHTML = text.toString();
     this.container.width(width + PADDING_X * 2);
-    this.container.height(height + 4 + PADDING_Y * 2);
+    this.container.height(height);
     this.group.fire(EVENT_EDITING, { text: text });
   }
 

@@ -14,7 +14,7 @@ import EventEmitter from "../utils/EventEmitter";
 const defaultOptions = {
   curveHeight: 0,
   strokeColor: "black",
-  strokeWidth: 2,
+  strokeWidth: 3,
   showControlPoints: false,
 };
 

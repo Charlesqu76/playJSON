@@ -7,6 +7,6 @@ export default function mouseout(
   graph: Graph,
   item: TLine | TKeyvalueBox | TObjectBox
 ) {
-  if (graph.selectedItem === item) return;
-  item.unHighlight();
+  // if (graph.selectedItem === item) return;
+  // item.unHighlight();
 }

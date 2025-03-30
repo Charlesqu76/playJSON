@@ -11,7 +11,7 @@ export function signLink(keyvalueBox: TKeyvalueBox) {
 export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
   if (!keyvalueBox.parent || !keyvalueBox.graph.canvas || !keyvalueBox.sign)
     return;
-  // event.stopPropagation();
+  event.stopPropagation();
   keyvalueBox.graph.isLinking = true;
   let tempLine: Line | null = null;
   const svgPoint = (
@@ -23,7 +23,7 @@ export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
     .stroke({ width: 2, color: "#000" });
 
   const mousemove = (e: MouseEvent) => {
-    e.preventDefault();
+    console.log("mousemove");
     svgPoint.x = e.clientX;
     svgPoint.y = e.clientY;
     const cursor = svgPoint.matrixTransform(
@@ -31,6 +31,7 @@ export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
         .getScreenCTM()
         ?.inverse()
     );
+
     tempLine?.plot(startPos.x, startPos.y, cursor.x, cursor.y);
     for (const objectBox of keyvalueBox.graph.objectBoxes) {
       if (

@@ -1,10 +1,6 @@
 import Box from "../basic/Box";
 import Graph from "..";
-import TextEditor, {
-  EVENT_EDITING,
-  text1,
-  TTextEditor,
-} from "../basic/TextEditor";
+import TextEditor, { EVENT_EDITING, TTextEditor } from "../basic/TextEditor";
 
 const PADDING_X = 2;
 const PADDING_Y = 2;
@@ -13,14 +9,6 @@ export const textPosition = (x: number, y: number) => {
   return {
     x: x + PADDING_X,
     y: y + PADDING_Y,
-  };
-};
-
-export const calculateWidthAndHeight = (text: string) => {
-  const { width, height } = text1(text);
-  return {
-    width: width + PADDING_X * 2,
-    height: height + PADDING_Y * 2,
   };
 };
 
@@ -40,7 +28,7 @@ export default class TextBox extends Box {
   textBox?: TTextEditor;
 
   constructor({ x, y, text, style }: Props, graph: Graph) {
-    const { width, height } = calculateWidthAndHeight(text);
+    const { width, height } = graph.inputText.testWidthAndHeight(text);
     super({ width, height, x, y, graph });
     this.style = style;
     this.text = text;

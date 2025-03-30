@@ -12,7 +12,7 @@ import { EVENT_EDITING } from "../basic/TextEditor";
 import Sign, { TSign } from "./Sign";
 import { signLink } from "../event/keyvaluebox/sign";
 import { EVENT_LINE_UPDATE } from "../basic/Line";
-import { dragEnd, dragMove, dragStart } from "../event/keyvaluebox/drag";
+import { dragEnd, dragMove } from "../event/keyvaluebox/drag";
 import {
   calculatePosition,
   calculateWidthAndHeight,
@@ -83,12 +83,6 @@ export default class KeyValueBox extends Box {
     this.graph.emit(EVENT_CREATE, { item: this });
   }
 
-  get keyChain(): Array<string> {
-    if (!this.parent) return [];
-    const key = this.parent.isArray ? `[${this.key}]` : this.key;
-    return [...this.parent.keyChain, key];
-  }
-
   render(x: number, y: number) {
     this.x = x ?? this.x;
     this.y = y ?? this.y;
@@ -115,38 +109,6 @@ export default class KeyValueBox extends Box {
     this.groupRect?.setHeight(this.height);
   }
 
-  get child() {
-    return this._child;
-  }
-
-  set child(child: TObjectBox | null) {
-    this._child = child;
-    if (!child) {
-      this.valueBox.updateText("null");
-      return;
-    }
-    if (child.isArray) {
-      this.valueBox.updateText("[]");
-    } else {
-      this.valueBox.updateText("{}");
-    }
-  }
-
-  get parent() {
-    return this._parent;
-  }
-
-  set parent(parent: TObjectBox) {
-    this._parent = parent;
-    if (!parent) {
-      return;
-    }
-    if (parent.isArray) {
-      this.keyBox.updateText(parent.children.size - 1);
-      this.parent?.arrangeChildren();
-    }
-  }
-
   init() {
     if (!this.graph?.canvas) return;
     this.groupRect = new GroupRect(
@@ -169,11 +131,13 @@ export default class KeyValueBox extends Box {
     });
     this.keyBox.render(keyPostion.x, keyPostion.y);
     this.groupRect.add(this.keyBox.group);
-    this.keyBox.textBox?.group?.on(EVENT_EDITING, this.renderKeyAndValue);
+    this.keyBox.textBox?.group?.on(EVENT_EDITING, () =>
+      this.renderKeyAndValue()
+    );
 
     this.valueBox.render(valuePosition.x, valuePosition.y);
     this.groupRect.add(this.valueBox.group);
-    this.valueBox.group?.on(EVENT_EDITING, this.renderKeyAndValue);
+    this.valueBox.group?.on(EVENT_EDITING, () => this.renderKeyAndValue());
 
     this.sign = new Sign(
       {
@@ -184,8 +148,6 @@ export default class KeyValueBox extends Box {
     );
 
     this.group?.add(this.sign.sign);
-
-    dragStart(this);
 
     dragMove(this);
 
@@ -199,14 +161,10 @@ export default class KeyValueBox extends Box {
       this.graph.emit(EVENT_MOUSEOUT, { item: this });
     });
 
-    this.group?.on(
-      "click",
-      (event) => {
-        this.graph.emit(EVENT_SELECT, { item: this });
-        event.stopPropagation();
-      },
-      { passive: true }
-    );
+    this.group?.on("click", (e) => {
+      e.stopPropagation();
+      this.graph.emit(EVENT_SELECT, { item: this });
+    });
 
     signLink(this);
     this.renderChild();
@@ -288,5 +246,43 @@ export default class KeyValueBox extends Box {
     return {
       [this.key]: this.value,
     };
+  }
+
+  get child() {
+    return this._child;
+  }
+
+  set child(child: TObjectBox | null) {
+    this._child = child;
+    if (!child) {
+      this.valueBox.updateText("null");
+      return;
+    }
+    if (child.isArray) {
+      this.valueBox.updateText("[]");
+    } else {
+      this.valueBox.updateText("{}");
+    }
+  }
+
+  get parent() {
+    return this._parent;
+  }
+
+  set parent(parent: TObjectBox) {
+    this._parent = parent;
+    if (!parent) {
+      return;
+    }
+    if (parent.isArray) {
+      this.keyBox.updateText(parent.children.size - 1);
+      this.parent?.arrangeChildren();
+    }
+  }
+
+  get keyChain(): Array<string> {
+    if (!this.parent) return [];
+    const key = this.parent.isArray ? `[${this.key}]` : this.key;
+    return [...this.parent.keyChain, key];
   }
 }

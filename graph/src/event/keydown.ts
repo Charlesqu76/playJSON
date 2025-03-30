@@ -88,15 +88,9 @@ function addKayValueBox(graph: Graph) {
       key,
       value,
       isArray: graph.selectedItem.isArray,
+      parent: graph.selectedItem,
     },
     graph
   );
   graph.selectedItem.addChildren(keyvaluebox);
-}
-
-function showJson(graph: Graph) {
-  if (graph.selectedItem instanceof ObjectBox) {
-    console.log(JSON.stringify(graph.selectedItem.value, null, 2));
-  } else {
-  }
 }

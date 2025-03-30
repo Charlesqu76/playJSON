@@ -10,13 +10,11 @@
 
 **Features**
 
-
 - [x] Visualization: Renders JSON as interactive SVG graphs
 - [x] Navigation: Pan and zoom to explore complex data
 - [x] Editing: Add, modify, and delete values directly
 - [x] Layout: Automatically organize nodes in a readable format
 - [x] Clipboard: Copy/paste JSON data between graphs
-- [ ] Search: Find specific keys or values in large structures
 
 **Command**
 

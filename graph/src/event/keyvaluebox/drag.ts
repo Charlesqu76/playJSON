@@ -3,40 +3,41 @@ import { TKeyvalueBox } from "../../component/keyValueBox";
 import isOverlapping from "../../utils/isOverlapping";
 
 export function dragStart(keyvalyeBox: TKeyvalueBox) {
-  keyvalyeBox.group?.on("dragstart", () => {
+  keyvalyeBox.group?.on("dragstart", (e) => {
     keyvalyeBox.origin = keyvalyeBox.boundary;
-    keyvalyeBox.graph.isKeyvvalueBoxMoving = true;
+    console.log("dragstart");
+    e.stopPropagation();
   });
 }
 
 export function dragMove(keyvalyeBox: TKeyvalueBox) {
-  keyvalyeBox.group?.on(
-    "dragmove",
-    (event) => {
-      keyvalyeBox.emit(EVENT_LINE_UPDATE);
-      const { box } = (event as CustomEvent).detail;
-      const overlapItem = Array.from(keyvalyeBox.graph.objectBoxes).find(
-        (objectBox) => {
-          return (
-            isOverlapping(box, objectBox.boundary) &&
-            objectBox !== keyvalyeBox.parent
-          );
-        }
-      );
-      keyvalyeBox.graph.objectBoxes.forEach((objectBox) => {
-        if (overlapItem === objectBox) {
-          objectBox.highlight();
-        } else {
-          objectBox.unHighlight();
-        }
-      });
-    },
-    { passive: true }
-  );
+  keyvalyeBox.group?.on("dragmove", (event) => {
+    keyvalyeBox.front();
+
+    keyvalyeBox.graph.isKeyvvalueBoxMoving = true;
+    keyvalyeBox.emit(EVENT_LINE_UPDATE);
+    const { box } = (event as CustomEvent).detail;
+    const overlapItem = Array.from(keyvalyeBox.graph.objectBoxes).find(
+      (objectBox) => {
+        return (
+          isOverlapping(box, objectBox.boundary) &&
+          objectBox !== keyvalyeBox.parent
+        );
+      }
+    );
+    keyvalyeBox.graph.objectBoxes.forEach((objectBox) => {
+      if (overlapItem === objectBox) {
+        objectBox.highlight();
+      } else {
+        objectBox.unHighlight();
+      }
+    });
+  });
 }
 
 export function dragEnd(keyvalyeBox: TKeyvalueBox) {
   keyvalyeBox.group?.on("dragend", (event) => {
+    if (!keyvalyeBox.graph.isKeyvvalueBoxMoving) return;
     const { box } = (event as CustomEvent).detail;
 
     setTimeout(() => {
@@ -55,15 +56,13 @@ export function dragEnd(keyvalyeBox: TKeyvalueBox) {
     );
 
     if (!overlapItem) {
-      if (keyvalyeBox.origin) {
-        keyvalyeBox.move(keyvalyeBox.origin.x, keyvalyeBox.origin.y);
-      }
+      keyvalyeBox.move(keyvalyeBox.x, keyvalyeBox.y);
       return;
     }
 
-    keyvalyeBox.group && overlapItem.group?.add(keyvalyeBox.group);
     keyvalyeBox.parent?.removeChildren(keyvalyeBox);
     overlapItem.addChildren(keyvalyeBox);
+    overlapItem.unHighlight();
     keyvalyeBox.emit(EVENT_LINE_UPDATE);
   });
 }

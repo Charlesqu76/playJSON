@@ -2,7 +2,11 @@
   "name": "playjson",
   "version": "1.0.0",
   "description": "",
-  "scripts": {},
+  "scripts": {
+    "graph": "pnpm --filter graph dev",
+    "web": "pnpm --filter web dev",
+    "build": "pnpm --filter web build"
+  },
   "keywords": [],
   "author": "",
   "license": "ISC",

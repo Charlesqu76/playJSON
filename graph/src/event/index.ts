@@ -59,8 +59,4 @@ export function graphEvent(graph: Graph) {
       graph.zoomCallback(event.detail.level);
     }
   });
-
-  graph.canvas?.on("panned", (event: any) => {
-    console.log("panned", event);
-  });
 }

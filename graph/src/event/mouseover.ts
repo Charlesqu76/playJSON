@@ -8,7 +8,7 @@ export default function mouseover(
   item: TLine | TKeyvalueBox | TObjectBox
 ) {
   if (graph.isLinking || graph.isKeyvvalueBoxMoving) return;
-  item.highlight();
+  // item.highlight();
   if (item instanceof Line) {
     item.path.attr({ cursor: "pointer" });
   } else {
