@@ -2,16 +2,6 @@ import Box from "../basic/Box";
 import Graph from "..";
 import TextEditor, { EVENT_EDITING, TTextEditor } from "../basic/TextEditor";
 
-const PADDING_X = 2;
-const PADDING_Y = 2;
-
-export const textPosition = (x: number, y: number) => {
-  return {
-    x: x + PADDING_X,
-    y: y + PADDING_Y,
-  };
-};
-
 interface Props {
   x?: number;
   y?: number;
@@ -93,10 +83,20 @@ export default class TextBox extends Box {
   }
 
   get value() {
-    return this.textBox?.text;
+    return this.textBox?.value;
   }
 
   get group() {
     return this.textBox?.group;
+  }
+
+  get boundary() {
+    const {
+      x = 0,
+      y = 0,
+      width = 0,
+      height = 0,
+    } = this.textBox?.boundary || {};
+    return { x, y, width, height };
   }
 }

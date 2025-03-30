@@ -285,4 +285,17 @@ export default class KeyValueBox extends Box {
     const key = this.parent.isArray ? `[${this.key}]` : this.key;
     return [...this.parent.keyChain, key];
   }
+
+  get boundary() {
+    const { width, height } = calculateWidthAndHeight(
+      this.keyBox,
+      this.valueBox
+    );
+    return {
+      x: this.x,
+      y: this.y,
+      width,
+      height,
+    };
+  }
 }

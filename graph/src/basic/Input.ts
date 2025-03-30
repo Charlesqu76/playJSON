@@ -45,50 +45,12 @@ export default class Input {
     });
 
     div.addEventListener("blur", () => {
-      console.log("blur");
       this.hide();
     });
   }
 
-  init() {
-    // const removeInput = () => {
-    //   const { width, height } = input.getBoundingClientRect();
-    //     onChange({
-    //       width,
-    //       height,
-    //       value: input.textContent as string,
-    //     });
-    //     Array.from(container.childNodes).includes(div) &&
-    //       container?.removeChild(div);
-    // };
-    // div.addEventListener("input", (e) => {
-    //   console.log(input.textContent);
-    //   onChange({
-    //     value: input.textContent as string,
-    //     width,
-    //     height,
-    //   });
-    //   e.stopPropagation();
-    // });
-    // div.addEventListener("blur", () => {
-    //   removeInput();
-    // });
-  }
-
   render(container: HTMLElement) {
     container.appendChild(this.div);
-  }
-
-  get width() {
-    return this.div.offsetWidth;
-  }
-
-  get height() {
-    return this.div.offsetHeight;
-  }
-
-  get text() {
-    return this.div.innerText;
   }
 
   testWidthAndHeight(text: string) {
@@ -129,5 +91,17 @@ export default class Input {
     if (this.onChange) {
       this.div.removeEventListener("input", this.onChange);
     }
+  }
+
+  get width() {
+    return this.div.offsetWidth;
+  }
+
+  get height() {
+    return this.div.offsetHeight;
+  }
+
+  get text() {
+    return this.div.innerText;
   }
 }

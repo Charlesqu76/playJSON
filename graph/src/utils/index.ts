@@ -44,13 +44,13 @@ export const getControlPoints = (
 
   if (!endBoundary || !startBoundary) return;
   const startPoint = {
-    x: startBoundary.x + startBoundary.width,
-    y: startBoundary.y + startBoundary.height / 2,
+    x: start.x + start.width,
+    y: start.y + start.height / 2,
   };
 
   const endPoint = {
-    x: endBoundary.x,
-    y: endBoundary.y + endBoundary.height / 2,
+    x: end.x,
+    y: end.y + end.height / 2,
   };
   const xDiff = endPoint.x - startPoint.x;
 

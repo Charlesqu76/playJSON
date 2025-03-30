@@ -14,7 +14,7 @@ export function getWidthAndHeight(children: Set<TKeyvalueBox>) {
   let height = 0;
   let width = 0;
   children.forEach((child) => {
-    width = Math.max(width, child.width);
+    width = Math.max(width, child.boundary.width);
     height += child.height;
   });
 

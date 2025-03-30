@@ -7,7 +7,7 @@ export const EVENT_EDITING = "textEditing";
 const PADDING_X = 2;
 const PADDING_Y = 2;
 const size = "16px";
-const DEFAULT_MAX_WIDTH = 400;
+const DEFAULT_MAX_WIDTH = 300;
 
 export const textPosition = (x: number, y: number) => {
   return {
@@ -32,19 +32,17 @@ export type TTextEditor = TextEditor;
 
 export default class TextEditor extends GroupRect {
   text: string;
-  maxWidth: number;
   span: HTMLSpanElement;
   foreignObject: ForeignObject;
   graph: Graph;
   constructor({ x, y, text, style, width, height }: Props, graph: Graph) {
     if (!graph.canvas) throw new Error("canvas not found");
-    const { maxWidth = DEFAULT_MAX_WIDTH } = style || {};
     super(
       {
         x,
         y,
-        width: width + PADDING_X * 2,
-        height: height + PADDING_Y * 2,
+        width: 0,
+        height: 0,
         style: {
           stroke: "none",
         },
@@ -57,33 +55,35 @@ export default class TextEditor extends GroupRect {
     this.group.draggable(false);
     this.group?.attr("cursor", "text");
 
-    this.maxWidth = maxWidth || DEFAULT_MAX_WIDTH;
-    const foreignObject = this.group
-      .foreignObject(width + PADDING_X, height)
-      .attr({
-        x: x + PADDING_X,
-        y: y + PADDING_Y,
-      });
+    const foreignObject = this.group.foreignObject(0, 0).attr({
+      x: x,
+      y: y,
+    });
 
     this.foreignObject = foreignObject;
+    this.setWidthAndHeight(width, height);
     this.foreignObject.attr({
-      margin: "0",
-      padding: "0",
       overflow: "hidden",
-      "pointer-events": "none",
     });
+
+    const div = document.createElement("div");
+    div.style.width = "100%";
+    div.style.height = "100%";
+    div.style.paddingTop = PADDING_Y + "px";
+    div.style.paddingLeft = PADDING_X + "px";
+
     const span = document.createElement("span");
     span.style.fontSize = size;
-    span.style.display = "inline-block";
+    span.style.display = "block";
     span.style.lineHeight = "normal";
     span.style.fontFamily = "Arial, Helvetica, sans-serif";
     span.style.wordBreak = "break-word";
-    span.style.maxWidth = `${this.maxWidth}px`;
+    span.style.maxWidth = `${DEFAULT_MAX_WIDTH}px`;
     span.style.color = style?.color || "black";
     span.style.whiteSpace = "break-spaces";
     span.style.overflowWrap = "break-word";
-
-    foreignObject.node.appendChild(span);
+    foreignObject.node.appendChild(div);
+    div.appendChild(span);
     span.innerHTML = text;
     this.span = span;
 
@@ -93,8 +93,8 @@ export default class TextEditor extends GroupRect {
 
       const { x, y, width, height } = this.group.bbox();
       this.graph.inputText.show({
-        x: x + 2,
-        y: y + 2,
+        x: x + PADDING_X,
+        y: y + PADDING_Y,
         text: this.text,
         color: style?.color || "black",
         onChange: (text, width, height) => {
@@ -113,12 +113,16 @@ export default class TextEditor extends GroupRect {
       height = h;
     }
     this.text = text.toString();
-    this.foreignObject.width(width + PADDING_X * 2);
-    this.foreignObject.height(height);
     this.span.innerHTML = text.toString();
-    this.container.width(width + PADDING_X * 2);
-    this.container.height(height);
+    this.setWidthAndHeight(width, height);
     this.group.fire(EVENT_EDITING, { text: text });
+  }
+
+  setWidthAndHeight(width: number, height: number) {
+    this.container.width(width + PADDING_X);
+    this.container.height(height);
+    this.foreignObject.width(width + PADDING_X);
+    this.foreignObject.height(height);
   }
 
   front() {
@@ -138,22 +142,21 @@ export default class TextEditor extends GroupRect {
     this.group.hide();
   }
 
+  delete() {
+    this.group.remove();
+  }
+
   get value() {
-    const value = this.span.innerHTML;
-    return convertStringValue(value);
+    return convertStringValue(this.text);
   }
 
   get boundary() {
     const { width, height, x, y } = this.group.bbox();
     return {
-      width: width + PADDING_X * 2,
-      height: height + PADDING_Y * 2,
+      width,
+      height,
       x,
       y,
     };
-  }
-
-  delete() {
-    this.group.remove();
   }
 }
