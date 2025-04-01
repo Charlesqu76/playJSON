@@ -66,17 +66,18 @@ export default class Input {
     y,
     text,
     color,
+    scale,
     onChange,
   }: {
     x: number;
     y: number;
     text: string;
     color: string;
+    scale: number;
     onChange: (text: string, width: number, height: number) => void;
   }) {
     this.div.style.visibility = "visible";
-    this.div.style.left = `${x}px`;
-    this.div.style.top = `${y}px`;
+    this.div.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
     this.div.style.color = color;
     this.span.innerText = text;
     this.div.focus();

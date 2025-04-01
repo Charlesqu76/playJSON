@@ -88,13 +88,14 @@ export default class TextEditor extends GroupRect {
     this.span = span;
 
     this.group.on("dblclick", (e) => {
+      this.graph.editting = this;
       e.preventDefault();
       e.stopPropagation();
-
-      const { x, y, width, height } = this.group.bbox();
+      const { x, y } = this.group.rbox();
       this.graph.inputText.show({
-        x: x + PADDING_X,
-        y: y + PADDING_Y,
+        x: x,
+        y: y,
+        scale: this.graph.zoom,
         text: this.text,
         color: style?.color || "black",
         onChange: (text, width, height) => {

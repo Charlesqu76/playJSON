@@ -9,8 +9,8 @@ import {
   EVENT_SELECT,
   EVENT_UPDATE,
 } from "../event";
-import { getControlPoints } from "../utils";
 import EventEmitter from "../utils/EventEmitter";
+import { getControlPoints } from "@/utils/line";
 const defaultOptions = {
   curveHeight: 0,
   strokeColor: "black",

@@ -10,6 +10,7 @@ import { graphEvent } from "./event/index";
 import { TKeyvalueBox } from "./component/keyValueBox";
 import { TLine } from "./basic/Line";
 import Input, { TInput } from "./basic/Input";
+import TextEditor from "./basic/TextEditor";
 
 const MAX_ZOOM = 2;
 const MIN_ZOOM = 0.1;
@@ -25,6 +26,7 @@ class Graph extends EventEmitter {
   canvas: Svg | null = null;
   zoomCallback: ((zoom: number) => void) | null = null;
   valueChanged: ((value: any) => void) | null = null;
+  // root: ObjectBox;
 
   noParentObjectBoxes = new Set<TObjectBox>([]);
   objectBoxes = new Set<TObjectBox>([]);
@@ -37,6 +39,7 @@ class Graph extends EventEmitter {
   isKeyvvalueBoxMoving: boolean = false;
   isObjectBoxMoving: boolean = false;
   inputText: TInput;
+  editting?: TextEditor;
 
   constructor(props: IProps) {
     super();
@@ -44,16 +47,15 @@ class Graph extends EventEmitter {
     this.zoomCallback = zoomCallback || null;
     this.valueChanged = valueChanged || null;
     this.inputText = new Input();
+    // this.root = new ObjectBox({ value: [{ 1: 2 }] }, this);
   }
 
   updateInputPosition = () => {
+    if (!this.canvas || !this.editting) return;
     const scale = this.zoom;
-    if (!this.canvas) return;
-    const { x, y } = this.viewpoint;
-
-    this.inputText.div.style.transform = `translate(${-x * scale}px, ${
-      -y * scale
-    }px) scale(${scale})`;
+    const { x, y } = this.editting.group.rbox();
+    console.log("x, y", x, y);
+    this.inputText.div.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
   };
 
   initCanvas = (id: string | HTMLElement) => {
@@ -99,14 +101,15 @@ class Graph extends EventEmitter {
   };
 
   initData = (data: Object | Object[]) => {
+    if (this.canvas === null) return;
     if (!Array.isArray(data)) {
       data = [data];
     }
+
     (data as object[]).forEach((item) => {
-      if (this.canvas === null) return;
       new ObjectBox(
         {
-          x: 100,
+          x: 0,
           y: 0,
           value: item,
         },
