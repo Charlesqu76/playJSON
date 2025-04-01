@@ -14,72 +14,66 @@ interface Props {
 export type TTextBox = TextBox;
 export default class TextBox extends Box {
   style: any;
-  text: string;
+  private _text: string | number | undefined | null | boolean;
   textBox?: TTextEditor;
 
   constructor({ x, y, text, style }: Props, graph: Graph) {
     const { width, height } = graph.inputText.testWidthAndHeight(text);
     super({ width, height, x, y, graph });
     this.style = style;
-    this.text = text;
+    this._text = text;
   }
 
-  render(x: number, y: number) {
+  render(x: number = this.x, y: number = this.y) {
     if (!this.graph.canvas) return;
-    this.x = x ?? this.x;
-    this.y = y ?? this.y;
+    this.x = x;
+    this.y = y;
     if (!this.textBox) {
-      this.init();
+      this._init();
     } else {
-      this.move();
+      this._move();
     }
   }
 
-  init() {
+  private _init() {
     this.textBox = new TextEditor(
       {
         x: this.x,
         y: this.y,
         width: this.width,
         height: this.height,
-        text: this.text,
+        text: String(this._text),
         style: this.style,
       },
       this.graph
     );
 
-    this.textBox?.group.on(EVENT_EDITING, (e) => {
-      // @ts-ignore
-      this.text = this.textBox?.value;
+    this.textBox?.group.on(EVENT_EDITING, () => {
       const { width = 0, height = 0 } = this.textBox?.boundary || {};
       this.width = width;
       this.height = height;
     });
   }
 
-  move() {
-    if (!this.textBox) return;
-    this.textBox.move(this.x, this.y);
+  private _move() {
+    this.textBox?.move(this.x, this.y);
   }
 
   updateText(newText: string | number) {
     this.textBox?.updateText(newText);
-    this.text = newText.toString();
+    this._text = newText;
   }
 
   hide() {
-    if (!this.textBox) return;
-    this.textBox.hide();
+    this.textBox?.hide();
   }
 
   show() {
-    if (!this.textBox) return;
-    this.textBox.show();
+    this.textBox?.show();
   }
 
   front() {
-    if (!this.textBox) return;
-    this.textBox.front();
+    this.textBox?.front();
   }
 
   get value() {

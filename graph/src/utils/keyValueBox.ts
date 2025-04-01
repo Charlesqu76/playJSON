@@ -2,6 +2,7 @@ import { TTextBox } from "@/component/TextBox";
 
 const PADDING_Y = 5;
 const PADDING_X = 10;
+const GAP = 5;
 export function calculatePosition({
   x,
   y,
@@ -16,7 +17,7 @@ export function calculatePosition({
     y: y + PADDING_Y,
   };
   const valuePosition = {
-    x: x + keyBox.width + PADDING_X + 4 + 4,
+    x: x + keyBox.width + PADDING_X + GAP,
     y: y + PADDING_Y,
   };
   return {
@@ -29,8 +30,8 @@ export function calculateWidthAndHeight(keyBox: TTextBox, valueBox: TTextBox) {
   const width = keyBox.width + valueBox.width;
   const height = Math.max(keyBox.height, valueBox.height);
   return {
-    width: width + PADDING_X * 2 + 8 + 4,
-    height: height + PADDING_Y * 2 + 4,
+    width: width + PADDING_X * 2 + GAP,
+    height: height + PADDING_Y * 2,
   };
 }
 

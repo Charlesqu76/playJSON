@@ -25,11 +25,8 @@ export const useStore = create<State & Actions>((set, get) => ({
     zoomCallback: (zoom) => {
       set(() => ({ zoom: zoom * 100 }));
     },
-    valueChanged: (value) => {
-      set(() => ({ jsons: value }));
-    },
   }),
-  zoom: undefined,
+  zoom: 100,
   setJsons: (jsons) => set(() => ({ jsons: jsons })),
   setZoom: (zoom) => set(() => ({ zoom: zoom * 100 })),
   setSearchText: (text) => set(() => ({ searchText: text })),

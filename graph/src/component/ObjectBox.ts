@@ -7,20 +7,15 @@ import {
   EVENT_SELECT,
 } from "../event";
 import Line, { EVENT_LINE_UPDATE, TLine } from "../basic/Line";
-import { layoutTree } from "../utils/layout";
 import GroupRect from "../basic/GroupRect";
-import {
-  childrenPostion,
-  getWidthAndHeight,
-  setChildrenWidth,
-} from "../utils/ObjectBox";
+import { renderChildren, getWidthAndHeight } from "../utils/ObjectBox";
 import Box from "../basic/Box";
 import { value } from "../utils/ObjectBox";
 import checkCircle from "../utils/linkVerify";
 
 interface Props {
-  x: number;
-  y: number;
+  x?: number;
+  y?: number;
   value: Object;
   parent?: TKeyvalueBox | null;
 }
@@ -39,16 +34,15 @@ export default class ObjectBox extends Box {
   private _line: TLine | null = null;
   private _parent: TKeyvalueBox | null = null;
   children: Set<TKeyvalueBox> = new Set([]);
-  groupRect?: GroupRect;
+  private groupRect?: GroupRect;
 
-  constructor({ value, parent = null }: Props, graph: Graph) {
-    super({ width: 0, height: 0, graph });
+  constructor({ x, y, value, parent = null }: Props, graph: Graph) {
+    super({ width: 0, height: 0, graph, x, y });
     this.isArray = Array.isArray(value);
     const children = Object.entries(value).map(
       ([key, value]) =>
         new KeyValueBox(
           {
-            isArray: this.isArray,
             key: key,
             value: value,
             parent: this,
@@ -57,47 +51,25 @@ export default class ObjectBox extends Box {
         )
     );
     this.children = new Set(children);
-    const { width, height } = getWidthAndHeight(this.children);
+    const { width, height } = this.boundary;
     this.width = width;
     this.height = height;
     this.parent = parent;
     this.graph.emit(EVENT_CREATE, { item: this });
   }
 
-  get value() {
-    return value(this);
-  }
-
-  get keyChain() {
-    if (!this.parent) return [];
-    return this.parent.keyChain;
-  }
-
-  get parent() {
-    return this._parent;
-  }
-
-  set parent(parent: TKeyvalueBox | null) {
-    if (!parent) {
-      this.graph.noParentObjectBoxes.add(this);
-    } else {
-      this.graph.noParentObjectBoxes.delete(this);
-    }
-    this._parent = parent;
-  }
-
   render(x: number = this.x, y: number = this.y) {
-    this.x = x ?? this.x;
-    this.y = y ?? this.y;
+    this.x = x;
+    this.y = y;
     if (!this.groupRect) {
-      this.init();
+      this._init();
     } else {
-      this.move(this.x, this.y);
+      this._move();
     }
-    this.parent && this.link(this.parent);
+    this.emit(EVENT_LINE_UPDATE);
   }
 
-  init() {
+  private _init() {
     if (!this.graph?.canvas) throw new Error("canvas is not initialized");
     this.groupRect = new GroupRect(
       {
@@ -107,70 +79,68 @@ export default class ObjectBox extends Box {
         height: this.height,
         style: {
           fill: this.isArray ? ARRAY_COLOR : OBJECT_COLOR,
+          cursor: "move",
         },
       },
       this.graph
     );
-    this.container?.attr("cursor", "move");
 
-    if (!this.group || !this.container) return;
-
-    childrenPostion(this.children, this.x, this.y);
-    setChildrenWidth(this.children, this.width);
-
+    this.renderChildren();
     this.children.forEach((child) => {
       child.group && this.group?.add(child.group);
     });
 
+    this.parent && this.link(this.parent);
+    this.initEvent();
+  }
+
+  private _move() {
+    this.groupRect?.move(this.x, this.y);
+    this.renderChildren();
+  }
+
+  initEvent() {
     this.group?.on("dragmove", (e) => {
       const { box } = (e as CustomEvent).detail;
-      this.move(box.x, box.y);
+      this.render(box.x, box.y);
     });
 
     this.group?.on("dragend", (e) => {
       const { box } = (e as CustomEvent).detail;
-      this.move(box.x, box.y);
+      this.render(box.x, box.y);
     });
 
-    this.group.on("mouseenter", () => {
+    this.group?.on("mouseenter", () => {
       this.graph.emit(EVENT_MOUSEOVER, { item: this });
     });
 
-    this.group.on("mouseleave", () => {
+    this.group?.on("mouseleave", () => {
       this.graph.emit(EVENT_MOUSEOUT, { item: this });
     });
 
-    this.group.on("click", (e) => {
+    this.group?.on("click", (e) => {
       this.graph.emit(EVENT_SELECT, { item: this });
       e.stopPropagation();
     });
   }
 
-  move(x: number, y: number) {
-    this.x = x ?? this.x;
-    this.y = y ?? this.y;
-    this.groupRect?.move(this.x, this.y);
-    childrenPostion(this.children, this.x, this.y);
-    this.emit(EVENT_LINE_UPDATE);
+  layout(x = this.x, y = this.y) {
+    this.render(x, y);
+    this.children.forEach((child) => {
+      child.layout();
+    });
   }
 
-  setWidth(width: number): void {
-    this.width = width;
-    this.groupRect?.setWidth(this.width);
-  }
-
-  setHeight(height: number): void {
-    this.height = height;
-    this.groupRect?.setHeight(this.height);
-  }
-
-  arrangeChildren() {
-    const { width, height } = getWidthAndHeight(this.children);
+  renderChildren() {
+    const { width, height } = this.boundary;
     this.setHeight(height);
     this.setWidth(width);
-    const { x, y } = this.boundary;
-    childrenPostion(this.children, x, y);
-    setChildrenWidth(this.children, this.width);
+    renderChildren({
+      children: this.children,
+      x: this.x,
+      y: this.y,
+      width: this.width,
+    });
     this.children.forEach((child) => {
       child.emit(EVENT_LINE_UPDATE);
     });
@@ -190,21 +160,22 @@ export default class ObjectBox extends Box {
       child.parent = this;
     });
 
-    this.arrangeChildren();
+    this.renderChildren();
   }
 
   removeChildren(child: TKeyvalueBox) {
     this.children.delete(child);
-    this.arrangeChildren();
-    this.line?.update();
+    this.renderChildren();
   }
 
-  get line() {
-    return this._line;
+  setWidth(width: number): void {
+    this.width = width;
+    this.groupRect?.setWidth(this.width);
   }
 
-  set line(line: TLine | null) {
-    this._line = line;
+  setHeight(height: number): void {
+    this.height = height;
+    this.groupRect?.setHeight(this.height);
   }
 
   link(keyValueBox: TKeyvalueBox) {
@@ -222,17 +193,12 @@ export default class ObjectBox extends Box {
     this.line?.unlink();
   }
 
-  layout() {
-    layoutTree(this);
-  }
-
   delete() {
     if (this.line) this.unlink();
     this.children.forEach((child) => {
       child.delete();
     });
     this.groupRect?.delete();
-    this.groupRect = undefined;
     this.graph.objectBoxes.delete(this);
   }
 
@@ -251,11 +217,42 @@ export default class ObjectBox extends Box {
     this.groupRect?.unHighlight();
   }
 
-  get container() {
-    return this.groupRect?.container;
+  get boundary() {
+    const { width, height } = getWidthAndHeight(this.children);
+    return {
+      x: this.x,
+      y: this.y,
+      width: width,
+      height: height,
+    };
+  }
+
+  get value() {
+    return value(this);
+  }
+
+  get keyChain() {
+    if (!this.parent) return [];
+    return this.parent.keyChain;
+  }
+
+  get parent() {
+    return this._parent;
+  }
+
+  set parent(parent: TKeyvalueBox | null) {
+    this._parent = parent;
   }
 
   get group() {
     return this.groupRect?.group;
+  }
+
+  get line() {
+    return this._line;
+  }
+
+  set line(line: TLine | null) {
+    this._line = line;
   }
 }

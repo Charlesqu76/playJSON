@@ -16,7 +16,6 @@ export default class Sign {
     }
     this.sign = new Circle().radius(4).fill("black");
     this.sign.move(x, y);
-    graph.canvas.add(this.sign);
     this.sign.on("mouseover", () => {
       this.sign.attr({ cursor: "pointer" });
       this.sign.radius(5);

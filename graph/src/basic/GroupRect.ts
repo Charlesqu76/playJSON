@@ -48,22 +48,10 @@ export default class GroupRect extends EventEmitter {
     this.group?.move(x, y);
   }
 
-  get boundary() {
-    const { x, y, width, height } = this.group.bbox();
-    return { x, y, width, height };
-  }
-
-  get width() {
-    return this.group.bbox().width;
-  }
-
-  get height() {
-    return this.group.bbox().height;
-  }
-
   setWidth(width: number) {
     this.container.width(width);
   }
+
   setHeight(height: number) {
     this.container.height(height);
   }
@@ -78,11 +66,31 @@ export default class GroupRect extends EventEmitter {
     this.container.front();
   }
 
-  highlight() {
-    this.container.attr({ "stroke-width": 3, stroke: "red" });
+  hide() {
+    this.group.hide();
   }
 
-  unHighlight() {
-    this.container.attr({ "stroke-width": 1, stroke: "black" });
+  show() {
+    this.group.show();
+  }
+
+  highlight(style?: Record<string, string | number>) {
+    this.container.attr({ "stroke-width": 3, stroke: "red", ...style });
+  }
+
+  unHighlight(style?: Record<string, string | number>) {
+    this.container.attr({ "stroke-width": 1, stroke: "black", ...style });
+  }
+
+  get boundary() {
+    return this.group.bbox();
+  }
+
+  get width() {
+    return this.group.bbox().width;
+  }
+
+  get height() {
+    return this.group.bbox().height;
   }
 }
