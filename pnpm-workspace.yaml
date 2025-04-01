@@ -1,0 +1,4 @@
+packages:
+  - "graph"
+  - "web"
+  - "!**/test/**"
