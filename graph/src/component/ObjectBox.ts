@@ -209,6 +209,22 @@ export default class ObjectBox extends Box {
     });
   }
 
+  hide() {
+    this.line?.hide();
+    this.groupRect?.hide();
+    this.children.forEach((child) => {
+      child.hide();
+    });
+  }
+
+  show() {
+    this.line?.show();
+    this.groupRect?.show();
+    this.children.forEach((child) => {
+      child.show();
+    });
+  }
+
   highlight() {
     this.groupRect?.highlight();
   }

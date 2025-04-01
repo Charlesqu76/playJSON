@@ -8,7 +8,7 @@ import { graphEvent } from "./event/index";
 import { TKeyvalueBox } from "./component/keyValueBox";
 import { TLine } from "./basic/Line";
 import Input, { TInput } from "./basic/Input";
-import TextEditor from "./basic/TextEditor";
+import TextEditor, { PADDING_X, PADDING_Y } from "./basic/TextEditor";
 import { layoutTree } from "./utils/layout";
 
 interface IProps {
@@ -44,8 +44,8 @@ class Graph extends EventEmitter {
     const scale = this.zoom;
     const { x, y } = this.editting.group.rbox();
     const { x: rx, y: ry } = this.canvas.rbox();
-    this.inputText.div.style.transform = `translate(${x - rx + 4}px, ${
-      y - ry + 4
+    this.inputText.div.style.transform = `translate(${x - rx + PADDING_X}px, ${
+      y - ry + PADDING_Y
     }px) scale(${scale})`;
   };
 

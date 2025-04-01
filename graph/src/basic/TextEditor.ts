@@ -4,8 +4,8 @@ import convertStringValue from "../utils/convertStringValue";
 import GroupRect from "./GroupRect";
 
 export const EVENT_EDITING = "textEditing";
-const PADDING_X = 2;
-const PADDING_Y = 2;
+export const PADDING_X = 4;
+export const PADDING_Y = 4;
 const size = "16px";
 const DEFAULT_MAX_WIDTH = 300;
 
@@ -55,10 +55,7 @@ export default class TextEditor extends GroupRect {
     });
 
     this.foreignObject = foreignObject;
-    this.setWidthAndHeight(width, height);
-    this.foreignObject.attr({
-      overflow: "hidden",
-    });
+    this.setWidthAndHeight(width, height, false);
 
     const span = document.createElement("span");
     span.style.fontSize = size;
@@ -70,8 +67,8 @@ export default class TextEditor extends GroupRect {
     span.style.color = style?.color || "black";
     span.style.whiteSpace = "break-spaces";
     span.style.overflowWrap = "break-word";
-    span.style.marginTop = PADDING_Y * 2 + "px";
-    span.style.marginLeft = PADDING_X * 2 + "px";
+    span.style.marginTop = PADDING_Y + "px";
+    span.style.marginLeft = PADDING_X + "px";
     foreignObject.node.appendChild(span);
     span.innerHTML = text;
     this.span = span;
@@ -82,6 +79,10 @@ export default class TextEditor extends GroupRect {
 
     this.group.on("dblclick", (e) => {
       if (this.disabled) return;
+      if (graph.selectedItem) {
+        graph.selectedItem.unHighlight();
+        graph.selectedItem = null;
+      }
       if (this.graph.editting && this.graph.editting !== this) {
         this.graph.editting.unHighlight();
       }
@@ -110,17 +111,22 @@ export default class TextEditor extends GroupRect {
       width = w;
       height = h;
     }
+
     this.text = text.toString();
-    this.span.innerHTML = text.toString();
+    this.span.innerHTML = this.text;
     this.setWidthAndHeight(width, height);
     this.group.fire(EVENT_EDITING, { text: text });
   }
 
-  setWidthAndHeight(width: number, height: number) {
-    super.setWidth(width + PADDING_X * 2);
-    super.setHeight(height + PADDING_Y * 2);
-    this.foreignObject.width(width + PADDING_X * 2);
-    this.foreignObject.height(height + PADDING_Y * 2);
+  setWidthAndHeight(width: number, height: number, withPadding = true) {
+    if (withPadding) {
+      width += PADDING_X * 2;
+      height += PADDING_Y * 2;
+    }
+    super.setWidth(width);
+    super.setHeight(height);
+    this.foreignObject.width(width);
+    this.foreignObject.height(height);
   }
 
   setDisabled(disabled: boolean) {
@@ -149,12 +155,6 @@ export default class TextEditor extends GroupRect {
   }
 
   get boundary() {
-    const { width, height, x, y } = this.group.bbox();
-    return {
-      width,
-      height,
-      x,
-      y,
-    };
+    return this.group.bbox();
   }
 }

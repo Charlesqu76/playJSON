@@ -31,7 +31,7 @@ export function calculateWidthAndHeight(keyBox: TTextBox, valueBox: TTextBox) {
   const height = Math.max(keyBox.height, valueBox.height);
   return {
     width: width + PADDING_X * 2 + GAP,
-    height: height + PADDING_Y * 2,
+    height: height + PADDING_Y * 2 + 4,
   };
 }
 

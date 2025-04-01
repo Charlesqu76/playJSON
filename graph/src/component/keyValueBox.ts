@@ -157,6 +157,21 @@ export default class KeyValueBox extends Box {
     this.sign?.sign.on("mousedown", (event) => {
       link(event as MouseEvent, this);
     });
+
+    // this.sign?.sign.on("click", (e) => {
+    //   e.stopPropagation();
+    //   this.showChild = !this.showChild;
+
+    //   if (!this.showChild) {
+    //     this.child?.hide();
+    //     layoutTree(this.parent);
+    //     this.parent.layout();
+    //   } else {
+    //     layoutTree(this.parent);
+    //     this.parent?.layout();
+    //     this.child?.show();
+    //   }
+    // });
   }
 
   setWidth(width: number): void {
@@ -189,6 +204,22 @@ export default class KeyValueBox extends Box {
     this.keyBox?.front();
     this.valueBox?.front();
     this.sign?.front();
+  }
+
+  show() {
+    this.groupRect?.show();
+    this.keyBox?.show();
+    this.valueBox?.show();
+    this.sign?.show();
+    this.child?.show();
+  }
+
+  hide() {
+    this.groupRect?.hide();
+    this.keyBox?.hide();
+    this.valueBox?.hide();
+    this.sign?.hide();
+    this.child?.hide();
   }
 
   layout() {

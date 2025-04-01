@@ -29,6 +29,14 @@ export default class Sign {
     this.sign.front();
   }
 
+  hide() {
+    this.sign.hide();
+  }
+
+  show() {
+    this.sign.show();
+  }
+
   move(x: number, y: number) {
     this.sign.move(x, y);
   }

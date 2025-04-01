@@ -1,6 +1,11 @@
 import Box from "../basic/Box";
 import Graph from "..";
-import TextEditor, { EVENT_EDITING, TTextEditor } from "../basic/TextEditor";
+import TextEditor, {
+  EVENT_EDITING,
+  PADDING_X,
+  PADDING_Y,
+  TTextEditor,
+} from "../basic/TextEditor";
 
 interface Props {
   x?: number;
@@ -19,7 +24,13 @@ export default class TextBox extends Box {
 
   constructor({ x, y, text, style }: Props, graph: Graph) {
     const { width, height } = graph.inputText.testWidthAndHeight(text);
-    super({ width, height, x, y, graph });
+    super({
+      width: width + PADDING_X * 2,
+      height: height + PADDING_Y * 2,
+      x,
+      y,
+      graph,
+    });
     this.style = style;
     this._text = text;
   }

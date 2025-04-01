@@ -10,6 +10,11 @@ export default function select(
   if (item !== graph.selectedItem) {
     graph.selectedItem?.unHighlight();
   }
+  if (graph.editting) {
+    graph.editting.unHighlight();
+    graph.editting = undefined;
+    graph.inputText.hide();
+  }
   item.highlight();
   graph.selectedItem = item;
 }

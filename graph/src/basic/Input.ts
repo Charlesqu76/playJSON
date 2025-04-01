@@ -27,17 +27,16 @@ export default class Input {
     div.style.fontFamily = "Arial, Helvetica, sans-serif";
     div.style.visibility = "hidden";
     div.style.backgroundColor = "rgba(255, 255, 255, 1)";
+    div.style.fontSize = "16px";
     div.style.maxWidth = `${MAX_WIDTH}px`;
+
+    const input = document.createElement("span");
+    this.span = input;
+    div.appendChild(input);
 
     this.div.addEventListener("input", () =>
       this.onChange?.(this.text, this.width, this.height)
     );
-
-    const input = document.createElement("span");
-    this.span = input;
-    input.style.fontSize = "16px";
-    input.style.fontFamily = "Arial, Helvetica, sans-serif";
-    div.appendChild(input);
 
     document.addEventListener("click", (e) => {
       if (e.target !== div) {
@@ -95,11 +94,11 @@ export default class Input {
   }
 
   get width() {
-    return this.div.offsetWidth + 2 * 2;
+    return this.div.scrollWidth;
   }
 
   get height() {
-    return this.div.offsetHeight + 2 * 2;
+    return this.div.scrollHeight;
   }
 
   get text() {
