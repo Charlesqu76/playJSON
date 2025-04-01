@@ -1,5 +1,4 @@
 import Graph from "..";
-import { TObjectBox } from "../component/ObjectBox";
 import {
   EVENT_CREATE,
   EVENT_DELETE,
@@ -8,7 +7,6 @@ import {
   EVENT_SELECT,
   EVENT_UPDATE,
 } from "../event";
-import debounce from "../utils/debounce";
 import create from "./create";
 import deleteItem from "./delete";
 import mouseout from "./mouseout";
@@ -16,14 +14,7 @@ import mouseover from "./mouseover";
 import select from "./select";
 
 export function graphEvent(graph: Graph) {
-  const update = debounce((data: TObjectBox[]) => {
-    const d = data.map((item) => item.value);
-    graph.valueChanged && graph.valueChanged(d);
-  }, 200);
-
-  graph.on(EVENT_UPDATE, (data) => {
-    update(graph.getAllIsolateObjectBox);
-  });
+  graph.on(EVENT_UPDATE, (data) => {});
 
   graph.on(EVENT_DELETE, ({ item }) => {
     deleteItem(graph, item);
@@ -55,8 +46,11 @@ export function graphEvent(graph: Graph) {
   });
 
   graph.canvas?.on("zoom", (event: any) => {
-    if (graph.zoomCallback) {
-      graph.zoomCallback(event.detail.level);
-    }
+    graph.zoomCallback?.(event.detail.level);
+    graph.updateInputPosition();
+  });
+
+  graph.canvas?.on("panning", (e) => {
+    graph.updateInputPosition();
   });
 }

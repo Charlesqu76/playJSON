@@ -1,16 +1,11 @@
 import ObjectBox, { TObjectBox } from "./ObjectBox";
 import Graph from "../index";
 import Box from "../basic/Box";
-import {
-  EVENT_CREATE,
-  EVENT_MOUSEOUT,
-  EVENT_MOUSEOVER,
-  EVENT_SELECT,
-} from "../event";
+import { EVENT_CREATE, EVENT_SELECT } from "../event";
 import GroupRect, { TGroupRect } from "../basic/GroupRect";
 import { EVENT_EDITING } from "../basic/TextEditor";
-import Sign, { TSign } from "./Sign";
-import { signLink } from "../event/keyvaluebox/sign";
+import Sign, { TSign } from "../basic/Sign";
+import { link } from "../event/keyvaluebox/sign";
 import { EVENT_LINE_UPDATE } from "../basic/Line";
 import { dragEnd, dragMove } from "../event/keyvaluebox/drag";
 import {
@@ -29,7 +24,6 @@ interface Props {
   y?: number;
   key: string;
   value: string | Object;
-  isArray: boolean;
   parent: TObjectBox;
 }
 
@@ -50,66 +44,48 @@ export default class KeyValueBox extends Box {
   private _parent: TObjectBox;
   private _child: TObjectBox | null = null;
   showChild: boolean = true;
-  origin: { x: number; y: number } | null = null;
   constructor({ key, value, parent }: Props, graph: Graph) {
-    const keyBox = new TextBox({ text: key, x: 0, y: 0 }, graph);
-    const valueBox = new TextBox(
+    super({ graph });
+    this.keyBox = new TextBox({ text: key }, graph);
+    this.valueBox = new TextBox(
       {
         text: getText(value) as string,
-        y: 0,
-        x: 0,
         style: {
           color: VALUE_COLOR,
         },
       },
       graph
     );
-    const { width, height } = calculateWidthAndHeight(keyBox, valueBox);
-    super({ width, height, graph });
+    const { width, height } = this.boundary;
+    this.setWidth(width);
+    this.setHeight(height);
     this._parent = parent;
-    this.keyBox = keyBox;
-    this.valueBox = valueBox;
+
     if (isObject(value)) {
       this._child = new ObjectBox(
         {
-          x: 0,
-          y: 0,
           value,
           parent: this,
         },
         graph
       );
     }
+
     this.graph.emit(EVENT_CREATE, { item: this });
   }
 
-  render(x: number, y: number) {
-    this.x = x ?? this.x;
-    this.y = y ?? this.y;
-    if (!this.group) {
-      this.init();
+  render(x: number = this.x, y: number = this.y) {
+    this.x = x;
+    this.y = y;
+    if (!this.groupRect) {
+      this._init();
     } else {
-      this.move(this.x, this.y);
+      this._move();
     }
+    this.emit(EVENT_LINE_UPDATE);
   }
 
-  setWidthUnderParent(width: number) {
-    if (!this.container) return;
-    this.setWidth(width);
-    this.sign?.move(this.x + this.width - 4, this.y + this.height / 2 - 4);
-  }
-
-  setWidth(width: number): void {
-    this.width = width;
-    this.groupRect?.setWidth(this.width);
-  }
-
-  setHeight(height: number): void {
-    this.height = height;
-    this.groupRect?.setHeight(this.height);
-  }
-
-  init() {
+  private _init() {
     if (!this.graph?.canvas) return;
     this.groupRect = new GroupRect(
       {
@@ -141,54 +117,20 @@ export default class KeyValueBox extends Box {
 
     this.sign = new Sign(
       {
-        x: this.x + this.groupRect.width - 4,
-        y: this.y + this.groupRect.height / 2 - 4,
+        x: this.groupRect.boundary.cx,
+        y: this.groupRect.boundary.cy,
       },
       this.graph
     );
+    this.groupRect?.add(this.sign.sign);
 
-    this.group?.add(this.sign.sign);
-
-    dragMove(this);
-
-    dragEnd(this);
-
-    this.group?.on("mouseenter", () => {
-      this.graph.emit(EVENT_MOUSEOVER, { item: this });
-    });
-
-    this.group?.on("mouseleave", () => {
-      this.graph.emit(EVENT_MOUSEOUT, { item: this });
-    });
-
-    this.group?.on("click", (e) => {
-      e.stopPropagation();
-      this.graph.emit(EVENT_SELECT, { item: this });
-    });
-
-    signLink(this);
     this.renderChild();
+
+    this.initEvent();
   }
 
-  renderKeyAndValue() {
-    const { width, height } = calculateWidthAndHeight(
-      this.keyBox,
-      this.valueBox
-    );
-    this.width = width;
-    this.height = height;
-    this.parent?.arrangeChildren();
-  }
-
-  renderChild() {
-    if (!this.child) return;
-    this.child.render();
-  }
-
-  move(x: number, y: number) {
-    this.x = x;
-    this.y = y;
-    this.groupRect?.move(x, y);
+  private _move() {
+    this.groupRect?.move(this.x, this.y);
     const { keyPostion, valuePosition } = calculatePosition({
       x: this.x,
       y: this.y,
@@ -196,7 +138,50 @@ export default class KeyValueBox extends Box {
     });
     this.keyBox.render(keyPostion.x, keyPostion.y);
     this.valueBox.render(valuePosition.x, valuePosition.y);
-    this.emit(EVENT_LINE_UPDATE);
+  }
+
+  initEvent() {
+    this.group?.on("dragmove", (event) => {
+      dragMove(event as CustomEvent, this);
+    });
+
+    this.group?.on("dragend", (event) => {
+      dragEnd(event as CustomEvent, this);
+    });
+
+    this.group?.on("click", (e) => {
+      e.stopPropagation();
+      this.graph.emit(EVENT_SELECT, { item: this });
+    });
+
+    this.sign?.sign.on("mousedown", (event) => {
+      link(event as MouseEvent, this);
+    });
+  }
+
+  setWidth(width: number): void {
+    this.width = width;
+    this.groupRect?.setWidth(width);
+    this.sign?.move(
+      this.x + this.width - this.sign.boundary.width / 2,
+      this.y + this.height / 2 - this.sign.boundary.height / 2
+    );
+  }
+
+  setHeight(height: number): void {
+    this.height = height;
+    this.groupRect?.setHeight(height);
+  }
+
+  renderKeyAndValue() {
+    const { width, height } = this.boundary;
+    this.width = width;
+    this.height = height;
+    this.parent?.renderChildren();
+  }
+
+  renderChild() {
+    this.child?.render();
   }
 
   front() {
@@ -206,12 +191,11 @@ export default class KeyValueBox extends Box {
     this.sign?.front();
   }
 
-  highlight() {
-    this.groupRect?.highlight();
-  }
-
-  unHighlight() {
-    this.groupRect?.unHighlight();
+  layout() {
+    this.render();
+    if (this.child) {
+      this.child.layout();
+    }
   }
 
   delete() {
@@ -220,7 +204,15 @@ export default class KeyValueBox extends Box {
     }
     this.parent?.removeChildren(this);
     this.groupRect?.delete();
-    this.groupRect = undefined;
+    this.graph.keyValueBoxes.delete(this);
+  }
+
+  highlight() {
+    this.groupRect?.highlight();
+  }
+
+  unHighlight() {
+    this.groupRect?.unHighlight();
   }
 
   get container() {
@@ -232,14 +224,14 @@ export default class KeyValueBox extends Box {
   }
 
   get key() {
-    return String(this.keyBox.text);
+    return String(this.keyBox.value);
   }
 
   get value() {
     if (this.child) {
       return this.child.value;
     }
-    return this.valueBox.text;
+    return this.valueBox.value;
   }
 
   get entry() {
@@ -256,8 +248,11 @@ export default class KeyValueBox extends Box {
     this._child = child;
     if (!child) {
       this.valueBox.updateText("null");
+      this.valueBox.textBox?.setDisabled(false);
       return;
     }
+    this.valueBox.textBox?.setDisabled(true);
+
     if (child.isArray) {
       this.valueBox.updateText("[]");
     } else {
@@ -276,7 +271,7 @@ export default class KeyValueBox extends Box {
     }
     if (parent.isArray) {
       this.keyBox.updateText(parent.children.size - 1);
-      this.parent?.arrangeChildren();
+      this.parent?.renderChildren();
     }
   }
 

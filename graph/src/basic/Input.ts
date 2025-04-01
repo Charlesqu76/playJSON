@@ -3,7 +3,8 @@ const MAX_WIDTH = 300;
 export default class Input {
   div: HTMLDivElement;
   span: HTMLSpanElement;
-  onChange?: () => void;
+  onChange?: (text: string, width: number, height: number) => void;
+  onBlur?: () => void;
   constructor() {
     const div = document.createElement("div");
     this.div = div;
@@ -28,6 +29,10 @@ export default class Input {
     div.style.backgroundColor = "rgba(255, 255, 255, 1)";
     div.style.maxWidth = `${MAX_WIDTH}px`;
 
+    this.div.addEventListener("input", () =>
+      this.onChange?.(this.text, this.width, this.height)
+    );
+
     const input = document.createElement("span");
     this.span = input;
     input.style.fontSize = "16px";
@@ -35,7 +40,9 @@ export default class Input {
     div.appendChild(input);
 
     document.addEventListener("click", (e) => {
-      this.div.blur();
+      if (e.target !== div) {
+        this.div.blur();
+      }
     });
 
     div.addEventListener("keydown", (e) => {
@@ -62,44 +69,37 @@ export default class Input {
   }
 
   show({
-    x,
-    y,
     text,
     color,
-    scale,
     onChange,
+    onBlur,
   }: {
-    x: number;
-    y: number;
     text: string;
     color: string;
-    scale: number;
     onChange: (text: string, width: number, height: number) => void;
+    onBlur: () => void;
   }) {
     this.div.style.visibility = "visible";
-    this.div.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
     this.div.style.color = color;
     this.span.innerText = text;
     this.div.focus();
-    this.onChange = () => {
-      onChange(this.text, this.width, this.height);
-    };
-    this.div.addEventListener("input", this.onChange);
+    this.onChange = onChange;
+    this.onBlur = onBlur;
   }
 
   hide() {
     this.div.style.visibility = "hidden";
-    if (this.onChange) {
-      this.div.removeEventListener("input", this.onChange);
-    }
+    this.onBlur?.();
+    this.onChange = undefined;
+    this.onBlur = undefined;
   }
 
   get width() {
-    return this.div.offsetWidth;
+    return this.div.offsetWidth + 2 * 2;
   }
 
   get height() {
-    return this.div.offsetHeight;
+    return this.div.offsetHeight + 2 * 2;
   }
 
   get text() {

@@ -3,14 +3,9 @@ import Graph from "..";
 import { Svg } from "@svgdotjs/svg.js";
 import { TKeyvalueBox } from "../component/keyValueBox";
 import { TObjectBox } from "../component/ObjectBox";
-import {
-  EVENT_MOUSEOUT,
-  EVENT_MOUSEOVER,
-  EVENT_SELECT,
-  EVENT_UPDATE,
-} from "../event";
+import { EVENT_MOUSEOUT, EVENT_MOUSEOVER, EVENT_SELECT } from "../event";
 import EventEmitter from "../utils/EventEmitter";
-import { getControlPoints } from "@/utils/line";
+import { getControlPoints } from "../utils/line";
 const defaultOptions = {
   curveHeight: 0,
   strokeColor: "black",
@@ -25,7 +20,6 @@ export const EVENT_LINE_UPDATE = Symbol("EVENT_LINE_UPDATE");
 export default class Line extends EventEmitter {
   keyValueBox: TKeyvalueBox;
   objectBox: TObjectBox;
-  static lastClickedLine: Line | null = null;
   path: Path;
   settings = defaultOptions;
   graph: Graph;
@@ -47,11 +41,10 @@ export default class Line extends EventEmitter {
       width: strokeWidth,
     });
 
-    this.link();
-    setTimeout(() => {
-      this.update();
-    }, 0);
+    this.path.attr({ cursor: "pointer" });
 
+    this.link();
+    this.update();
     this.initEvent();
   }
 
@@ -60,13 +53,13 @@ export default class Line extends EventEmitter {
       this.graph.emit(EVENT_SELECT, { item: this });
     });
 
-    this.path.on("mouseover", () => {
-      this.graph.emit(EVENT_MOUSEOVER, { item: this });
-    });
+    // this.path.on("mouseover", () => {
+    //   this.graph.emit(EVENT_MOUSEOVER, { item: this });
+    // });
 
-    this.path.on("mouseout", () => {
-      this.graph.emit(EVENT_MOUSEOUT, { item: this });
-    });
+    // this.path.on("mouseout", () => {
+    //   this.graph.emit(EVENT_MOUSEOUT, { item: this });
+    // });
   }
 
   show() {
@@ -81,9 +74,10 @@ export default class Line extends EventEmitter {
     this.path.hide();
   }
 
-  update = () => {
-    // @ts-ignore
-    this.path.plot(getControlPoints(this.keyValueBox, this.objectBox));
+  private update = () => {
+    const p = getControlPoints(this.keyValueBox, this.objectBox);
+    if (!p) return;
+    this.path.plot(p);
   };
 
   link() {
@@ -92,7 +86,6 @@ export default class Line extends EventEmitter {
     this.objectBox.line = this;
     this.objectBox.parent = this.keyValueBox;
     this.keyValueBox.child = this.objectBox;
-    // this.graph.emit(EVENT_UPDATE, { name: "link" });
   }
 
   unlink() {
@@ -102,8 +95,6 @@ export default class Line extends EventEmitter {
     this.objectBox.parent = null;
     this.keyValueBox.child = null;
     this.path.remove();
-    this.graph.emit(EVENT_UPDATE, { name: "delete" });
-    // this.graph.emit(EVENT_UPDATE, { name: "unlink" });
   }
 
   highlight() {

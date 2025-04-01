@@ -1,7 +1,5 @@
-import { SVG } from "@svgdotjs/svg.js";
 import { Svg } from "@svgdotjs/svg.js";
-import "@svgdotjs/svg.draggable.js";
-import "@svgdotjs/svg.panzoom.js";
+import Canvas from "./canvas";
 
 import ObjectBox, { TObjectBox } from "./component/ObjectBox";
 import EventEmitter from "./utils/EventEmitter";
@@ -11,26 +9,19 @@ import { TKeyvalueBox } from "./component/keyValueBox";
 import { TLine } from "./basic/Line";
 import Input, { TInput } from "./basic/Input";
 import TextEditor from "./basic/TextEditor";
-
-const MAX_ZOOM = 2;
-const MIN_ZOOM = 0.1;
+import { layoutTree } from "./utils/layout";
 
 interface IProps {
   zoomCallback?: (zoom: number) => void;
-  valueChanged?: (value: any) => void;
-  json?: object | object[];
 }
 
 class Graph extends EventEmitter {
   container: HTMLElement | null = null;
   canvas: Svg | null = null;
   zoomCallback: ((zoom: number) => void) | null = null;
-  valueChanged: ((value: any) => void) | null = null;
-  // root: ObjectBox;
 
-  noParentObjectBoxes = new Set<TObjectBox>([]);
   objectBoxes = new Set<TObjectBox>([]);
-  keyValueBoxes: TKeyvalueBox[] = [];
+  keyValueBoxes = new Set<TKeyvalueBox>([]);
   linkLines: WeakSet<TLine> = new WeakSet([]);
   selectedItem: TLine | TKeyvalueBox | TObjectBox | null = null;
   mouseX: number = 0;
@@ -43,50 +34,32 @@ class Graph extends EventEmitter {
 
   constructor(props: IProps) {
     super();
-    const { zoomCallback, valueChanged, json } = props || {};
+    const { zoomCallback } = props || {};
     this.zoomCallback = zoomCallback || null;
-    this.valueChanged = valueChanged || null;
     this.inputText = new Input();
-    // this.root = new ObjectBox({ value: [{ 1: 2 }] }, this);
   }
 
   updateInputPosition = () => {
     if (!this.canvas || !this.editting) return;
     const scale = this.zoom;
     const { x, y } = this.editting.group.rbox();
-    console.log("x, y", x, y);
-    this.inputText.div.style.transform = `translate(${x}px, ${y}px) scale(${scale})`;
+    const { x: rx, y: ry } = this.canvas.rbox();
+    this.inputText.div.style.transform = `translate(${x - rx + 4}px, ${
+      y - ry + 4
+    }px) scale(${scale})`;
   };
 
   initCanvas = (id: string | HTMLElement) => {
-    this.container = id as HTMLElement;
-    if (typeof id === "string") {
-      this.container = document.querySelector(id);
-    }
-    if (!this.container) return;
-    this.container.style.position = "relative";
+    const conss = new Canvas(id, this);
+    this.canvas = conss.canvas;
+    this.container = conss.container;
+    if (!this.container) throw new Error("Container not found");
     this.inputText.render(this.container);
-
-    const { width, height } = this.container.getBoundingClientRect();
-    this.canvas = SVG()
-      .addTo(id)
-      .size("100%", "100%")
-      .viewbox(`0 0 ${width} ${height}`)
-      .panZoom({ zoomMin: MIN_ZOOM, zoomMax: MAX_ZOOM, zoomFactor: 0.1 });
-
     this.initEvent();
   };
 
   initEvent = () => {
     if (!this.canvas) return;
-
-    this.canvas.on("zoom", (e) => {
-      this.updateInputPosition();
-    });
-
-    this.canvas.on("panning", (e) => {
-      this.updateInputPosition();
-    });
 
     document.addEventListener("keydown", (e) => {
       keydown(e, this);
@@ -99,6 +72,41 @@ class Graph extends EventEmitter {
 
     graphEvent(this);
   };
+
+  recover(object: any) {
+    if (!Array.isArray(object)) {
+      object = [object];
+    }
+
+    object.forEach((item: any) => {
+      const { x, y, value } = item;
+      const box = new ObjectBox(
+        {
+          x,
+          y,
+          value,
+        },
+        this
+      );
+      layoutTree(box, x, y);
+      box.layout();
+    });
+  }
+
+  getInfo() {
+    const result: any[] = [];
+    this.noParentObjectBoxes.forEach((box) => {
+      const { value, boundary } = box;
+      const { x, y } = boundary;
+      const boxInfo = {
+        x,
+        y,
+        value,
+      };
+      result.push(boxInfo);
+    });
+    return result;
+  }
 
   initData = (data: Object | Object[]) => {
     if (this.canvas === null) return;
@@ -116,29 +124,37 @@ class Graph extends EventEmitter {
         this
       );
     });
+
+    this.layout();
   };
 
   layout = () => {
-    this.getAllIsolateObjectBox.forEach((box) => {
-      box.layout();
+    this.noParentObjectBoxes.forEach((box) => {
+      layoutTree(box, box.x, box.y);
+      box.layout(box.x, box.y);
       box.render();
     });
   };
 
-  addKeyValueBox = (box: TKeyvalueBox) => {
-    this.keyValueBoxes.push(box);
-  };
-
-  addObjectBox = (box: TObjectBox) => {
-    this.objectBoxes.add(box);
-  };
-
-  addLinkLine = (linkline: TLine) => {
-    this.linkLines.add(linkline);
-  };
-
-  get getAllIsolateObjectBox() {
-    return Array.from(this.objectBoxes).filter((box) => box.parent === null);
+  createObjectBox({
+    x = 0,
+    y = 0,
+    value = {},
+  }: {
+    x?: number;
+    y?: number;
+    value?: any;
+  }) {
+    const box = new ObjectBox(
+      {
+        x,
+        y,
+        value,
+      },
+      this
+    );
+    layoutTree(box, x, y);
+    box.render();
   }
 
   centerViewOn({
@@ -168,25 +184,18 @@ class Graph extends EventEmitter {
       .zoom(0.8);
   }
 
+  get noParentObjectBoxes() {
+    return Array.from(this.objectBoxes).filter((box) => box.parent === null);
+  }
+
   get value() {
-    const values = this.getAllIsolateObjectBox.map((item) => item.value);
+    const values = this.noParentObjectBoxes.map((item) => item.value);
     return values;
   }
 
   get zoom() {
     if (!this.canvas) return 1;
     return this.canvas.zoom();
-  }
-
-  get viewpoint() {
-    if (!this.canvas) return { x: 0, y: 0, width: 1000, height: 1000 };
-    const viewbox = this.canvas.viewbox();
-    return {
-      x: viewbox.x,
-      y: viewbox.y,
-      width: viewbox.width,
-      height: viewbox.height,
-    };
   }
 }
 

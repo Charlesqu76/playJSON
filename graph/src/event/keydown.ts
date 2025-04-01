@@ -21,16 +21,18 @@ export default function keydown(e: KeyboardEvent, graph: Graph) {
       e.preventDefault();
 
       if (graph.selectedItem instanceof ObjectBox) {
+        layoutTree(
+          graph.selectedItem,
+          graph.selectedItem.x,
+          graph.selectedItem.y
+        );
+
         graph.selectedItem.layout();
         return;
       }
       graph.layout();
     }
 
-    // if (e.key === "r") {
-    //   showJson(graph);
-    //   e.preventDefault();
-    // }
     if (e.key === "Delete" || e.key === "Backspace") {
       e.preventDefault();
 
@@ -59,16 +61,11 @@ async function handlePaste(graph: Graph) {
     );
     const text = await navigator.clipboard.readText();
     const value = JSON.parse(text);
-    const newNode = new ObjectBox(
-      {
-        x: cursor.x,
-        y: cursor.y,
-        value: value,
-      },
-      graph
-    );
-    layoutTree(newNode, cursor.x, cursor.y);
-    newNode.render();
+    graph.createObjectBox({
+      x: cursor.x,
+      y: cursor.y,
+      value: value,
+    });
   } catch (err) {
     console.error("Failed to paste:", err);
   }
@@ -87,7 +84,6 @@ function addKayValueBox(graph: Graph) {
       y: 0,
       key,
       value,
-      isArray: graph.selectedItem.isArray,
       parent: graph.selectedItem,
     },
     graph

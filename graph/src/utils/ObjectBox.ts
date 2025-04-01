@@ -14,8 +14,9 @@ export function getWidthAndHeight(children: Set<TKeyvalueBox>) {
   let height = 0;
   let width = 0;
   children.forEach((child) => {
-    width = Math.max(width, child.boundary.width);
-    height += child.height;
+    const { width: cw, height: ch } = child.boundary;
+    width = Math.max(width, cw);
+    height += ch;
   });
 
   return {
@@ -24,21 +25,24 @@ export function getWidthAndHeight(children: Set<TKeyvalueBox>) {
   };
 }
 
-export function childrenPostion(
-  children: Set<TKeyvalueBox>,
-  x: number,
-  y: number
-) {
+export function renderChildren({
+  children,
+  x,
+  y,
+  width,
+}: {
+  children: Set<TKeyvalueBox>;
+  x: number;
+  y: number;
+  width: number;
+}) {
+  x += PADDING_X;
+  y += PADDING_Y;
   children.forEach((child) => {
-    child.render(x + PADDING_X, y + PADDING_Y);
-    y += child.height + GAP;
-  });
-}
-
-export function setChildrenWidth(children: Set<TKeyvalueBox>, width: number) {
-  children.forEach((child) => {
-    child.setWidthUnderParent(width - PADDING_X * 2);
+    child.render(x, y);
+    child.setWidth(width - PADDING_X * 2);
     child.setHeight(child.height);
+    y += child.height + GAP;
   });
 }
 

@@ -9,13 +9,6 @@ const PADDING_Y = 2;
 const size = "16px";
 const DEFAULT_MAX_WIDTH = 300;
 
-export const textPosition = (x: number, y: number) => {
-  return {
-    x: x + PADDING_X,
-    y: y + PADDING_Y,
-  };
-};
-
 interface Props {
   x: number;
   y: number;
@@ -31,10 +24,11 @@ interface Props {
 export type TTextEditor = TextEditor;
 
 export default class TextEditor extends GroupRect {
-  text: string;
-  span: HTMLSpanElement;
-  foreignObject: ForeignObject;
-  graph: Graph;
+  private text: string;
+  private span: HTMLSpanElement;
+  private foreignObject: ForeignObject;
+  private graph: Graph;
+  private disabled: boolean = false;
   constructor({ x, y, text, style, width, height }: Props, graph: Graph) {
     if (!graph.canvas) throw new Error("canvas not found");
     super(
@@ -66,12 +60,6 @@ export default class TextEditor extends GroupRect {
       overflow: "hidden",
     });
 
-    const div = document.createElement("div");
-    div.style.width = "100%";
-    div.style.height = "100%";
-    div.style.paddingTop = PADDING_Y + "px";
-    div.style.paddingLeft = PADDING_X + "px";
-
     const span = document.createElement("span");
     span.style.fontSize = size;
     span.style.display = "block";
@@ -82,24 +70,33 @@ export default class TextEditor extends GroupRect {
     span.style.color = style?.color || "black";
     span.style.whiteSpace = "break-spaces";
     span.style.overflowWrap = "break-word";
-    foreignObject.node.appendChild(div);
-    div.appendChild(span);
+    span.style.marginTop = PADDING_Y * 2 + "px";
+    span.style.marginLeft = PADDING_X * 2 + "px";
+    foreignObject.node.appendChild(span);
     span.innerHTML = text;
     this.span = span;
 
-    this.group.on("dblclick", (e) => {
-      this.graph.editting = this;
-      e.preventDefault();
+    this.group.on("click", (e) => {
       e.stopPropagation();
-      const { x, y } = this.group.rbox();
+    });
+
+    this.group.on("dblclick", (e) => {
+      if (this.disabled) return;
+      if (this.graph.editting && this.graph.editting !== this) {
+        this.graph.editting.unHighlight();
+      }
+      this.graph.editting = this;
+      this.highlight();
+      e.stopPropagation();
+      this.graph.updateInputPosition();
       this.graph.inputText.show({
-        x: x,
-        y: y,
-        scale: this.graph.zoom,
         text: this.text,
         color: style?.color || "black",
         onChange: (text, width, height) => {
           this.updateText(text, width, height);
+        },
+        onBlur: () => {
+          this.unHighlight();
         },
       });
     });
@@ -120,31 +117,31 @@ export default class TextEditor extends GroupRect {
   }
 
   setWidthAndHeight(width: number, height: number) {
-    this.container.width(width + PADDING_X);
-    this.container.height(height);
-    this.foreignObject.width(width + PADDING_X);
-    this.foreignObject.height(height);
+    super.setWidth(width + PADDING_X * 2);
+    super.setHeight(height + PADDING_Y * 2);
+    this.foreignObject.width(width + PADDING_X * 2);
+    this.foreignObject.height(height + PADDING_Y * 2);
   }
 
-  front() {
-    this.group.front();
+  setDisabled(disabled: boolean) {
+    this.disabled = disabled;
+    if (disabled) {
+      this.group.attr("cursor", "not-allowed");
+    } else {
+      this.group.attr("cursor", "text");
+    }
   }
 
-  move(x: number, y: number) {
-    this.group.move(x, y);
-    this.container.move(x, y);
+  highlight(style?: Record<string, string | number>): void {
+    super.highlight({
+      stroke: "#92a8d1",
+      "stroke-width": 1,
+      ...style,
+    });
   }
 
-  show() {
-    this.group.show();
-  }
-
-  hide() {
-    this.group.hide();
-  }
-
-  delete() {
-    this.group.remove();
+  unHighlight(): void {
+    super.unHighlight({ stroke: "none" });
   }
 
   get value() {
