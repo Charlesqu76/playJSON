@@ -15,7 +15,7 @@ import {
   isObject,
 } from "../utils/keyValueBox";
 import TextBox from "./TextBox";
-import { layoutTree } from "@/utils/layout";
+import { layoutTree } from "../utils/layout";
 
 const BG_COLOR = "#fff";
 const VALUE_COLOR = "green";
