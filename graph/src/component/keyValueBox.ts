@@ -15,6 +15,7 @@ import {
   isObject,
 } from "../utils/keyValueBox";
 import TextBox from "./TextBox";
+import { layoutTree } from "@/utils/layout";
 
 const BG_COLOR = "#fff";
 const VALUE_COLOR = "green";
@@ -138,40 +139,48 @@ export default class KeyValueBox extends Box {
     });
     this.keyBox.render(keyPostion.x, keyPostion.y);
     this.valueBox.render(valuePosition.x, valuePosition.y);
+    this.sign?.move(
+      this.x + this.width - this.sign.boundary.width / 2,
+      this.y + this.height / 2 - this.sign.boundary.height / 2
+    );
   }
 
   initEvent() {
     this.group?.on("dragmove", (event) => {
+      this.graph.recordAction("dragmove", this);
       dragMove(event as CustomEvent, this);
     });
 
     this.group?.on("dragend", (event) => {
+      this.graph.recordAction("dragend", this);
       dragEnd(event as CustomEvent, this);
     });
 
     this.group?.on("click", (e) => {
+      this.graph.recordAction("click", this);
       e.stopPropagation();
       this.graph.emit(EVENT_SELECT, { item: this });
     });
 
     this.sign?.sign.on("mousedown", (event) => {
+      this.graph.recordAction("mousedown", this);
       link(event as MouseEvent, this);
     });
 
-    // this.sign?.sign.on("click", (e) => {
-    //   e.stopPropagation();
-    //   this.showChild = !this.showChild;
-
-    //   if (!this.showChild) {
-    //     this.child?.hide();
-    //     layoutTree(this.parent);
-    //     this.parent.layout();
-    //   } else {
-    //     layoutTree(this.parent);
-    //     this.parent?.layout();
-    //     this.child?.show();
-    //   }
-    // });
+    this.sign?.sign.on("click", (e) => {
+      this.graph.recordAction("click", this);
+      if (!this.child) return;
+      // this.graph.emit(EVENT_SELECT, { item: this });
+      e.stopPropagation();
+      this.showChild = !this.showChild;
+      layoutTree(this.parent);
+      this.parent.layout();
+      if (!this.showChild) {
+        this.child?.container?.hide();
+      } else {
+        this.child?.container?.show();
+      }
+    });
   }
 
   setWidth(width: number): void {

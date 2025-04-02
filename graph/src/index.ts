@@ -184,6 +184,10 @@ class Graph extends EventEmitter {
       .zoom(0.8);
   }
 
+  async recordAction(action: string, params: any) {
+    console.log("action", action, params);
+  }
+
   get noParentObjectBoxes() {
     return Array.from(this.objectBoxes).filter((box) => box.parent === null);
   }

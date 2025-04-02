@@ -1,17 +1,13 @@
 import KeyValueBox, { TKeyvalueBox } from "./keyValueBox";
 import Graph from "..";
-import {
-  EVENT_CREATE,
-  EVENT_MOUSEOUT,
-  EVENT_MOUSEOVER,
-  EVENT_SELECT,
-} from "../event";
+import { EVENT_ACTION, EVENT_CREATE, EVENT_SELECT } from "../event";
 import Line, { EVENT_LINE_UPDATE, TLine } from "../basic/Line";
 import GroupRect from "../basic/GroupRect";
 import { renderChildren, getWidthAndHeight } from "../utils/ObjectBox";
 import Box from "../basic/Box";
 import { value } from "../utils/ObjectBox";
 import checkCircle from "../utils/linkVerify";
+import { G } from "@svgdotjs/svg.js";
 
 interface Props {
   x?: number;
@@ -35,9 +31,11 @@ export default class ObjectBox extends Box {
   private _parent: TKeyvalueBox | null = null;
   children: Set<TKeyvalueBox> = new Set([]);
   private groupRect?: GroupRect;
+  container?: G;
 
   constructor({ x, y, value, parent = null }: Props, graph: Graph) {
     super({ width: 0, height: 0, graph, x, y });
+    this.container = graph.canvas?.group();
     this.isArray = Array.isArray(value);
     const children = Object.entries(value).map(
       ([key, value]) =>
@@ -84,13 +82,18 @@ export default class ObjectBox extends Box {
       },
       this.graph
     );
-
+    this.container?.add(this.groupRect.group);
     this.renderChildren();
+    this.parent && this.link(this.parent);
+
+    this.line?.path && this.container?.add(this.line.path);
     this.children.forEach((child) => {
       child.group && this.group?.add(child.group);
+      if (child.child) {
+        child.child.container && this.container?.add(child.child.container);
+      }
     });
 
-    this.parent && this.link(this.parent);
     this.initEvent();
   }
 
@@ -102,23 +105,18 @@ export default class ObjectBox extends Box {
   initEvent() {
     this.group?.on("dragmove", (e) => {
       const { box } = (e as CustomEvent).detail;
+      this.graph.recordAction("dragmove", box);
       this.render(box.x, box.y);
     });
 
     this.group?.on("dragend", (e) => {
       const { box } = (e as CustomEvent).detail;
+      this.graph.recordAction("dragend", box);
       this.render(box.x, box.y);
     });
 
-    this.group?.on("mouseenter", () => {
-      this.graph.emit(EVENT_MOUSEOVER, { item: this });
-    });
-
-    this.group?.on("mouseleave", () => {
-      this.graph.emit(EVENT_MOUSEOUT, { item: this });
-    });
-
     this.group?.on("click", (e) => {
+      this.graph.recordAction("click", {});
       this.graph.emit(EVENT_SELECT, { item: this });
       e.stopPropagation();
     });
@@ -258,6 +256,8 @@ export default class ObjectBox extends Box {
 
   set parent(parent: TKeyvalueBox | null) {
     this._parent = parent;
+    this.container && parent?.parent?.container?.add(this.container);
+    this.line?.path && parent?.parent?.container?.add(this.line.path);
   }
 
   get group() {

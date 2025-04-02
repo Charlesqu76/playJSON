@@ -4,8 +4,8 @@ const HORIZONTAL_SPACING = 30;
 const VERTICAL_SPACING = 20;
 
 export const layoutTree = (root: TObjectBox, x: number = 0, y: number = 0) => {
-  const initialX = x;
-  const initialY = y;
+  const initialX = x || root.x;
+  const initialY = y || root.y;
   const levels: TObjectBox[][] = [];
 
   const groupByLevels = (node: TObjectBox | null, level: number) => {

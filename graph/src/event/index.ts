@@ -1,20 +1,21 @@
 import Graph from "..";
 import {
+  EVENT_ACTION,
   EVENT_CREATE,
   EVENT_DELETE,
-  EVENT_MOUSEOUT,
-  EVENT_MOUSEOVER,
   EVENT_SELECT,
   EVENT_UPDATE,
 } from "../event";
 import create from "./create";
 import deleteItem from "./delete";
-import mouseout from "./mouseout";
-import mouseover from "./mouseover";
 import select from "./select";
 
 export function graphEvent(graph: Graph) {
   graph.on(EVENT_UPDATE, (data) => {});
+
+  graph.on(EVENT_CREATE, ({ item }) => {
+    create(graph, item);
+  });
 
   graph.on(EVENT_DELETE, ({ item }) => {
     deleteItem(graph, item);
@@ -24,17 +25,12 @@ export function graphEvent(graph: Graph) {
     select(graph, item);
   });
 
-  graph.on(EVENT_MOUSEOUT, ({ item }) => {
-    mouseout(graph, item);
-  });
-
-  graph.on(EVENT_MOUSEOVER, ({ item }) => {
-    mouseover(graph, item);
-  });
-
-  graph.on(EVENT_CREATE, ({ item }) => {
-    create(graph, item);
-  });
+  graph.on(
+    EVENT_ACTION,
+    ({ action, params }: { action: string; params: any }) => {
+      console.log("action", action, params);
+    }
+  );
 
   graph.canvas?.click((event: Event) => {
     if (event.target === graph.canvas?.node) {
@@ -46,11 +42,15 @@ export function graphEvent(graph: Graph) {
   });
 
   graph.canvas?.on("zoom", (event: any) => {
+    graph.recordAction("zoom", {
+      level: event.detail.level,
+    });
     graph.zoomCallback?.(event.detail.level);
     graph.updateInputPosition();
   });
 
   graph.canvas?.on("panning", (e) => {
+    graph.recordAction("panning", {});
     graph.updateInputPosition();
   });
 }

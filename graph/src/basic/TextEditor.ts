@@ -74,11 +74,17 @@ export default class TextEditor extends GroupRect {
     this.span = span;
 
     this.group.on("click", (e) => {
+      this.graph.recordAction("click", {
+        item: this,
+      });
       e.stopPropagation();
     });
 
     this.group.on("dblclick", (e) => {
       if (this.disabled) return;
+      this.graph.recordAction("dblclick", {
+        item: this,
+      });
       if (graph.selectedItem) {
         graph.selectedItem.unHighlight();
         graph.selectedItem = null;
@@ -116,6 +122,12 @@ export default class TextEditor extends GroupRect {
     this.span.innerHTML = this.text;
     this.setWidthAndHeight(width, height);
     this.group.fire(EVENT_EDITING, { text: text });
+  }
+
+  move(x: number, y: number) {
+    this.group.move(x, y);
+    this.foreignObject.x(x);
+    this.foreignObject.y(y);
   }
 
   setWidthAndHeight(width: number, height: number, withPadding = true) {

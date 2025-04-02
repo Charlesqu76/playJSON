@@ -3,7 +3,7 @@ import Graph from "..";
 import { Svg } from "@svgdotjs/svg.js";
 import { TKeyvalueBox } from "../component/keyValueBox";
 import { TObjectBox } from "../component/ObjectBox";
-import { EVENT_MOUSEOUT, EVENT_MOUSEOVER, EVENT_SELECT } from "../event";
+import { EVENT_SELECT } from "../event";
 import EventEmitter from "../utils/EventEmitter";
 import { getControlPoints } from "../utils/line";
 const defaultOptions = {
@@ -50,16 +50,11 @@ export default class Line extends EventEmitter {
 
   initEvent() {
     this.path.on("click", () => {
+      this.graph.recordAction("selectLine", {
+        line: this,
+      });
       this.graph.emit(EVENT_SELECT, { item: this });
     });
-
-    // this.path.on("mouseover", () => {
-    //   this.graph.emit(EVENT_MOUSEOVER, { item: this });
-    // });
-
-    // this.path.on("mouseout", () => {
-    //   this.graph.emit(EVENT_MOUSEOUT, { item: this });
-    // });
   }
 
   show() {

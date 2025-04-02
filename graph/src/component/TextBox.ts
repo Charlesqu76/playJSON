@@ -59,6 +59,7 @@ export default class TextBox extends Box {
       this.graph
     );
 
+
     this.textBox?.group.on(EVENT_EDITING, () => {
       const { width = 0, height = 0 } = this.textBox?.boundary || {};
       this.width = width;

@@ -16,11 +16,11 @@ export default class Sign {
     }
     this.sign = new Circle().radius(4).fill("black");
     this.sign.move(x, y);
-    this.sign.on("mouseover", () => {
+    this.sign.on("mouseenter", () => {
       this.sign.attr({ cursor: "pointer" });
-      this.sign.radius(5);
+      this.sign.radius(6);
     });
-    this.sign.on("mouseout", () => {
+    this.sign.on("mouseleave", () => {
       this.sign.radius(4);
     });
   }

@@ -6,6 +6,7 @@ export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
   if (!keyvalueBox.parent || !keyvalueBox.graph.canvas || !keyvalueBox.sign)
     return;
   event.stopPropagation();
+  event.preventDefault();
   keyvalueBox.graph.isLinking = true;
   let tempLine: Line | null = null;
   const svgPoint = (
@@ -17,7 +18,12 @@ export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
     .stroke({ width: 2, color: "#000" });
 
   const mousemove = (e: MouseEvent) => {
-    console.log("mousemove");
+    keyvalueBox.graph.recordAction("mousemove", {
+      x: e.clientX,
+      y: e.clientY,
+      item: keyvalueBox,
+      action: "link",
+    });
     svgPoint.x = e.clientX;
     svgPoint.y = e.clientY;
     const cursor = svgPoint.matrixTransform(
@@ -41,6 +47,12 @@ export function link(event: MouseEvent, keyvalueBox: TKeyvalueBox) {
   };
 
   const mouseup = (e: MouseEvent) => {
+    keyvalueBox.graph.recordAction("mouseup", {
+      x: e.clientX,
+      y: e.clientY,
+      item: keyvalueBox,
+      action: "link",
+    });
     keyvalueBox.graph.isLinking = false;
     tempLine?.remove();
     tempLine = null;

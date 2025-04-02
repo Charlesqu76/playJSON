@@ -6,13 +6,13 @@ export const getControlPoints = (
   end: TObjectBox,
   curveHeight = 0
 ) => {
-  const { boundary: startBoundary } = start || {};
+  const { boundary: startBoundary } = start.sign || {};
   const { boundary: endBoundary } = end || {};
 
   if (!endBoundary || !startBoundary) return;
   const startPoint = {
-    x: start.x + start.width,
-    y: start.y + start.height / 2,
+    x: startBoundary.x2,
+    y: startBoundary.cy,
   };
 
   const endPoint = {
