@@ -24,13 +24,6 @@ export default class Box extends EventEmitter {
     this.graph = graph;
   }
 
-  setWidth(width: number) {
-    this.width = width;
-  }
-  setHeight(height: number) {
-    this.height = height;
-  }
-
   get width() {
     return this._width;
   }

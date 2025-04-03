@@ -35,18 +35,18 @@ export default class TextEditor extends GroupRect {
       {
         x,
         y,
-        width: 0,
-        height: 0,
+        width,
+        height,
         style: {
           stroke: "none",
         },
+        draggable: false,
       },
       graph
     );
 
     this.graph = graph;
     this.text = text;
-    this.group.draggable(false);
     this.group?.attr("cursor", "text");
 
     const foreignObject = this.group.foreignObject(0, 0).attr({

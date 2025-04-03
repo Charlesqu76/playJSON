@@ -9,6 +9,7 @@ interface IProps {
   width: number;
   height: number;
   style?: Record<string, string | number>;
+  draggable?: boolean;
 }
 
 export type TGroupRect = GroupRect;
@@ -16,11 +17,14 @@ export type TGroupRect = GroupRect;
 export default class GroupRect extends EventEmitter {
   group: G;
   container: Rect;
-  constructor({ x, y, width, height, style = {} }: IProps, graph: Graph) {
+  constructor(
+    { x, y, width, height, style = {}, draggable = true }: IProps,
+    graph: Graph
+  ) {
     super();
     if (!graph.canvas) throw new Error("Canvas is not initialized");
     this.group = graph.canvas.group();
-    this.group?.draggable();
+    this.group?.draggable(draggable);
     this.container = new Rect({
       x: x,
       y: y,

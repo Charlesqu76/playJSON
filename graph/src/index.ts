@@ -19,7 +19,6 @@ class Graph extends EventEmitter {
   container: HTMLElement | null = null;
   canvas: Svg | null = null;
   zoomCallback: ((zoom: number) => void) | null = null;
-
   objectBoxes = new Set<TObjectBox>([]);
   keyValueBoxes = new Set<TKeyvalueBox>([]);
   linkLines: WeakSet<TLine> = new WeakSet([]);
@@ -73,7 +72,7 @@ class Graph extends EventEmitter {
     graphEvent(this);
   };
 
-  recover(object: any) {
+  load(object: any) {
     if (!Array.isArray(object)) {
       object = [object];
     }
@@ -91,6 +90,19 @@ class Graph extends EventEmitter {
       layoutTree(box, x, y);
       box.layout();
     });
+  }
+
+  clear() {
+    this.objectBoxes.forEach((box) => {
+      box.delete();
+    });
+    this.keyValueBoxes.forEach((box) => {
+      box.delete();
+    });
+    this.objectBoxes.clear();
+    this.keyValueBoxes.clear();
+    this.linkLines = new WeakSet([]);
+    this.canvas?.clear();
   }
 
   getInfo() {
@@ -185,7 +197,7 @@ class Graph extends EventEmitter {
   }
 
   async recordAction(action: string, params: any) {
-    console.log("action", action, params);
+    // console.log("action", action, params);
   }
 
   get noParentObjectBoxes() {
