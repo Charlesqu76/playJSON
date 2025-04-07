@@ -11,14 +11,12 @@ type Nav = {
 
 type State = {
   graph: Graph;
-  zoom?: number;
   searchText: string;
   navItems: Nav[];
   selected: Nav | null;
 };
 
 type Actions = {
-  setZoom: (zoom: number) => void;
   setSearchText: (text: string) => void;
   setNavItems: (sidebar: Nav[]) => void;
   setSelected: (selected: Nav) => void;
@@ -29,7 +27,6 @@ type Actions = {
 export const useStore = create<State & Actions>((set, get) => ({
   navItems: [],
   searchText: "",
-  zoom: 100,
   selected: null,
   setSelected: (selected) => {
     if (selected) {
@@ -37,16 +34,11 @@ export const useStore = create<State & Actions>((set, get) => ({
     }
     set(() => ({ selected: selected }));
   },
-  graph: new Graph({
-    zoomCallback: (zoom) => {
-      set(() => ({ zoom: zoom * 100 }));
-    },
-  }),
+  graph: new Graph({}),
   setNavItems: (navItems) => {
     localStorage.setItem("navItems", JSON.stringify(navItems));
     set(() => ({ navItems: navItems }));
   },
-  setZoom: (zoom) => set(() => ({ zoom: zoom * 100 })),
   setSearchText: (text) => set(() => ({ searchText: text })),
   saveGraph: (e: KeyboardEvent) => {
     const { graph, selected } = get();

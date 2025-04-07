@@ -16,6 +16,7 @@ interface IProps {
 }
 
 class Graph extends EventEmitter {
+  canvass: Canvas | null = null;
   container: HTMLElement | null = null;
   canvas: Svg | null = null;
   zoomCallback: ((zoom: number) => void) | null = null;
@@ -49,9 +50,9 @@ class Graph extends EventEmitter {
   };
 
   initCanvas = (id: string | HTMLElement) => {
-    const conss = new Canvas(id, this);
-    this.canvas = conss.canvas;
-    this.container = conss.container;
+    this.canvass = new Canvas(id, this);
+    this.canvas = this.canvass.canvas;
+    this.container = this.canvass.container;
     if (!this.container) throw new Error("Container not found");
     this.inputText.render(this.container);
     this.initEvent();
@@ -76,7 +77,6 @@ class Graph extends EventEmitter {
     if (!Array.isArray(object)) {
       object = [object];
     }
-
     object.forEach((item: any) => {
       const { x, y, value } = item;
       const box = new ObjectBox(
@@ -90,6 +90,7 @@ class Graph extends EventEmitter {
       layoutTree(box, x, y);
       box.layout();
     });
+    this.canvass?.toCenter();
   }
 
   clear() {
@@ -198,6 +199,7 @@ class Graph extends EventEmitter {
 
   async recordAction(action: string, params: any) {
     // console.log("action", action, params);
+    // this.getScope();
   }
 
   get noParentObjectBoxes() {

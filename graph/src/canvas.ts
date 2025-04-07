@@ -26,4 +26,10 @@ export default class Canvas {
       .viewbox(`0 0 ${width} ${height}`)
       .panZoom({ zoomMin: MIN_ZOOM, zoomMax: MAX_ZOOM, zoomFactor: 0.1 });
   }
+
+  toCenter() {
+    if (!this.canvas) return;
+    const { width, height, x, y } = this.canvas.bbox();
+    this.canvas.viewbox(x - width * 0.1, y, width * 1.2, height * 1.2);
+  }
 }

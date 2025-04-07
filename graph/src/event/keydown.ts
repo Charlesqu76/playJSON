@@ -88,5 +88,6 @@ function addKayValueBox(graph: Graph) {
     },
     graph
   );
+  keyvaluebox.render();
   graph.selectedItem.addChildren(keyvaluebox);
 }
