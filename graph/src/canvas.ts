@@ -32,4 +32,13 @@ export default class Canvas {
     const { width, height, x, y } = this.canvas.bbox();
     this.canvas.viewbox(x - width * 0.1, y, width * 1.2, height * 1.2);
   }
+
+  isInViwport(x: number, y: number) {
+    return true;
+    if (!this.canvas) return false;
+    const { x: viewX, y: viewY, width, height } = this.canvas.viewbox();
+    return (
+      x >= viewX && x <= viewX + width && y >= viewY && y <= viewY + height
+    );
+  }
 }

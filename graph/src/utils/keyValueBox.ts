@@ -7,17 +7,24 @@ export function calculatePosition({
   x,
   y,
   keyBox,
+  isArray,
 }: {
   x: number;
   y: number;
   keyBox: TTextBox;
+  isArray?: boolean;
 }) {
   const keyPostion = {
     x: x + PADDING_X,
     y: y + PADDING_Y,
   };
+
+  let valueX = x + PADDING_X;
+  if (!isArray) {
+    valueX += keyBox.width + GAP;
+  }
   const valuePosition = {
-    x: x + keyBox.width + PADDING_X + GAP,
+    x: valueX,
     y: y + PADDING_Y,
   };
   return {
@@ -26,11 +33,18 @@ export function calculatePosition({
   };
 }
 
-export function calculateWidthAndHeight(keyBox: TTextBox, valueBox: TTextBox) {
-  const width = keyBox.width + valueBox.width;
+export function calculateWidthAndHeight(
+  keyBox: TTextBox,
+  valueBox: TTextBox,
+  isArray: Boolean = false
+) {
+  let width = valueBox.width;
+  if (!isArray) {
+    width += keyBox.width + GAP;
+  }
   const height = Math.max(keyBox.height, valueBox.height);
   return {
-    width: width + PADDING_X * 2 + GAP,
+    width: width + PADDING_X * 2,
     height: height + PADDING_Y * 2,
   };
 }

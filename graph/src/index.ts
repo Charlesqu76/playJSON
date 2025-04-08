@@ -167,6 +167,7 @@ class Graph extends EventEmitter {
       this
     );
     layoutTree(box, x, y);
+
     box.render();
   }
 

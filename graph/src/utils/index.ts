@@ -1,6 +1,3 @@
-import { TKeyvalueBox } from "@/component/keyValueBox";
-import { TObjectBox } from "@/component/ObjectBox";
-
 export interface Box {
   boundary: {
     x: number;

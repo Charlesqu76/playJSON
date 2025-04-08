@@ -1,6 +1,6 @@
 import KeyValueBox, { TKeyvalueBox } from "./keyValueBox";
 import Graph from "..";
-import { EVENT_ACTION, EVENT_CREATE, EVENT_SELECT } from "../event";
+import { EVENT_CREATE, EVENT_SELECT } from "../event";
 import Line, { EVENT_LINE_UPDATE, TLine } from "../basic/Line";
 import GroupRect from "../basic/GroupRect";
 import { renderChildren, getWidthAndHeight } from "../utils/ObjectBox";
@@ -59,6 +59,16 @@ export default class ObjectBox extends Box {
   render(x: number = this.x, y: number = this.y) {
     this.x = x;
     this.y = y;
+    // if (
+    //   !this.graph.canvass?.isInViwport(
+    //     this.x + this.width,
+    //     this.y + this.height
+    //   )
+    // ) {
+    //   this.selfHidden();
+    // } else {
+    //   this.show();
+    // }
     if (!this.groupRect) {
       this._init();
     } else {
@@ -82,6 +92,7 @@ export default class ObjectBox extends Box {
       },
       this.graph
     );
+
     this.container?.add(this.groupRect.group);
     this.renderChildren();
     this.parent && this.link(this.parent);
@@ -207,11 +218,15 @@ export default class ObjectBox extends Box {
     });
   }
 
-  hide() {
+  selfHidden() {
     this.line?.hide();
     this.groupRect?.hide();
+  }
+
+  hide() {
+    this.selfHidden();
     this.children.forEach((child) => {
-      child.hide();
+      child?.hide();
     });
   }
 

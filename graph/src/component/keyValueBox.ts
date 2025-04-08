@@ -78,6 +78,7 @@ export default class KeyValueBox extends Box {
   render(x: number = this.x, y: number = this.y) {
     this.x = x;
     this.y = y;
+
     if (!this.groupRect) {
       this._init();
     } else {
@@ -105,8 +106,12 @@ export default class KeyValueBox extends Box {
       x: this.x,
       y: this.y,
       keyBox: this.keyBox,
+      isArray: this.parent.isArray,
     });
     this.keyBox.render(keyPostion.x, keyPostion.y);
+    if (this.parent.isArray) {
+      this.keyBox.hide();
+    }
     this.groupRect.add(this.keyBox.group);
     this.keyBox.textBox?.group?.on(EVENT_EDITING, () =>
       this.renderKeyAndValue()
@@ -136,6 +141,7 @@ export default class KeyValueBox extends Box {
       x: this.x,
       y: this.y,
       keyBox: this.keyBox,
+      isArray: this.parent.isArray,
     });
     this.keyBox.render(keyPostion.x, keyPostion.y);
     this.valueBox.render(valuePosition.x, valuePosition.y);
@@ -170,7 +176,6 @@ export default class KeyValueBox extends Box {
     this.sign?.sign.on("click", (e) => {
       this.graph.recordAction("click", this);
       if (!this.child) return;
-      // this.graph.emit(EVENT_SELECT, { item: this });
       e.stopPropagation();
       this.showChild = !this.showChild;
       layoutTree(this.parent);
@@ -223,11 +228,15 @@ export default class KeyValueBox extends Box {
     this.child?.show();
   }
 
-  hide() {
+  selfHide() {
     this.groupRect?.hide();
     this.keyBox?.hide();
     this.valueBox?.hide();
     this.sign?.hide();
+  }
+
+  hide() {
+    this.selfHide();
     this.child?.hide();
   }
 
@@ -310,9 +319,12 @@ export default class KeyValueBox extends Box {
       return;
     }
     if (parent.isArray) {
-      this.keyBox.updateText(parent.children.size - 1);
-      this.parent?.renderChildren();
+      this.keyBox?.hide();
+    } else {
+      this.keyBox.show();
     }
+    this.keyBox?.render();
+    // this.parent?.renderChildren();
   }
 
   get keyChain(): Array<string> {
@@ -324,7 +336,8 @@ export default class KeyValueBox extends Box {
   get boundary() {
     const { width, height } = calculateWidthAndHeight(
       this.keyBox,
-      this.valueBox
+      this.valueBox,
+      this.parent?.isArray
     );
     return {
       x: this.x,

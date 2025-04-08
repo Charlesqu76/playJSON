@@ -6,7 +6,6 @@ import { toast } from "sonner";
 type Nav = {
   id: string;
   title: string;
-  url: string;
 };
 
 type State = {
@@ -22,12 +21,28 @@ type Actions = {
   setSelected: (selected: Nav) => void;
   saveGraph: (e: KeyboardEvent) => void;
   loadGraph: (selected: Nav) => void;
+  init: () => void;
+  initGraph: (element: HTMLDivElement) => void;
 };
 
 export const useStore = create<State & Actions>((set, get) => ({
   navItems: [],
   searchText: "",
   selected: null,
+  init: () => {
+    const storedNavItems = localStorage.getItem("navItems");
+    try {
+      if (storedNavItems) {
+        const data = JSON.parse(storedNavItems);
+        get().setNavItems(data);
+        get().setSelected(data[0]);
+        get().loadGraph(data[0]);
+      }
+    } catch (e) {
+      console.error("Error parsing navItems from localStorage", e);
+    }
+  },
+
   setSelected: (selected) => {
     if (selected) {
       get().loadGraph(selected);
@@ -72,13 +87,21 @@ export const useStore = create<State & Actions>((set, get) => ({
     if (json) {
       const { id } = selected;
       const data = JSON.parse(json)[id];
-      if (!data) {
+      if (!data || Object.keys(data).length === 0) {
         toast.error("No data found");
         return;
       }
       graph.load(data);
     } else {
       graph.initData(data);
+    }
+  },
+  initGraph: (ele) => {
+    const { graph } = get();
+    graph.initCanvas(ele);
+    const { loadGraph, selected } = get();
+    if (selected) {
+      loadGraph(selected);
     }
   },
 }));

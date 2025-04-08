@@ -20,18 +20,15 @@ export function AppSidebar({ ...props }: ComponentProps<typeof Sidebar>) {
   const navItems = useStore((store) => store.navItems);
   const selected = useStore((store) => store.selected);
   const setNavItems = useStore((store) => store.setNavItems);
+  const init = useStore((store) => store.init);
   const setSelected = useStore((store) => store.setSelected);
-
   const handleDoubleClick = (index: number, title: string) => {
     setEditingItemIndex(index);
     setEditedTitle(title);
   };
 
   useEffect(() => {
-    const storedNavItems = localStorage.getItem("navItems");
-    if (storedNavItems) {
-      setNavItems(JSON.parse(storedNavItems));
-    }
+    init();
   }, []);
 
   const handleSave = (index: number) => {

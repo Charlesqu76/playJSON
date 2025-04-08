@@ -2,10 +2,10 @@ import { useStore } from "@/store";
 import React, { useEffect } from "react";
 export default function Graph() {
   const ref = React.useRef<HTMLDivElement>(null);
-  const { graph } = useStore((state) => state);
+  const initGraph = useStore((state) => state.initGraph);
   useEffect(() => {
     if (ref.current) {
-      graph.initCanvas(ref.current);
+      initGraph(ref.current);
     }
   }, []);
 
