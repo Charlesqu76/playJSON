@@ -323,8 +323,6 @@ export default class KeyValueBox extends Box {
     } else {
       this.keyBox.show();
     }
-    this.keyBox?.render();
-    // this.parent?.renderChildren();
   }
 
   get keyChain(): Array<string> {

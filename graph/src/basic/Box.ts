@@ -8,12 +8,14 @@ interface IProps {
   height?: number;
   graph: Graph;
 }
+
+export type TBox = Box;
 export default class Box extends EventEmitter {
-  x: number = 0;
-  y: number = 0;
+  private _x: number = 0;
+  private _y: number = 0;
   private _width: number = 0;
-  protected _height: number = 0;
-  graph: Graph;
+  private _height: number = 0;
+  protected graph: Graph;
 
   constructor({ x = 0, y = 0, width = 0, height = 0, graph }: IProps) {
     super();
@@ -22,6 +24,19 @@ export default class Box extends EventEmitter {
     this.width = width;
     this.height = height;
     this.graph = graph;
+  }
+
+  get x() {
+    return this._x;
+  }
+  get y() {
+    return this._y;
+  }
+  set x(x: number) {
+    this._x = x;
+  }
+  set y(y: number) {
+    this._y = y;
   }
 
   get width() {
@@ -50,5 +65,3 @@ export default class Box extends EventEmitter {
     };
   }
 }
-
-export type TBox = Box;

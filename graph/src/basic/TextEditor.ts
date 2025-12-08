@@ -125,7 +125,7 @@ export default class TextEditor extends GroupRect {
   }
 
   move(x: number, y: number) {
-    this.group.move(x, y);
+    // this.group.move(x, y);
     this.foreignObject.x(x);
     this.foreignObject.y(y);
   }

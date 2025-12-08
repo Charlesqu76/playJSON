@@ -48,6 +48,7 @@ export default class GroupRect extends EventEmitter {
     if (!SVGElement) return;
     this.group?.add(SVGElement);
   }
+
   move(x: number, y: number) {
     this.group?.move(x, y);
   }
@@ -70,12 +71,12 @@ export default class GroupRect extends EventEmitter {
     this.container.front();
   }
 
-  hide() {
-    this.group.hide();
-  }
-
   show() {
     this.group.show();
+  }
+
+  hide() {
+    this.group.hide();
   }
 
   highlight(style?: Record<string, string | number>) {

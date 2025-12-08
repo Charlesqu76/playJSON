@@ -78,12 +78,13 @@ class Graph extends EventEmitter {
       object = [object];
     }
     object.forEach((item: any) => {
-      const { x, y, value } = item;
+      const x = 0;
+      const y = 0;
       const box = new ObjectBox(
         {
           x,
           y,
-          value,
+          value: item,
         },
         this
       );
