@@ -194,15 +194,77 @@ button.ghost,
 
 .workspace-header {
   display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 1rem;
+  flex-wrap: wrap;
+  margin-bottom: 0.65rem;
+}
+
+.workspace-header-main {
+  display: flex;
   align-items: center;
   gap: 0.8rem;
-  margin-bottom: 0.65rem;
 }
 
 .workspace-header h1 {
   font-family: 'Space Grotesk', 'Avenir Next', 'Segoe UI', sans-serif;
   font-size: 1.15rem;
   margin: 0;
+}
+
+.workspace-header-search {
+  width: min(460px, 100%);
+  position: relative;
+}
+
+.workspace-header-search-row {
+  display: flex;
+  align-items: center;
+  gap: 0.45rem;
+}
+
+.workspace-header-search-meta {
+  margin-top: 0.35rem;
+  font-size: 0.82rem;
+  color: #6f655d;
+}
+
+.workspace-header-search-results {
+  position: absolute;
+  top: calc(100% + 0.35rem);
+  left: 0;
+  right: 0;
+  max-height: 240px;
+  overflow: auto;
+  border: 1px solid #e7dccd;
+  background: rgba(255, 255, 255, 0.95);
+  border-radius: 10px;
+  padding: 0.35rem;
+  display: flex;
+  flex-direction: column;
+  gap: 0.3rem;
+  z-index: 40;
+  box-shadow: 0 10px 26px rgba(40, 32, 26, 0.12);
+}
+
+.workspace-header-search-result {
+  text-align: left;
+  width: 100%;
+  justify-content: flex-start;
+  border: 1px solid #d9d0c4;
+  border-radius: 8px;
+  background: #fffefb;
+  color: #2f2a25;
+  padding: 0.45rem 0.6rem;
+  font: inherit;
+  cursor: pointer;
+}
+
+.workspace-header-search-result:hover,
+.workspace-header-search-result.is-active {
+  background: #f3ede3;
+  border-color: #cdbdaa;
 }
 
 .app-shell {

@@ -7,6 +7,7 @@ import JsonEditor from './components/JsonEditor';
 import LeftPanel, { type SearchResult } from './components/LeftPanel';
 import { Button } from './components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
+import { Input } from './components/ui/input';
 import { BoardProvider, useBoardDispatch, useBoardState } from './state/board';
 import {
   exportState,
@@ -69,6 +70,61 @@ const addAttributeOnRootObject = (value: JsonValue): JsonValue => {
     ...value,
     [key]: '',
   };
+};
+
+const isRefObject = (value: JsonValue): value is { $ref: string } =>
+  Boolean(
+    value &&
+      typeof value === 'object' &&
+      !Array.isArray(value) &&
+      typeof (value as Record<string, unknown>).$ref === 'string',
+  );
+
+const resolveReferences = (
+  value: JsonValue,
+  blocksById: Map<string, BoardState['blocks'][string]>,
+  seen: Set<string>,
+): JsonValue => {
+  if (Array.isArray(value)) {
+    return value.map((item) => resolveReferences(item, blocksById, seen));
+  }
+  if (!value || typeof value !== 'object') {
+    return value;
+  }
+  if (isRefObject(value)) {
+    const refId = value.$ref;
+    if (seen.has(refId)) return value;
+    const target = blocksById.get(refId);
+    if (!target) return value;
+    const nextSeen = new Set(seen);
+    nextSeen.add(refId);
+    return resolveReferences(target.data, blocksById, nextSeen);
+  }
+
+  const next: Record<string, JsonValue> = {};
+  for (const [key, nested] of Object.entries(value as JsonObject)) {
+    next[key] = resolveReferences(nested, blocksById, seen);
+  }
+  return next;
+};
+
+const resolveBlockValue = (state: BoardState, blockId: string): JsonValue | null => {
+  const block = state.blocks[blockId];
+  if (!block) return null;
+
+  const byId = new Map(Object.values(state.blocks).map((candidate) => [candidate.id, candidate]));
+  let seeded = block.data;
+  if (isRootObject(seeded)) {
+    const nextRoot: JsonObject = { ...seeded };
+    for (const link of Object.values(state.links)) {
+      if (link.sourceBlockId !== block.id || !link.sourceAttrKey) continue;
+      const target = byId.get(link.targetBlockId);
+      if (!target) continue;
+      nextRoot[link.sourceAttrKey] = target.data;
+    }
+    seeded = nextRoot;
+  }
+  return resolveReferences(seeded, byId, new Set([block.id]));
 };
 
 const isCompositeValue = (value: JsonValue): value is JsonObject | JsonValue[] =>
@@ -194,10 +250,44 @@ const estimateBlockHeight = (data: JsonValue): number => {
   return 140;
 };
 
+const getHiddenDescendants = (
+  state: BoardState,
+  collapsedBlockIds: ReadonlySet<string>,
+): Set<string> => {
+  if (collapsedBlockIds.size === 0) return new Set<string>();
+
+  const outgoing = new Map<string, string[]>();
+  for (const link of Object.values(state.links)) {
+    const next = outgoing.get(link.sourceBlockId) ?? [];
+    next.push(link.targetBlockId);
+    outgoing.set(link.sourceBlockId, next);
+  }
+
+  const hidden = new Set<string>();
+  const seen = new Set<string>();
+  const stack = [...collapsedBlockIds];
+  while (stack.length > 0) {
+    const current = stack.pop();
+    if (!current || seen.has(current)) continue;
+    seen.add(current);
+    for (const target of outgoing.get(current) ?? []) {
+      if (!hidden.has(target)) {
+        hidden.add(target);
+        stack.push(target);
+      }
+    }
+  }
+
+  return hidden;
+};
+
 const formatPositionsLeftToRight = (
   state: BoardState,
+  targetBlockIds?: ReadonlySet<string>,
 ): Record<string, { x: number; y: number }> => {
-  const ids = Object.keys(state.blocks);
+  const ids = targetBlockIds
+    ? [...targetBlockIds].filter((id) => Boolean(state.blocks[id]))
+    : Object.keys(state.blocks);
   if (ids.length === 0) return {};
 
   const outgoing = new Map<string, string[]>();
@@ -208,8 +298,9 @@ const formatPositionsLeftToRight = (
     incoming.set(id, []);
     undirected.set(id, new Set<string>());
   }
+  const active = new Set(ids);
   for (const link of Object.values(state.links)) {
-    if (!state.blocks[link.sourceBlockId] || !state.blocks[link.targetBlockId]) continue;
+    if (!active.has(link.sourceBlockId) || !active.has(link.targetBlockId)) continue;
     outgoing.get(link.sourceBlockId)?.push(link.targetBlockId);
     incoming.get(link.targetBlockId)?.push(link.sourceBlockId);
     undirected.get(link.sourceBlockId)?.add(link.targetBlockId);
@@ -339,6 +430,8 @@ const Workspace = () => {
 
   const [collapsedBlockIds, setCollapsedBlockIds] = useState<Set<string>>(new Set());
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
+  const [isSearchOpen, setIsSearchOpen] = useState(false);
+  const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const copiedBlockRef = useRef<CopiedBlock | null>(null);
 
   useEffect(() => {
@@ -357,6 +450,10 @@ const Workspace = () => {
       .filter((block) => matchesSearchQuery(block.title, block.data, state.searchQuery))
       .map((block) => ({ id: block.id, title: block.title }));
   }, [allBlocks, state.searchQuery]);
+  const headerSearchResults = useMemo(
+    () => (state.searchQuery.trim() ? searchResults.slice(0, 12) : []),
+    [searchResults, state.searchQuery],
+  );
 
   const rootResults = useMemo<SearchResult[]>(() => {
     const targets = new Set(Object.values(state.links).map((link) => link.targetBlockId));
@@ -402,7 +499,9 @@ const Workspace = () => {
   };
 
   const onFormat = () => {
-    const nextPositions = formatPositionsLeftToRight(state);
+    const hidden = getHiddenDescendants(state, collapsedBlockIds);
+    const visibleIds = new Set(Object.keys(state.blocks).filter((id) => !hidden.has(id)));
+    const nextPositions = formatPositionsLeftToRight(state, visibleIds);
     Object.entries(nextPositions).forEach(([id, position]) => {
       dispatch({
         type: 'setBlockPosition',
@@ -414,6 +513,51 @@ const Workspace = () => {
       });
     });
   };
+
+  const expandCollapsedParents = (targetBlockId: string) => {
+    setCollapsedBlockIds((prev) => {
+      if (prev.size === 0) return prev;
+
+      const incoming = new Map<string, string[]>();
+      for (const link of Object.values(state.links)) {
+        const next = incoming.get(link.targetBlockId) ?? [];
+        next.push(link.sourceBlockId);
+        incoming.set(link.targetBlockId, next);
+      }
+
+      const ancestors = new Set<string>();
+      const seen = new Set<string>([targetBlockId]);
+      const stack = [targetBlockId];
+      while (stack.length > 0) {
+        const current = stack.pop();
+        if (!current) break;
+        for (const parent of incoming.get(current) ?? []) {
+          if (seen.has(parent)) continue;
+          seen.add(parent);
+          ancestors.add(parent);
+          stack.push(parent);
+        }
+      }
+
+      let changed = false;
+      const next = new Set(prev);
+      for (const ancestor of ancestors) {
+        if (next.delete(ancestor)) changed = true;
+      }
+      return changed ? next : prev;
+    });
+  };
+
+  const selectSearchResult = (id: string) => {
+    expandCollapsedParents(id);
+    dispatch({ type: 'selectBlock', payload: { id } });
+    setSelectedLinkId(null);
+    setIsSearchOpen(false);
+  };
+
+  useEffect(() => {
+    setActiveSearchIndex(0);
+  }, [state.searchQuery]);
 
   useEffect(() => {
     const onKeyDown = (event: KeyboardEvent) => {
@@ -466,9 +610,17 @@ const Workspace = () => {
 
       const isCopy = (event.metaKey || event.ctrlKey) && event.key.toLowerCase() === 'c';
       if (isCopy && state.selectedBlockId) {
+        const block = state.blocks[state.selectedBlockId];
+        if (!block) return;
         copiedBlockRef.current = {
           rootBlockId: state.selectedBlockId,
         };
+        event.preventDefault();
+        const resolvedValue = resolveBlockValue(state, block.id);
+        const clipboardText = JSON.stringify(resolvedValue ?? block.data, null, 2);
+        if (typeof navigator !== 'undefined' && navigator.clipboard?.writeText) {
+          void navigator.clipboard.writeText(clipboardText).catch(() => {});
+        }
         return;
       }
 
@@ -492,20 +644,114 @@ const Workspace = () => {
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
-        <Button asChild variant="outline">
-          <Link to="/">Back Home</Link>
-        </Button>
-        <h1>PlayJSON Workspace</h1>
+        <div className="workspace-header-main">
+          <Button asChild variant="outline">
+            <Link to="/">Back Home</Link>
+          </Button>
+          <h1>PlayJSON Workspace</h1>
+        </div>
+        <div className="workspace-header-search">
+          <div className="workspace-header-search-row">
+            <Input
+              role="combobox"
+              aria-expanded={isSearchOpen && state.searchQuery.trim().length > 0}
+              aria-controls="workspace-search-listbox"
+              aria-autocomplete="list"
+              aria-activedescendant={
+                isSearchOpen && headerSearchResults[activeSearchIndex]
+                  ? `workspace-search-option-${headerSearchResults[activeSearchIndex]?.id}`
+                  : undefined
+              }
+              value={state.searchQuery}
+              onChange={(event) => {
+                dispatch({ type: 'setSearchQuery', payload: { query: event.target.value } });
+                setIsSearchOpen(true);
+              }}
+              onFocus={() => {
+                if (state.searchQuery.trim()) setIsSearchOpen(true);
+              }}
+              onBlur={() => {
+                window.setTimeout(() => setIsSearchOpen(false), 120);
+              }}
+              onKeyDown={(event) => {
+                if (event.key === 'ArrowDown') {
+                  event.preventDefault();
+                  if (headerSearchResults.length === 0) return;
+                  setIsSearchOpen(true);
+                  setActiveSearchIndex((prev) => (prev + 1) % headerSearchResults.length);
+                  return;
+                }
+                if (event.key === 'ArrowUp') {
+                  event.preventDefault();
+                  if (headerSearchResults.length === 0) return;
+                  setIsSearchOpen(true);
+                  setActiveSearchIndex((prev) =>
+                    (prev - 1 + headerSearchResults.length) % headerSearchResults.length,
+                  );
+                  return;
+                }
+                if (event.key === 'Escape') {
+                  setIsSearchOpen(false);
+                  return;
+                }
+                if (event.key !== 'Enter') return;
+                const chosen =
+                  isSearchOpen && headerSearchResults[activeSearchIndex]
+                    ? headerSearchResults[activeSearchIndex]
+                    : searchResults[0];
+                if (!chosen) return;
+                event.preventDefault();
+                selectSearchResult(chosen.id);
+              }}
+              placeholder="Search blocks by title, key, value..."
+            />
+            {state.searchQuery.trim() ? (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => dispatch({ type: 'setSearchQuery', payload: { query: '' } })}
+              >
+                Clear
+              </Button>
+            ) : null}
+          </div>
+          <div className="workspace-header-search-meta">
+            {state.searchQuery.trim()
+              ? `${searchResults.length} match${searchResults.length === 1 ? '' : 'es'} • Press Enter to jump to the first match`
+              : 'Type to search blocks quickly'}
+          </div>
+          {state.searchQuery.trim() && isSearchOpen ? (
+            <div id="workspace-search-listbox" role="listbox" className="workspace-header-search-results">
+              {headerSearchResults.length > 0 ? (
+                headerSearchResults.map((result, index) => (
+                  <button
+                    key={result.id}
+                    id={`workspace-search-option-${result.id}`}
+                    role="option"
+                    aria-selected={index === activeSearchIndex}
+                    className={`workspace-header-search-result ${index === activeSearchIndex ? 'is-active' : ''}`}
+                    onMouseDown={(event) => {
+                      event.preventDefault();
+                    }}
+                    onClick={() => selectSearchResult(result.id)}
+                  >
+                    {result.title}
+                  </button>
+                ))
+              ) : (
+                <div className="hint">No matching blocks.</div>
+              )}
+            </div>
+          ) : null}
+        </div>
       </header>
 
       <div className="app-shell">
         <LeftPanel
           onCreate={onCreate}
-          searchQuery={state.searchQuery}
-          onSearchChange={(query) => dispatch({ type: 'setSearchQuery', payload: { query } })}
-          searchResults={searchResults}
           rootResults={rootResults}
           onSelectResult={(id) => {
+            expandCollapsedParents(id);
             dispatch({ type: 'selectBlock', payload: { id } });
             setSelectedLinkId(null);
           }}

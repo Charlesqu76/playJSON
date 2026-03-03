@@ -1,4 +1,4 @@
-import { useMemo, useRef, useState } from 'react';
+import { useRef, useState } from 'react';
 import { Button } from './ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
 import { Input } from './ui/input';
@@ -12,9 +12,6 @@ export interface SearchResult {
 
 interface LeftPanelProps {
   onCreate: (title: string, rawJson: string) => string | null;
-  searchQuery: string;
-  onSearchChange: (query: string) => void;
-  searchResults: SearchResult[];
   rootResults: SearchResult[];
   onSelectResult: (id: string) => void;
   onImport: (text: string) => string | null;
@@ -22,9 +19,6 @@ interface LeftPanelProps {
 
 const LeftPanel = ({
   onCreate,
-  searchQuery,
-  onSearchChange,
-  searchResults,
   rootResults,
   onSelectResult,
   onImport,
@@ -34,8 +28,6 @@ const LeftPanel = ({
   const [error, setError] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
-
-  const visibleResults = useMemo(() => searchResults.slice(0, 20), [searchResults]);
 
   return (
     <Card className="left-panel">
@@ -90,33 +82,6 @@ const LeftPanel = ({
         }}
       />
       {importError ? <div className="inline-error">{importError}</div> : null}
-
-      <div className="panel-section">
-        <Separator />
-        <h3 style={{ marginTop: '0.8rem' }}>Search</h3>
-        <Input
-          className="control-input"
-          value={searchQuery}
-          onChange={(event) => onSearchChange(event.target.value)}
-          placeholder="Search by title, key, or value"
-        />
-        <div className="search-results">
-          {visibleResults.map((result) => (
-            <Button
-              key={result.id}
-              className="search-result"
-              variant="outline"
-              size="sm"
-              onClick={() => onSelectResult(result.id)}
-            >
-              {result.title}
-            </Button>
-          ))}
-          {visibleResults.length === 0 && searchQuery.trim() ? (
-            <div className="hint">No matching blocks.</div>
-          ) : null}
-        </div>
-      </div>
 
       <div className="panel-section">
         <Separator />

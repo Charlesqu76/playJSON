@@ -70,7 +70,7 @@ const BoardCanvas = ({
   onDeleteLink,
   onUpdateData,
 }: BoardCanvasProps) => {
-  const { setCenter } = useReactFlow();
+  const { setCenter, fitView, zoomIn, zoomOut } = useReactFlow();
   const allLinks = useMemo(() => Object.values(state.links), [state.links]);
 
   const hiddenBlockIds = useMemo(() => {
@@ -248,6 +248,24 @@ const BoardCanvas = ({
     }
   };
 
+  const onAutoFormat = () => {
+    onFormat();
+    requestAnimationFrame(() => {
+      void fitView({
+        padding: 0.18,
+        duration: 260,
+      });
+    });
+  };
+
+  const onZoomIn = () => {
+    void zoomIn({ duration: 180 });
+  };
+
+  const onZoomOut = () => {
+    void zoomOut({ duration: 180 });
+  };
+
   return (
     <div className="board-canvas">
       <div className="board-canvas-toolbar">
@@ -260,7 +278,13 @@ const BoardCanvas = ({
         <Button className="board-canvas-format-btn" size="sm" variant="secondary" onClick={onExport}>
           Export
         </Button>
-        <Button className="board-canvas-format-btn" size="sm" variant="secondary" onClick={onFormat}>
+        <Button className="board-canvas-format-btn" size="sm" variant="outline" onClick={onZoomOut}>
+          Zoom Out
+        </Button>
+        <Button className="board-canvas-format-btn" size="sm" variant="outline" onClick={onZoomIn}>
+          Zoom In
+        </Button>
+        <Button className="board-canvas-format-btn" size="sm" variant="secondary" onClick={onAutoFormat}>
           Auto-Format
         </Button>
         <Button className="board-canvas-format-btn" size="sm" variant="destructive" onClick={onResetBoard}>
@@ -288,6 +312,11 @@ const BoardCanvas = ({
           }
           onSelectLink(null);
         }}
+        zoomOnScroll
+        zoomOnPinch
+        zoomOnDoubleClick
+        minZoom={0.2}
+        maxZoom={2.5}
         fitView
         nodesConnectable={false}
         nodeTypes={nodeTypes}
