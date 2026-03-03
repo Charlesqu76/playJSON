@@ -2,43 +2,22 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ReactFlowProvider } from '@xyflow/react';
 import { v4 as uuidv4 } from 'uuid';
-import BoardCanvas from './components/BoardCanvas';
-import JsonEditor from './components/JsonEditor';
-import LeftPanel, { type SearchResult } from './components/LeftPanel';
-import { Button } from './components/ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './components/ui/card';
-import { Input } from './components/ui/input';
-import { BoardProvider, useBoardDispatch, useBoardState } from './state/board';
+import BoardCanvas from '../components/BoardCanvas';
+import JsonEditor from '../components/JsonEditor';
+import LeftPanel, { type SearchResult } from '../components/LeftPanel';
+import { Button } from '../components/ui/button';
+import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
+import { Input } from '../components/ui/input';
+import { BoardProvider, useBoardDispatch, useBoardState } from '../state/board';
 import {
   exportState,
   importState as importBoardState,
   loadState,
   saveState,
-} from './state/storage';
-import type { BoardState, JsonObject, JsonValue } from './types/model';
-import { parseJsonText } from './utils/json';
-import { matchesSearchQuery } from './utils/search';
-
-const highlights = [
-  {
-    title: 'Visual JSON Workbench',
-    detail: 'Switch between tree, board, and raw text editing with no context loss.',
-  },
-  {
-    title: 'Fast Search + Ref Links',
-    detail: 'Find nested keys instantly and trace relationships across blocks.',
-  },
-  {
-    title: 'Local-First Workflow',
-    detail: 'Keep your data private with export/import support built in.',
-  },
-];
-
-const metrics = [
-  { label: 'Editing modes', value: '3' },
-  { label: 'Keyboard actions', value: '20+' },
-  { label: 'Focused objective', value: '1' },
-];
+} from '../state/storage';
+import type { BoardState, JsonObject, JsonValue } from '../types/model';
+import { parseJsonText } from '../utils/json';
+import { matchesSearchQuery } from '../utils/search';
 
 const downloadFile = (name: string, content: string): void => {
   const blob = new Blob([content], { type: 'application/json' });
@@ -834,50 +813,4 @@ export const WorkspacePage = () => (
   </BoardProvider>
 );
 
-export const HomePage = () => (
-  <div className="home-page">
-    <header className="topbar">
-      <div className="brand">PlayJSON</div>
-    </header>
-
-    <main>
-      <section className="hero">
-        <p className="eyebrow">Ship cleaner JSON models</p>
-        <h1>Build, connect, and inspect JSON data without the chaos.</h1>
-        <p className="lead">
-          A focused workspace for technical teams who need fast structure editing, visual linking,
-          and reliable exports.
-        </p>
-        <div className="hero-actions">
-          <Link to="/workspace" className="nav-link-button">
-            Open Workspace
-          </Link>
-        </div>
-      </section>
-
-      <section className="metrics" aria-label="Key metrics">
-        {metrics.map((metric) => (
-          <article key={metric.label}>
-            <h2>{metric.value}</h2>
-            <p>{metric.label}</p>
-          </article>
-        ))}
-      </section>
-
-      <section className="features" id="features">
-        {highlights.map((item) => (
-          <article className="feature-card" key={item.title}>
-            <h3>{item.title}</h3>
-            <p>{item.detail}</p>
-          </article>
-        ))}
-      </section>
-    </main>
-  </div>
-);
-
-function App() {
-  return <HomePage />;
-}
-
-export default App;
+export default WorkspacePage;

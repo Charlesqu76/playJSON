@@ -26,7 +26,7 @@ describe('findByJsonPath', () => {
       tags: ['alpha', 'beta'],
       meta: { 'display name': 'Alice W' },
     },
-  } as const;
+  };
 
   it('resolves nested object path', () => {
     expect(findByJsonPath(value, '$.profile.name')).toBe('Alice');
