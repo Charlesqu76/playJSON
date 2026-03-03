@@ -179,6 +179,21 @@ const sortByCurrentPosition = (state: BoardState, a: string, b: string) => {
   return state.blocks[a].title.localeCompare(state.blocks[b].title);
 };
 
+const estimateBlockHeight = (data: JsonValue): number => {
+  const BASE = 110;
+  const ROW_HEIGHT = 20;
+  const FOOTER = 30;
+  const MAX_VISIBLE_ROWS = 7;
+
+  if (Array.isArray(data)) {
+    return BASE + Math.min(data.length, MAX_VISIBLE_ROWS) * ROW_HEIGHT + FOOTER;
+  }
+  if (isRootObject(data)) {
+    return BASE + Math.min(Object.keys(data).length, MAX_VISIBLE_ROWS) * ROW_HEIGHT + FOOTER;
+  }
+  return 140;
+};
+
 const formatPositionsLeftToRight = (
   state: BoardState,
 ): Record<string, { x: number; y: number }> => {
@@ -225,9 +240,10 @@ const formatPositionsLeftToRight = (
     components.push(group);
   }
 
-  const H_GAP = 290;
-  const V_GAP = 150;
-  const COMPONENT_GAP = 180;
+  const NODE_WIDTH = 360;
+  const COLUMN_GAP = 60;
+  const ROW_GAP = 28;
+  const COMPONENT_GAP = 140;
   const START_X = 80;
   let currentY = 80;
 
@@ -278,18 +294,26 @@ const formatPositionsLeftToRight = (
       columns.set(col, list);
     }
 
-    for (const [col, colIds] of columns.entries()) {
+    let componentBottom = currentY;
+    const orderedColumns = [...columns.keys()].sort((a, b) => a - b);
+    for (const col of orderedColumns) {
+      const colIds = columns.get(col) ?? [];
       colIds.sort((a, b) => sortByCurrentPosition(state, a, b));
-      colIds.forEach((id, row) => {
+      let yCursor = currentY;
+      for (const id of colIds) {
         nextPositions[id] = {
-          x: START_X + col * H_GAP,
-          y: currentY + row * V_GAP,
+          x: START_X + col * (NODE_WIDTH + COLUMN_GAP),
+          y: yCursor,
         };
-      });
+        const block = state.blocks[id];
+        yCursor += estimateBlockHeight(block.data) + ROW_GAP;
+      }
+      if (yCursor > componentBottom) {
+        componentBottom = yCursor;
+      }
     }
 
-    const maxRows = Math.max(...[...columns.values()].map((colIds) => colIds.length), 1);
-    currentY += maxRows * V_GAP + COMPONENT_GAP;
+    currentY = componentBottom + COMPONENT_GAP;
   }
 
   return nextPositions;
