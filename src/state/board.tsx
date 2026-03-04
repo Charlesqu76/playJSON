@@ -39,6 +39,10 @@ export type BoardAction =
       type: 'upsertAttrLink';
       payload: { sourceBlockId: string; sourceAttrKey: string; targetBlockId: string };
     }
+  | {
+      type: 'moveAttrToBlock';
+      payload: { sourceBlockId: string; sourceAttrKey: string; targetBlockId: string };
+    }
   | { type: 'deleteLink'; payload: { id: string } }
   | { type: 'removeAttrLink'; payload: { sourceBlockId: string; sourceAttrKey: string } }
   | {
@@ -119,6 +123,92 @@ const remapRefs = (value: JsonValue, idMap: ReadonlyMap<string, string>): JsonVa
     next[key] = remapRefs(nested, idMap);
   }
   return next;
+};
+
+const setAttributeValue = (
+  block: BoardState['blocks'][string],
+  sourceAttrKey: string,
+  nextValue: JsonValue,
+): JsonValue | null => {
+  if (Array.isArray(block.data)) {
+    const index = Number(sourceAttrKey);
+    if (!Number.isInteger(index) || index < 0 || index >= block.data.length) return null;
+    const nextArray = [...block.data];
+    nextArray[index] = nextValue;
+    return nextArray;
+  }
+  if (block.data && typeof block.data === 'object') {
+    if (!Object.prototype.hasOwnProperty.call(block.data, sourceAttrKey)) {
+      return null;
+    }
+    return {
+      ...(block.data as Record<string, JsonValue>),
+      [sourceAttrKey]: nextValue,
+    } satisfies Record<string, JsonValue>;
+  }
+  return null;
+};
+
+const getAttributeValue = (
+  block: BoardState['blocks'][string],
+  sourceAttrKey: string,
+): JsonValue | undefined => {
+  if (Array.isArray(block.data)) {
+    const index = Number(sourceAttrKey);
+    if (!Number.isInteger(index) || index < 0 || index >= block.data.length) return undefined;
+    return block.data[index] as JsonValue;
+  }
+  if (block.data && typeof block.data === 'object') {
+    if (!Object.prototype.hasOwnProperty.call(block.data, sourceAttrKey)) return undefined;
+    return (block.data as Record<string, JsonValue>)[sourceAttrKey];
+  }
+  return undefined;
+};
+
+const nextObjectKey = (target: Record<string, JsonValue>, baseKey: string): string => {
+  const normalizedBase = baseKey.trim() || 'item';
+  if (!Object.prototype.hasOwnProperty.call(target, normalizedBase)) return normalizedBase;
+  let index = 1;
+  let candidate = `${normalizedBase}_${index}`;
+  while (Object.prototype.hasOwnProperty.call(target, candidate)) {
+    index += 1;
+    candidate = `${normalizedBase}_${index}`;
+  }
+  return candidate;
+};
+
+const moveValueIntoTarget = (
+  targetBlock: BoardState['blocks'][string],
+  sourceAttrKey: string,
+  value: JsonValue,
+): { data: JsonValue; targetAttrKey: string } | null => {
+  if (Array.isArray(targetBlock.data)) {
+    const nextArray = [...targetBlock.data, value];
+    return {
+      data: nextArray,
+      targetAttrKey: String(nextArray.length - 1),
+    };
+  }
+
+  if (targetBlock.data && typeof targetBlock.data === 'object') {
+    const targetObject = targetBlock.data as Record<string, JsonValue>;
+    const numericIndex = Number(sourceAttrKey);
+    const preferredKey =
+      Number.isInteger(numericIndex) && numericIndex >= 0 ? `item_${numericIndex}` : sourceAttrKey;
+    const targetAttrKey = nextObjectKey(targetObject, preferredKey);
+    return {
+      data: {
+        ...targetObject,
+        [targetAttrKey]: value,
+      } satisfies Record<string, JsonValue>,
+      targetAttrKey,
+    };
+  }
+
+  return {
+    data: [targetBlock.data, value],
+    targetAttrKey: '1',
+  };
 };
 
 export const boardReducer = (state: BoardState, action: BoardAction): BoardState => {
@@ -371,21 +461,26 @@ export const boardReducer = (state: BoardState, action: BoardAction): BoardState
     case 'upsertAttrLink': {
       const { sourceBlockId, sourceAttrKey, targetBlockId } = action.payload;
       const sourceBlock = state.blocks[sourceBlockId];
-      if (!sourceBlock || !state.blocks[targetBlockId]) return state;
+      const targetBlock = state.blocks[targetBlockId];
+      if (!sourceBlock || !targetBlock) return state;
       if (sourceBlockId === targetBlockId) return state;
       if (!sourceAttrKey.trim()) return state;
-      const sourceData = sourceBlock.data;
-      const isSourceObject = Boolean(sourceData && typeof sourceData === 'object' && !Array.isArray(sourceData));
-      const isSourceArray = Array.isArray(sourceData);
-      if (!isSourceObject && !isSourceArray) return state;
 
+      const nextSourceData = setAttributeValue(sourceBlock, sourceAttrKey, {
+        $ref: targetBlockId,
+      });
+      if (!nextSourceData) return state;
+
+      const removedLinks: BoardState['links'][string][] = [];
       const nextLinks = Object.fromEntries(
         Object.entries(state.links).filter(
-          ([, link]) =>
-            !(
-              link.sourceBlockId === sourceBlockId &&
-              link.sourceAttrKey === sourceAttrKey
-            ) && link.targetBlockId !== targetBlockId,
+          ([, link]) => {
+            const shouldRemove =
+              (link.sourceBlockId === sourceBlockId && link.sourceAttrKey === sourceAttrKey) ||
+              link.targetBlockId === targetBlockId;
+            if (shouldRemove) removedLinks.push(link);
+            return !shouldRemove;
+          },
         ),
       );
       if (wouldCreateCycle(nextLinks, sourceBlockId, targetBlockId)) {
@@ -398,36 +493,99 @@ export const boardReducer = (state: BoardState, action: BoardAction): BoardState
         sourceAttrKey,
         targetBlockId,
       };
+      const now = new Date().toISOString();
+      const nextBlocks: BoardState['blocks'] = {
+        ...state.blocks,
+        [sourceBlockId]: {
+          ...sourceBlock,
+          data: nextSourceData,
+          updatedAt: now,
+        },
+        [targetBlockId]: {
+          ...targetBlock,
+          updatedAt: now,
+        },
+      };
 
-      let nextData: JsonValue = sourceData as JsonValue;
-      if (isSourceObject) {
-        if (!Object.prototype.hasOwnProperty.call(sourceData, sourceAttrKey)) return state;
-        nextData = {
-          ...(sourceData as Record<string, JsonValue>),
-          [sourceAttrKey]: {
-            $ref: targetBlockId,
-          },
-        } satisfies Record<string, JsonValue>;
-      } else {
-        const index = Number(sourceAttrKey);
-        if (!Number.isInteger(index) || index < 0 || index >= (sourceData as JsonValue[]).length) {
-          return state;
+      for (const removedLink of removedLinks) {
+        if (!removedLink.sourceAttrKey) continue;
+        if (
+          removedLink.sourceBlockId === sourceBlockId &&
+          removedLink.sourceAttrKey === sourceAttrKey
+        ) {
+          continue;
         }
-        const arrayNext = [...(sourceData as JsonValue[])];
-        arrayNext[index] = {
-          $ref: targetBlockId,
+        const removedSourceBlock = nextBlocks[removedLink.sourceBlockId];
+        if (!removedSourceBlock) continue;
+        const resetSourceData = setAttributeValue(removedSourceBlock, removedLink.sourceAttrKey, null);
+        if (!resetSourceData) continue;
+        nextBlocks[removedLink.sourceBlockId] = {
+          ...removedSourceBlock,
+          data: resetSourceData,
+          updatedAt: now,
         };
-        nextData = arrayNext;
       }
 
+      return {
+        ...state,
+        blocks: nextBlocks,
+        links: nextLinks,
+      };
+    }
+
+    case 'moveAttrToBlock': {
+      const { sourceBlockId, sourceAttrKey, targetBlockId } = action.payload;
+      if (sourceBlockId === targetBlockId) return state;
+
+      const sourceBlock = state.blocks[sourceBlockId];
+      const targetBlock = state.blocks[targetBlockId];
+      if (!sourceBlock || !targetBlock) return state;
+
+      const sourceValue = getAttributeValue(sourceBlock, sourceAttrKey);
+      if (sourceValue === undefined) return state;
+
+      const nextSourceData = setAttributeValue(sourceBlock, sourceAttrKey, null);
+      if (!nextSourceData) return state;
+
+      const movedTarget = moveValueIntoTarget(targetBlock, sourceAttrKey, sourceValue);
+      if (!movedTarget) return state;
+
+      const movedLinks = Object.values(state.links).filter(
+        (link) => link.sourceBlockId === sourceBlockId && link.sourceAttrKey === sourceAttrKey,
+      );
+      const nextLinks = Object.fromEntries(
+        Object.entries(state.links).filter(
+          ([, link]) => !(link.sourceBlockId === sourceBlockId && link.sourceAttrKey === sourceAttrKey),
+        ),
+      );
+
+      for (const movedLink of movedLinks) {
+        if (wouldCreateCycle(nextLinks, targetBlockId, movedLink.targetBlockId)) {
+          continue;
+        }
+        const id = uuidv4();
+        nextLinks[id] = {
+          id,
+          sourceBlockId: targetBlockId,
+          sourceAttrKey: movedTarget.targetAttrKey,
+          targetBlockId: movedLink.targetBlockId,
+        };
+      }
+
+      const now = new Date().toISOString();
       return {
         ...state,
         blocks: {
           ...state.blocks,
           [sourceBlockId]: {
             ...sourceBlock,
-            data: nextData,
-            updatedAt: new Date().toISOString(),
+            data: nextSourceData,
+            updatedAt: now,
+          },
+          [targetBlockId]: {
+            ...targetBlock,
+            data: movedTarget.data,
+            updatedAt: now,
           },
         },
         links: nextLinks,

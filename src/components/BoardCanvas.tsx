@@ -1,4 +1,4 @@
-import { useEffect, useMemo } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import {
   Background,
   Controls,
@@ -13,7 +13,7 @@ import {
 import '@xyflow/react/dist/style.css';
 import type { BoardState, JsonValue } from '../types/model';
 import { summarizeJson } from '../utils/json';
-import BlockNode, { type BlockNodeData } from './BlockNode';
+import BlockNode, { getAttrHandleId, type ActiveAttrDrag, type BlockNodeData } from './BlockNode';
 import { Button } from './ui/button';
 
 const nodeTypes = {
@@ -35,6 +35,11 @@ interface BoardCanvasProps {
   onMoveBlock: (id: string, x: number, y: number) => void;
   onRenameAttrLinkKey: (blockId: string, oldKey: string, newKey: string) => void;
   onCreateAttrLink: (
+    sourceBlockId: string,
+    sourceAttrKey: string,
+    targetBlockId: string,
+  ) => void;
+  onMoveAttrToBlock: (
     sourceBlockId: string,
     sourceAttrKey: string,
     targetBlockId: string,
@@ -66,12 +71,35 @@ const BoardCanvas = ({
   onMoveBlock,
   onRenameAttrLinkKey,
   onCreateAttrLink,
+  onMoveAttrToBlock,
   onRemoveAttrLink,
   onDeleteLink,
   onUpdateData,
 }: BoardCanvasProps) => {
   const { setCenter, fitView, zoomIn, zoomOut } = useReactFlow();
+  const activeAttrDragRef = useRef<ActiveAttrDrag | null>(null);
+  const clearDragTimerRef = useRef<number | null>(null);
   const allLinks = useMemo(() => Object.values(state.links), [state.links]);
+  const onStartAttrDrag = useCallback(
+    (mode: ActiveAttrDrag['mode'], sourceBlockId: string, sourceAttrKey: string) => {
+      if (clearDragTimerRef.current !== null) {
+        window.clearTimeout(clearDragTimerRef.current);
+        clearDragTimerRef.current = null;
+      }
+      activeAttrDragRef.current = { mode, sourceBlockId, sourceAttrKey };
+    },
+    [],
+  );
+  const onEndAttrDrag = useCallback(() => {
+    if (clearDragTimerRef.current !== null) {
+      window.clearTimeout(clearDragTimerRef.current);
+    }
+    clearDragTimerRef.current = window.setTimeout(() => {
+      activeAttrDragRef.current = null;
+      clearDragTimerRef.current = null;
+    }, 60);
+  }, []);
+  const getActiveAttrDrag = useCallback(() => activeAttrDragRef.current, []);
 
   const hiddenBlockIds = useMemo(() => {
     if (collapsedBlockIds.size === 0) return new Set<string>();
@@ -197,6 +225,10 @@ const BoardCanvas = ({
           return null;
         },
         onCreateAttrLink,
+        onMoveAttrToBlock,
+        onStartAttrDrag,
+        onEndAttrDrag,
+        getActiveAttrDrag,
         onRemoveAttrLink,
         onToggleExpand,
       } satisfies BlockNodeData,
@@ -207,8 +239,12 @@ const BoardCanvas = ({
     allLinks,
     collapsedBlockIds,
     onCreateAttrLink,
+    onMoveAttrToBlock,
+    getActiveAttrDrag,
+    onEndAttrDrag,
     onRemoveAttrLink,
     onRenameAttrLinkKey,
+    onStartAttrDrag,
     onToggleExpand,
     onUpdateData,
     state.blocks,
@@ -224,7 +260,9 @@ const BoardCanvas = ({
       .map((link) => ({
         id: link.id,
         source: link.sourceBlockId,
+        sourceHandle: link.sourceAttrKey ? getAttrHandleId(link.sourceAttrKey) : 'block-source',
         target: link.targetBlockId,
+        targetHandle: 'block-target',
         animated: false,
         selected: selectedLinkId === link.id,
       }));
@@ -317,6 +355,7 @@ const BoardCanvas = ({
         zoomOnDoubleClick
         minZoom={0.2}
         maxZoom={2.5}
+        edgesReconnectable={false}
         fitView
         nodesConnectable={false}
         nodeTypes={nodeTypes}

@@ -782,6 +782,12 @@ const Workspace = () => {
                 payload: { sourceBlockId, sourceAttrKey, targetBlockId },
               })
             }
+            onMoveAttrToBlock={(sourceBlockId, sourceAttrKey, targetBlockId) =>
+              dispatch({
+                type: 'moveAttrToBlock',
+                payload: { sourceBlockId, sourceAttrKey, targetBlockId },
+              })
+            }
             onRemoveAttrLink={(sourceBlockId, sourceAttrKey) =>
               dispatch({ type: 'removeAttrLink', payload: { sourceBlockId, sourceAttrKey } })
             }

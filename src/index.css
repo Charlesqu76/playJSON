@@ -552,10 +552,17 @@ button.ghost,
   font-family: 'IBM Plex Mono', Consolas, monospace;
   font-size: 0.75rem;
   padding: 0.2rem 0.35rem;
+  padding-right: 0.95rem;
   border-bottom: 1px solid #f1ebe1;
   display: flex;
   gap: 0.2rem;
   align-items: center;
+  position: relative;
+}
+
+.block-node-array-item.is-selected,
+.block-node-attr-item.is-selected {
+  background: #edf4ff;
 }
 
 .block-node-array-item:last-child,
@@ -608,6 +615,30 @@ button.ghost,
 .attr-link-glyph {
   width: 12px;
   height: 12px;
+}
+
+.block-node-target-handle,
+.block-node-block-source-handle,
+.block-node-attr-handle {
+  width: 10px;
+  height: 10px;
+  border: 2px solid #2563eb;
+  background: #ffffff;
+  pointer-events: none;
+}
+
+.block-node-target-handle {
+  left: -7px;
+}
+
+.block-node-block-source-handle {
+  right: -7px;
+}
+
+.block-node-attr-handle {
+  right: -8px;
+  top: 50%;
+  transform: translate(50%, -50%);
 }
 
 .meta {
