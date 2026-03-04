@@ -75,18 +75,22 @@ const JsonEditor = ({
   }, [allBlocks, block, linkByAttrKey]);
 
   if (!block) {
-    return <div className="empty-state">Select a JSON block.</div>;
+    return <div className="text-[0.9rem] text-[#6f655d]">Select a JSON block.</div>;
   }
 
   return (
-    <div className="json-editor">
+    <div className="grid gap-[0.45rem]">
       <div>
-        <div className="meta">Resolved Value</div>
-        <pre className="json-preview">{formatJson(resolvedValue ?? block.data)}</pre>
+        <div className="text-[0.85rem] text-[#6f655d]">Resolved Value</div>
+        <pre className="mb-[0.7rem] mt-[0.35rem] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem]">
+          {formatJson(resolvedValue ?? block.data)}
+        </pre>
       </div>
       <div>
-        <div className="meta">Preview JSON</div>
-        <pre className="json-preview">{formatJson(block.data)}</pre>
+        <div className="text-[0.85rem] text-[#6f655d]">Preview JSON</div>
+        <pre className="mb-[0.7rem] mt-[0.35rem] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem]">
+          {formatJson(block.data)}
+        </pre>
       </div>
     </div>
   );

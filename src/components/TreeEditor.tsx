@@ -37,6 +37,13 @@ const parseInputToJsonValue = (raw: string): JsonValue => {
   return primitiveFromInput(raw);
 };
 
+const treeInputClass =
+  'w-full rounded-[10px] border border-[#d0c4b5] bg-[#fffefb] px-[0.6rem] py-[0.48rem] text-[#2e2a26] focus:outline-none focus:ring-2 focus:ring-[#f3bc82] focus:ring-offset-1';
+const treeButtonClass =
+  'inline-flex items-center justify-center rounded-[10px] border border-transparent bg-[#24221f] px-[0.85rem] py-[0.45rem] font-semibold text-[#f8f2eb] transition-colors hover:bg-[#171614]';
+const treeDangerButtonClass =
+  'inline-flex items-center justify-center rounded-[10px] border border-transparent bg-[#be123c] px-[0.7rem] py-[0.35rem] text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#9f1239]';
+
 const TreeNode = ({
   value,
   path,
@@ -53,22 +60,22 @@ const TreeNode = ({
 
   if (isObject(value)) {
     return (
-      <div className="tree-node">
-        <div className="tree-header">
-          <span className="tree-label">{label}</span>
-          <span className="tree-type">object</span>
+      <div className="border-l border-[#e9dece] pl-[0.55rem]">
+        <div className="flex items-center gap-[0.4rem]">
+          <span className="font-medium">{label}</span>
+          <span className="text-[0.8rem] text-[#7f756d]">object</span>
           {allowDelete ? (
-            <button className="danger" onClick={() => onDelete(path)}>
+            <button className={treeDangerButtonClass} onClick={() => onDelete(path)}>
               Delete
             </button>
           ) : null}
         </div>
 
-        <div className="tree-children">
+        <div className="mt-[0.4rem] grid gap-[0.35rem]">
           {Object.entries(value).map(([key, child]) => (
-            <div key={key} className="tree-row">
+            <div key={key} className="grid gap-[0.35rem]">
               <input
-                className="tree-key-input"
+                className={treeInputClass}
                 value={key}
                 onChange={(event) => onRename(path, key, event.target.value)}
               />
@@ -86,18 +93,21 @@ const TreeNode = ({
             </div>
           ))}
 
-          <div className="tree-add-row">
+          <div className="grid grid-cols-[1fr_1fr_auto] gap-[0.35rem]">
             <input
+              className={treeInputClass}
               placeholder="new key"
               value={newKey}
               onChange={(event) => setNewKey(event.target.value)}
             />
             <input
+              className={treeInputClass}
               placeholder="value (JSON or text)"
               value={newValue}
               onChange={(event) => setNewValue(event.target.value)}
             />
             <button
+              className={treeButtonClass}
               onClick={() => {
                 onAddObjectKey(path, newKey, newValue);
                 setNewKey('');
@@ -114,18 +124,18 @@ const TreeNode = ({
 
   if (Array.isArray(value)) {
     return (
-      <div className="tree-node">
-        <div className="tree-header">
-          <span className="tree-label">{label}</span>
-          <span className="tree-type">array[{value.length}]</span>
+      <div className="border-l border-[#e9dece] pl-[0.55rem]">
+        <div className="flex items-center gap-[0.4rem]">
+          <span className="font-medium">{label}</span>
+          <span className="text-[0.8rem] text-[#7f756d]">array[{value.length}]</span>
           {allowDelete ? (
-            <button className="danger" onClick={() => onDelete(path)}>
+            <button className={treeDangerButtonClass} onClick={() => onDelete(path)}>
               Delete
             </button>
           ) : null}
         </div>
 
-        <div className="tree-children">
+        <div className="mt-[0.4rem] grid gap-[0.35rem]">
           {value.map((child, index) => (
             <TreeNode
               key={`${path.join('.')}-${index}`}
@@ -141,13 +151,15 @@ const TreeNode = ({
             />
           ))}
 
-          <div className="tree-add-row">
+          <div className="grid grid-cols-[1fr_auto] gap-[0.35rem]">
             <input
+              className={treeInputClass}
               placeholder="value (JSON or text)"
               value={newValue}
               onChange={(event) => setNewValue(event.target.value)}
             />
             <button
+              className={treeButtonClass}
               onClick={() => {
                 onAppendArrayItem(path, newValue);
                 setNewValue('');
@@ -162,14 +174,15 @@ const TreeNode = ({
   }
 
   return (
-    <div className="tree-node primitive">
-      <label className="tree-label">{label}</label>
+    <div className="flex items-center gap-[0.4rem]">
+      <label className="font-medium">{label}</label>
       <input
+        className={treeInputClass}
         value={value === null ? 'null' : String(value)}
         onChange={(event) => onPrimitiveChange(path, event.target.value)}
       />
       {allowDelete ? (
-        <button className="danger" onClick={() => onDelete(path)}>
+        <button className={treeDangerButtonClass} onClick={() => onDelete(path)}>
           Delete
         </button>
       ) : null}
@@ -236,8 +249,12 @@ const TreeEditor = ({ value, onChange }: TreeEditorProps) => {
   };
 
   return (
-    <div className="tree-editor">
-      {error ? <div className="inline-error">{error}</div> : null}
+    <div className="grid gap-[0.45rem]">
+      {error ? (
+        <div className="mb-[0.55rem] rounded-lg border border-[#fecaca] bg-[#fee2e2] px-[0.45rem] py-[0.35rem] text-[0.9rem] text-[#b91c1c]">
+          {error}
+        </div>
+      ) : null}
       <TreeNode
         value={value}
         path={[]}
@@ -250,8 +267,10 @@ const TreeEditor = ({ value, onChange }: TreeEditorProps) => {
         allowDelete={false}
       />
       <details>
-        <summary>Preview JSON</summary>
-        <pre className="json-preview">{formatJson(value)}</pre>
+        <summary className="cursor-pointer font-medium">Preview JSON</summary>
+        <pre className="mb-[0.7rem] mt-[0.35rem] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem]">
+          {formatJson(value)}
+        </pre>
       </details>
     </div>
   );

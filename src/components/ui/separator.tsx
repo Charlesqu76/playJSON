@@ -10,8 +10,8 @@ const Separator = ({ className, orientation = 'horizontal', ...props }: Separato
     <div
       aria-hidden
       className={cn(
-        'ui-separator',
-        orientation === 'vertical' ? 'ui-separator-vertical' : 'ui-separator-horizontal',
+        'shrink-0 bg-[#efe7dc]',
+        orientation === 'vertical' ? 'h-full w-px' : 'h-px w-full',
         className,
       )}
       {...props}
@@ -20,4 +20,3 @@ const Separator = ({ className, orientation = 'horizontal', ...props }: Separato
 };
 
 export { Separator };
-

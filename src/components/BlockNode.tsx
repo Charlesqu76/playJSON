@@ -1,5 +1,6 @@
 import { useState } from 'react';
 import { Handle, Position, type NodeProps } from '@xyflow/react';
+import { cn } from '../lib/utils';
 
 const ATTR_MOVE_MIME = 'application/x-json-attr-move';
 const ATTR_LINK_MIME = 'application/x-json-attr-link';
@@ -93,7 +94,13 @@ const BlockNode = ({ data }: NodeProps) => {
 
   return (
     <div
-      className={`block-node kind-${nodeData.blockKind} ${nodeData.isSelected ? 'is-selected' : ''}`}
+      className={cn(
+        'max-w-[320px] min-w-[170px] rounded-xl border p-2 transition-[box-shadow,border-color,background] duration-100',
+        nodeData.blockKind === 'object' && 'border-[#d7b691] bg-[#fff8ee]',
+        nodeData.blockKind === 'array' && 'border-[#9fc3de] bg-[#edf7ff]',
+        nodeData.blockKind === 'other' && 'border-[#c6c6c6] bg-[#f7f7f7]',
+        nodeData.isSelected && 'border-[#2563eb] bg-[#f7fbff] shadow-[0_0_0_2px_rgba(37,99,235,0.2)]',
+      )}
       onDragOver={(event) => {
         event.preventDefault();
         event.dataTransfer.dropEffect = 'move';
@@ -121,13 +128,13 @@ const BlockNode = ({ data }: NodeProps) => {
         type="target"
         position={Position.Left}
         id="block-target"
-        className="block-node-target-handle"
+        className="pointer-events-none !left-[-7px] !h-[10px] !w-[10px] !border-2 !border-[#2563eb] !bg-white"
       />
-      <div className="block-node-head">
-        <div className="block-node-title">{nodeData.title}</div>
+      <div className="flex items-center justify-between gap-[0.45rem]">
+        <div className="font-bold">{nodeData.title}</div>
         {nodeData.hasLinkedChildren ? (
           <button
-            className="nodrag nopan block-node-expand-btn"
+            className="nodrag nopan rounded-md border border-[#d9d0c4] bg-[#fffefb] px-[0.4rem] py-[0.18rem] text-[0.72rem] hover:bg-[#f3ede3]"
             onClick={() => {
               nodeData.onToggleExpand(nodeData.blockId);
               setEditingAttr(null);
@@ -137,17 +144,20 @@ const BlockNode = ({ data }: NodeProps) => {
           </button>
         ) : null}
       </div>
-      <div className="block-node-summary">{nodeData.summary}</div>
+      <div className="mb-[0.45rem] mt-[0.2rem] text-[0.85rem] text-[#61564f]">{nodeData.summary}</div>
 
       {nodeData.blockKind === 'array' && nodeData.arrayValues.length > 0 ? (
-        <div className="block-node-array-values">
+        <div className="mb-[0.3rem] rounded-lg border border-[#e9dfd1] bg-white">
           {nodeData.arrayValues.map((item) => {
             const sourceAttrKey = String(item.index);
             const attrId = `array:${sourceAttrKey}`;
             return (
               <div
                 key={`${nodeData.blockId}-array-${item.index}`}
-                className={`nodrag nopan block-node-array-item ${selectedAttrId === attrId ? 'is-selected' : ''}`}
+                className={cn(
+                  'nodrag nopan relative flex items-center gap-[0.2rem] border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] pr-[0.95rem] font-mono text-[0.75rem] last:border-b-0',
+                  selectedAttrId === attrId && 'bg-[#edf4ff]',
+                )}
                 draggable
                 onPointerDown={(event) => {
                   event.stopPropagation();
@@ -174,7 +184,10 @@ const BlockNode = ({ data }: NodeProps) => {
                 }}
               >
                 <span
-                  className={`nodrag nopan attr-link-icon ${item.isLinked ? '' : 'is-idle'}`}
+                  className={cn(
+                    'nodrag nopan inline-flex h-4 w-4 cursor-grab items-center justify-center rounded-full bg-[rgba(37,99,235,0.12)] text-[#2563eb]',
+                    !item.isLinked && 'bg-[rgba(138,127,118,0.15)] text-[#8a7f76]',
+                  )}
                   title={
                     item.isLinked
                       ? `Linked to ${item.targetTitle ?? 'target'} (drag to relink, click to unlink)`
@@ -212,7 +225,7 @@ const BlockNode = ({ data }: NodeProps) => {
                   }}
                 >
                   <svg
-                    className="attr-link-glyph"
+                    className="h-3 w-3"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -232,7 +245,7 @@ const BlockNode = ({ data }: NodeProps) => {
                   type="source"
                   position={Position.Right}
                   id={getAttrHandleId(sourceAttrKey)}
-                  className="block-node-attr-handle"
+                  className="pointer-events-none !right-[-8px] !top-1/2 !h-[10px] !w-[10px] !translate-x-1/2 !-translate-y-1/2 !border-2 !border-[#2563eb] !bg-white"
                 />
               </div>
             );
@@ -241,14 +254,17 @@ const BlockNode = ({ data }: NodeProps) => {
       ) : null}
 
       {nodeData.blockKind === 'object' && nodeData.attributes.length > 0 ? (
-        <div className="block-node-attrs">
+        <div className="mb-[0.3rem] rounded-lg border border-[#e9dfd1] bg-white">
           {nodeData.attributes.map((attr) => {
             const attrId = `object:${attr.key}`;
             const isEditing = editingAttr?.key === attr.key;
             return (
               <div
                 key={attr.key}
-                className={`nodrag nopan block-node-attr-item ${selectedAttrId === attrId ? 'is-selected' : ''}`}
+                className={cn(
+                  'nodrag nopan relative flex items-center gap-[0.2rem] border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] pr-[0.95rem] font-mono text-[0.75rem] last:border-b-0',
+                  selectedAttrId === attrId && 'bg-[#edf4ff]',
+                )}
                 draggable={!isEditing}
                 onPointerDown={(event) => {
                   event.stopPropagation();
@@ -279,7 +295,7 @@ const BlockNode = ({ data }: NodeProps) => {
                 }}
               >
                 <span
-                  className="block-node-attr-key"
+                  className="cursor-pointer rounded-[2px] hover:bg-[#f4f8ff]"
                   onDoubleClick={() =>
                     setEditingAttr({
                       key: attr.key,
@@ -290,7 +306,7 @@ const BlockNode = ({ data }: NodeProps) => {
                 >
                   {editingAttr?.key === attr.key && editingAttr.field === 'key' ? (
                     <input
-                      className="nodrag nopan block-node-attr-input"
+                      className="nodrag nopan w-[120px] rounded border border-[#d0c4b5] px-[0.2rem] py-[0.1rem] text-[0.72rem] focus:outline-none focus:ring-1 focus:ring-[#f3bc82]"
                       value={editingAttr.draft}
                       autoFocus
                       onChange={(event) =>
@@ -330,7 +346,7 @@ const BlockNode = ({ data }: NodeProps) => {
                 </span>
                 <span>: </span>
                 <span
-                  className="block-node-attr-value"
+                  className="min-w-0 cursor-pointer rounded-[2px] hover:bg-[#f4f8ff]"
                   onDoubleClick={() =>
                     setEditingAttr({
                       key: attr.key,
@@ -341,7 +357,7 @@ const BlockNode = ({ data }: NodeProps) => {
                 >
                   {editingAttr?.key === attr.key && editingAttr.field === 'value' ? (
                     <input
-                      className="nodrag nopan block-node-attr-input"
+                      className="nodrag nopan w-[120px] rounded border border-[#d0c4b5] px-[0.2rem] py-[0.1rem] text-[0.72rem] focus:outline-none focus:ring-1 focus:ring-[#f3bc82]"
                       value={editingAttr.draft}
                       autoFocus
                       onChange={(event) =>
@@ -380,7 +396,10 @@ const BlockNode = ({ data }: NodeProps) => {
                   )}
                 </span>
                 <span
-                  className={`nodrag nopan attr-link-icon block-node-attr-link ${attr.isLinked ? '' : 'is-idle'}`}
+                  className={cn(
+                    'nodrag nopan ml-auto inline-flex h-4 w-4 shrink-0 cursor-grab items-center justify-center rounded-full bg-[rgba(37,99,235,0.12)] text-[#2563eb]',
+                    !attr.isLinked && 'bg-[rgba(138,127,118,0.15)] text-[#8a7f76]',
+                  )}
                   title={
                     attr.isLinked
                       ? `Linked to ${attr.targetTitle ?? 'target'} (drag to relink, click to unlink)`
@@ -418,7 +437,7 @@ const BlockNode = ({ data }: NodeProps) => {
                   }}
                 >
                   <svg
-                    className="attr-link-glyph"
+                    className="h-3 w-3"
                     viewBox="0 0 24 24"
                     fill="none"
                     xmlns="http://www.w3.org/2000/svg"
@@ -437,7 +456,7 @@ const BlockNode = ({ data }: NodeProps) => {
                   type="source"
                   position={Position.Right}
                   id={getAttrHandleId(attr.key)}
-                  className="block-node-attr-handle"
+                  className="pointer-events-none !right-[-8px] !top-1/2 !h-[10px] !w-[10px] !translate-x-1/2 !-translate-y-1/2 !border-2 !border-[#2563eb] !bg-white"
                 />
               </div>
             );
@@ -445,12 +464,16 @@ const BlockNode = ({ data }: NodeProps) => {
         </div>
       ) : null}
 
-      {error ? <div className="inline-error">{error}</div> : null}
+      {error ? (
+        <div className="mb-[0.55rem] rounded-lg border border-[#fecaca] bg-[#fee2e2] px-[0.45rem] py-[0.35rem] text-[0.9rem] text-[#b91c1c]">
+          {error}
+        </div>
+      ) : null}
       <Handle
         type="source"
         position={Position.Right}
         id="block-source"
-        className="block-node-block-source-handle"
+        className="pointer-events-none !right-[-7px] !h-[10px] !w-[10px] !border-2 !border-[#2563eb] !bg-white"
       />
     </div>
   );

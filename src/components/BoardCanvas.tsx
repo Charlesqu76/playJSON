@@ -307,27 +307,52 @@ const BoardCanvas = ({
   };
 
   return (
-    <div className="board-canvas">
-      <div className="board-canvas-toolbar">
-        <Button className="board-canvas-format-btn" size="sm" onClick={onAddObjectBlock}>
+    <div className="relative h-full overflow-hidden rounded-xl border border-[#d9d0c4] bg-white">
+      <div className="absolute right-[0.6rem] top-[0.6rem] z-[6] flex flex-wrap justify-end gap-[0.45rem]">
+        <Button className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]" size="sm" onClick={onAddObjectBlock}>
           Add Object
         </Button>
-        <Button className="board-canvas-format-btn" size="sm" onClick={onAddArrayBlock}>
+        <Button className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]" size="sm" onClick={onAddArrayBlock}>
           Add Array
         </Button>
-        <Button className="board-canvas-format-btn" size="sm" variant="secondary" onClick={onExport}>
+        <Button
+          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+          size="sm"
+          variant="secondary"
+          onClick={onExport}
+        >
           Export
         </Button>
-        <Button className="board-canvas-format-btn" size="sm" variant="outline" onClick={onZoomOut}>
+        <Button
+          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+          size="sm"
+          variant="outline"
+          onClick={onZoomOut}
+        >
           Zoom Out
         </Button>
-        <Button className="board-canvas-format-btn" size="sm" variant="outline" onClick={onZoomIn}>
+        <Button
+          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+          size="sm"
+          variant="outline"
+          onClick={onZoomIn}
+        >
           Zoom In
         </Button>
-        <Button className="board-canvas-format-btn" size="sm" variant="secondary" onClick={onAutoFormat}>
+        <Button
+          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+          size="sm"
+          variant="secondary"
+          onClick={onAutoFormat}
+        >
           Auto-Format
         </Button>
-        <Button className="board-canvas-format-btn" size="sm" variant="destructive" onClick={onResetBoard}>
+        <Button
+          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+          size="sm"
+          variant="destructive"
+          onClick={onResetBoard}
+        >
           Reset Board
         </Button>
       </div>

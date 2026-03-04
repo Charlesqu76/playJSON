@@ -4,8 +4,9 @@
   "version": "0.1.0",
   "type": "module",
   "scripts": {
-    "dev": "vite",
-    "build": "tsc -b && vite build",
+    "tw:build": "tailwindcss -c ./tailwind.config.cjs -i ./src/index.css -o ./src/tailwind.css",
+    "dev": "pnpm tw:build && vite",
+    "build": "pnpm tw:build && tsc -b && vite build",
     "preview": "vite preview",
     "test": "vitest run"
   },

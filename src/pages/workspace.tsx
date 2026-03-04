@@ -939,13 +939,16 @@ const Workspace = () => {
   }, [dispatch, selectedLinkId, state.blocks, state.positions, state.selectedBlockId]);
 
   return (
-    <div className="workspace-shell">
-      <header className="workspace-header">
-        <Link className="workspace-logo" to="/">
+    <div className="min-h-screen p-3">
+      <header className="mb-[0.7rem] grid grid-cols-[auto_minmax(320px,460px)] items-center gap-[0.85rem] max-[860px]:grid-cols-1">
+        <Link
+          className="[font-family:'Space_Grotesk','Avenir_Next','Segoe_UI',sans-serif] text-[1.15rem] font-bold tracking-[0.02em] text-[#2f2a25] no-underline"
+          to="/"
+        >
           PlayJSON
         </Link>
-        <div className="workspace-header-search">
-          <div className="workspace-header-search-row">
+        <div className="relative w-full">
+          <div className="flex items-center">
             <Input
               id="workspace-search-input"
               role="combobox"
@@ -1002,7 +1005,11 @@ const Workspace = () => {
             />
           </div>
           {state.searchQuery.trim() && isSearchOpen ? (
-            <div id="workspace-search-listbox" role="listbox" className="workspace-header-search-results">
+            <div
+              id="workspace-search-listbox"
+              role="listbox"
+              className="absolute inset-x-0 top-[calc(100%+0.35rem)] z-40 flex max-h-60 flex-col gap-[0.3rem] overflow-auto rounded-[10px] border border-[#e7dccd] bg-[rgba(255,255,255,0.95)] p-[0.35rem] shadow-[0_10px_26px_rgba(40,32,26,0.12)]"
+            >
               {headerSearchResults.length > 0 ? (
                 headerSearchResults.map((result, index) => (
                   <button
@@ -1010,7 +1017,11 @@ const Workspace = () => {
                     id={`workspace-search-option-${result.id}`}
                     role="option"
                     aria-selected={index === activeSearchIndex}
-                    className={`workspace-header-search-result ${index === activeSearchIndex ? 'is-active' : ''}`}
+                    className={`w-full cursor-pointer justify-start rounded-lg border px-[0.6rem] py-[0.45rem] text-left text-inherit ${
+                      index === activeSearchIndex
+                        ? 'border-[#cdbdaa] bg-[#f3ede3] text-[#2f2a25]'
+                        : 'border-[#d9d0c4] bg-[#fffefb] text-[#2f2a25] hover:border-[#cdbdaa] hover:bg-[#f3ede3]'
+                    }`}
                     onMouseDown={(event) => {
                       event.preventDefault();
                     }}
@@ -1020,14 +1031,18 @@ const Workspace = () => {
                   </button>
                 ))
               ) : (
-                <div className="hint">No matching blocks.</div>
+                <div className="text-[0.9rem] text-[#6f655d]">No matching blocks.</div>
               )}
             </div>
           ) : null}
         </div>
       </header>
 
-      <div className="app-shell" ref={appShellRef} style={appShellStyle}>
+      <div
+        className="grid h-[calc(100vh-84px)] items-stretch gap-0 [grid-template-columns:var(--left-panel-width)_10px_minmax(0,1fr)_10px_var(--right-panel-width)] max-[1280px]:h-auto max-[1280px]:grid-cols-1"
+        ref={appShellRef}
+        style={appShellStyle}
+      >
         <LeftPanel
           onCreate={onCreate}
           rootResults={rootResults}
@@ -1040,7 +1055,7 @@ const Workspace = () => {
         />
 
         <div
-          className="workspace-resize-handle"
+          className="relative m-0 w-full cursor-col-resize border-0 bg-transparent p-0 touch-none transition-colors duration-100 hover:bg-[rgba(184,171,152,0.22)] focus-visible:bg-[rgba(184,171,152,0.22)] max-[1280px]:hidden"
           role="separator"
           tabIndex={0}
           aria-label="Resize left and center panels"
@@ -1062,7 +1077,7 @@ const Workspace = () => {
           }}
         />
 
-        <div className="workspace-center-panel">
+        <div className="min-w-0 max-[1280px]:min-h-[55vh]">
           <ReactFlowProvider>
             <BoardCanvas
               state={state}
@@ -1124,7 +1139,7 @@ const Workspace = () => {
         </div>
 
         <div
-          className="workspace-resize-handle"
+          className="relative m-0 w-full cursor-col-resize border-0 bg-transparent p-0 touch-none transition-colors duration-100 hover:bg-[rgba(184,171,152,0.22)] focus-visible:bg-[rgba(184,171,152,0.22)] max-[1280px]:hidden"
           role="separator"
           tabIndex={0}
           aria-label="Resize center and right panels"
@@ -1146,16 +1161,20 @@ const Workspace = () => {
           }}
         />
 
-        <Card className="right-panel">
+        <Card className="overflow-auto p-0">
           <CardHeader>
             <CardTitle>Selected Block</CardTitle>
           </CardHeader>
           <CardContent>
-          {!selectedBlock ? (
-            <div className="hint">Select a block to edit.</div>
-          ) : (
-            <JsonEditor block={selectedBlock} allBlocks={allBlocks} links={Object.values(state.links)} />
-          )}
+            {!selectedBlock ? (
+              <div className="text-[0.9rem] text-[#6f655d]">Select a block to edit.</div>
+            ) : (
+              <JsonEditor
+                block={selectedBlock}
+                allBlocks={allBlocks}
+                links={Object.values(state.links)}
+              />
+            )}
           </CardContent>
         </Card>
       </div>
