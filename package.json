@@ -1,15 +1,47 @@
 {
-  "name": "playjson",
-  "version": "1.0.0",
-  "description": "",
+  "name": "json-visual-board",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
   "scripts": {
-    "graph": "pnpm --filter graph dev",
-    "web": "pnpm --filter web dev",
-    "build": "pnpm --filter web build"
+    "tw:build": "tailwindcss -c ./tailwind.config.cjs -i ./src/index.css -o ./src/tailwind.css",
+    "dev": "pnpm tw:build && vite",
+    "build": "pnpm tw:build && tsc -b && vite build",
+    "preview": "vite preview",
+    "test": "vitest run"
   },
-  "keywords": [],
-  "author": "",
-  "license": "ISC",
-  "devDependencies": {},
-  "dependencies": {}
+  "dependencies": {
+    "@tanstack/react-router": "^1.163.3",
+    "@xyflow/react": "^12.8.5",
+    "d3-hierarchy": "^3.1.2",
+    "dagre": "^0.8.5",
+    "elkjs": "^0.11.1",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "uuid": "^11.1.0",
+    "zod": "^3.24.1"
+  },
+  "devDependencies": {
+    "@radix-ui/react-slot": "^1.2.4",
+    "@testing-library/jest-dom": "^6.6.3",
+    "@testing-library/react": "^16.2.0",
+    "@types/d3-hierarchy": "^3.1.7",
+    "@types/dagre": "^0.7.54",
+    "@types/node": "^25.3.3",
+    "@types/react": "^18.3.18",
+    "@types/react-dom": "^18.3.5",
+    "@types/uuid": "^10.0.0",
+    "@vitejs/plugin-react": "^4.4.1",
+    "autoprefixer": "^10.4.27",
+    "class-variance-authority": "^0.7.1",
+    "clsx": "^2.1.1",
+    "jsdom": "^26.0.0",
+    "postcss": "^8.5.8",
+    "tailwind-merge": "^3.5.0",
+    "tailwindcss": "^3.4.17",
+    "tailwindcss-animate": "^1.0.7",
+    "typescript": "~5.7.2",
+    "vite": "^6.0.5",
+    "vitest": "^3.0.5"
+  }
 }
