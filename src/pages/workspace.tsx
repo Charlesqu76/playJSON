@@ -1,6 +1,9 @@
 import { useEffect, useMemo, useRef, useState } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ReactFlowProvider } from '@xyflow/react';
+import * as dagre from 'dagre';
+import { stratify, tree, type HierarchyPointNode } from 'd3-hierarchy';
+import ELK, { type ElkExtendedEdge, type ElkNode } from 'elkjs/lib/elk.bundled.js';
 import { v4 as uuidv4 } from 'uuid';
 import BoardCanvas from '../components/BoardCanvas';
 import JsonEditor from '../components/JsonEditor';
@@ -34,6 +37,7 @@ const nextBlockPosition = (blockCount: number) => ({
 });
 
 const AUTO_FORMAT_VIRTUAL_ROOT_ID = '__auto_format_virtual_root__';
+const elk = new ELK();
 
 const isRootObject = (value: JsonValue): value is JsonObject =>
   Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -265,151 +269,268 @@ const getHiddenDescendants = (
   return hidden;
 };
 
-const formatPositionsLeftToRight = (
+const formatPositionsLeftToRight = async (
   state: BoardState,
   targetBlockIds?: ReadonlySet<string>,
-): Record<string, { x: number; y: number }> => {
+): Promise<Record<string, { x: number; y: number }>> => {
   const ids = targetBlockIds
     ? [...targetBlockIds].filter((id) => Boolean(state.blocks[id]))
     : Object.keys(state.blocks);
   if (ids.length === 0) return {};
 
-  const outgoing = new Map<string, string[]>();
-  const incoming = new Map<string, string[]>();
-  const undirected = new Map<string, Set<string>>();
-  for (const id of ids) {
-    outgoing.set(id, []);
-    incoming.set(id, []);
-    undirected.set(id, new Set<string>());
-  }
-  const active = new Set(ids);
-  for (const link of Object.values(state.links)) {
-    if (!active.has(link.sourceBlockId) || !active.has(link.targetBlockId)) continue;
-    outgoing.get(link.sourceBlockId)?.push(link.targetBlockId);
-    incoming.get(link.targetBlockId)?.push(link.sourceBlockId);
-    undirected.get(link.sourceBlockId)?.add(link.targetBlockId);
-    undirected.get(link.targetBlockId)?.add(link.sourceBlockId);
-  }
-  const parentlessBlockIds = ids.filter((id) => (incoming.get(id) ?? []).length === 0);
-  let virtualRootId: string | null = null;
-  if (parentlessBlockIds.length > 1) {
-    virtualRootId = AUTO_FORMAT_VIRTUAL_ROOT_ID;
-    let suffix = 1;
-    while (active.has(virtualRootId)) {
-      virtualRootId = `${AUTO_FORMAT_VIRTUAL_ROOT_ID}_${suffix}`;
-      suffix += 1;
-    }
-
-    outgoing.set(virtualRootId, [...parentlessBlockIds]);
-    incoming.set(virtualRootId, []);
-    undirected.set(virtualRootId, new Set(parentlessBlockIds));
-    for (const id of parentlessBlockIds) {
-      incoming.get(id)?.push(virtualRootId);
-      undirected.get(id)?.add(virtualRootId);
-    }
-  }
-
-  const components: string[][] = [];
-  const seen = new Set<string>();
-  const orderedIds = [...ids].sort((a, b) => sortByCurrentPosition(state, a, b));
-  for (const start of orderedIds) {
-    if (seen.has(start)) continue;
-    const queue = [start];
-    const group: string[] = [];
-    seen.add(start);
-    while (queue.length > 0) {
-      const current = queue.shift();
-      if (!current) break;
-      group.push(current);
-      const neighbors = [...(undirected.get(current) ?? [])].sort((a, b) =>
-        sortByCurrentPosition(state, a, b),
-      );
-      for (const neighbor of neighbors) {
-        if (seen.has(neighbor)) continue;
-        seen.add(neighbor);
-        queue.push(neighbor);
-      }
-    }
-    components.push(group);
-  }
-
   const NODE_WIDTH = 360;
   const COLUMN_GAP = 60;
   const ROW_GAP = 28;
-  const COMPONENT_GAP = 140;
   const START_X = 80;
-  let currentY = 80;
+  const START_Y = 80;
 
+  const incoming = new Map<string, string[]>();
+  for (const id of ids) {
+    incoming.set(id, []);
+  }
+  const active = new Set(ids);
+  const visibleLinks = Object.values(state.links).filter(
+    (link) => active.has(link.sourceBlockId) && active.has(link.targetBlockId),
+  );
+  for (const link of visibleLinks) {
+    incoming.get(link.targetBlockId)?.push(link.sourceBlockId);
+  }
+
+  let virtualRootId = AUTO_FORMAT_VIRTUAL_ROOT_ID;
+  let suffix = 1;
+  while (active.has(virtualRootId)) {
+    virtualRootId = `${AUTO_FORMAT_VIRTUAL_ROOT_ID}_${suffix}`;
+    suffix += 1;
+  }
+
+  interface HierarchyDatum {
+    id: string;
+    parentId: string | null;
+  }
+
+  const orderedIds = [...ids].sort((a, b) => sortByCurrentPosition(state, a, b));
+  const hierarchyRows: HierarchyDatum[] = [{ id: virtualRootId, parentId: null }];
+  for (const id of orderedIds) {
+    const parents = [...(incoming.get(id) ?? [])].sort((a, b) => sortByCurrentPosition(state, a, b));
+    hierarchyRows.push({
+      id,
+      parentId: parents[0] ?? virtualRootId,
+    });
+  }
+
+  let hierarchyNodes: HierarchyPointNode<HierarchyDatum>[];
+  try {
+    const root = stratify<HierarchyDatum>()
+      .id((datum) => datum.id)
+      .parentId((datum) => datum.parentId)(hierarchyRows);
+    hierarchyNodes = tree<HierarchyDatum>()
+      .nodeSize([1, 1])
+      .separation((a, b) => (a.parent === b.parent ? 1 : 1.25))(root)
+      .descendants()
+      .filter((node) => node.data.id !== virtualRootId);
+  } catch {
+    return {};
+  }
+
+  if (hierarchyNodes.length === 0) return {};
+
+  const verticalOrder = new Map<string, number>();
+  const depthById = new Map<string, number>();
+  for (const node of hierarchyNodes) {
+    verticalOrder.set(node.data.id, node.x);
+    depthById.set(node.data.id, Math.max(0, node.depth - 1));
+  }
+
+  const columns = new Map<number, string[]>();
+  for (const node of hierarchyNodes) {
+    const depth = depthById.get(node.data.id) ?? 0;
+    const list = columns.get(depth) ?? [];
+    list.push(node.data.id);
+    columns.set(depth, list);
+  }
+
+  const d3Positions: Record<string, { x: number; y: number }> = {};
+
+  for (const depth of [...columns.keys()].sort((a, b) => a - b)) {
+    const columnIds = (columns.get(depth) ?? []).sort((a, b) => {
+      const verticalDelta = (verticalOrder.get(a) ?? 0) - (verticalOrder.get(b) ?? 0);
+      if (verticalDelta !== 0) return verticalDelta;
+      return sortByCurrentPosition(state, a, b);
+    });
+    let yCursor = START_Y;
+    for (const id of columnIds) {
+      const block = state.blocks[id];
+      if (!block) continue;
+      d3Positions[id] = {
+        x: START_X + depth * (NODE_WIDTH + COLUMN_GAP),
+        y: yCursor,
+      };
+      yCursor += estimateBlockHeight(block.data) + ROW_GAP;
+    }
+  }
+
+  const dagreGraph = new dagre.graphlib.Graph();
+  dagreGraph.setGraph({
+    rankdir: 'LR',
+    align: 'UL',
+    marginx: START_X,
+    marginy: START_Y,
+    nodesep: ROW_GAP + 24,
+    ranksep: COLUMN_GAP + 80,
+    ranker: 'network-simplex',
+  });
+  dagreGraph.setDefaultEdgeLabel(() => ({}));
+
+  for (const id of orderedIds) {
+    const block = state.blocks[id];
+    if (!block) continue;
+    dagreGraph.setNode(id, {
+      width: NODE_WIDTH,
+      height: estimateBlockHeight(block.data),
+    });
+  }
+
+  for (const link of visibleLinks) {
+    const sourceDepth = depthById.get(link.sourceBlockId) ?? 0;
+    const targetDepth = depthById.get(link.targetBlockId) ?? sourceDepth + 1;
+    dagreGraph.setEdge(link.sourceBlockId, link.targetBlockId, {
+      minlen: Math.max(1, targetDepth - sourceDepth),
+      weight: 2,
+    });
+  }
+
+  for (const depth of [...columns.keys()].sort((a, b) => a - b)) {
+    const orderedColumnIds = (columns.get(depth) ?? []).sort((a, b) => {
+      const verticalDelta = (verticalOrder.get(a) ?? 0) - (verticalOrder.get(b) ?? 0);
+      if (verticalDelta !== 0) return verticalDelta;
+      return sortByCurrentPosition(state, a, b);
+    });
+    for (let index = 1; index < orderedColumnIds.length; index += 1) {
+      const previous = orderedColumnIds[index - 1];
+      const current = orderedColumnIds[index];
+      if (!previous || !current) continue;
+      dagreGraph.setEdge(previous, current, {
+        minlen: 1,
+        weight: 0.2,
+      });
+    }
+  }
+
+  dagre.layout(dagreGraph);
+
+  const dagrePositions = new Map<string, { x: number; y: number }>();
+  for (const id of orderedIds) {
+    const block = state.blocks[id];
+    if (!block) continue;
+    const node = dagreGraph.node(id) as dagre.Node | undefined;
+    if (!node || typeof node.x !== 'number' || typeof node.y !== 'number') continue;
+    const width = typeof node.width === 'number' ? node.width : NODE_WIDTH;
+    const height = typeof node.height === 'number' ? node.height : estimateBlockHeight(block.data);
+    dagrePositions.set(id, {
+      x: node.x - width / 2,
+      y: node.y - height / 2,
+    });
+  }
+
+  const elkGraph: ElkNode = {
+    id: 'root',
+    layoutOptions: {
+      'elk.algorithm': 'layered',
+      'elk.direction': 'RIGHT',
+      'elk.spacing.nodeNode': String(ROW_GAP + 20),
+      'elk.layered.spacing.nodeNodeBetweenLayers': String(COLUMN_GAP + 80),
+      'elk.layered.crossingMinimization.strategy': 'LAYER_SWEEP',
+      'elk.layered.nodePlacement.strategy': 'NETWORK_SIMPLEX',
+      'elk.layered.considerModelOrder.strategy': 'NODES_AND_EDGES',
+    },
+    children: orderedIds.map((id) => {
+      const block = state.blocks[id];
+      const d3Position = d3Positions[id] ?? { x: START_X, y: START_Y };
+      const dagrePosition = dagrePositions.get(id) ?? d3Position;
+      return {
+        id,
+        width: NODE_WIDTH,
+        height: estimateBlockHeight(block.data),
+        x: dagrePosition.x,
+        y: dagrePosition.y,
+      };
+    }),
+    edges: visibleLinks.map(
+      (link) =>
+        ({
+          id: link.id,
+          sources: [link.sourceBlockId],
+          targets: [link.targetBlockId],
+        }) satisfies ElkExtendedEdge,
+    ),
+  };
+
+  let elkPositions = new Map<string, { x: number; y: number }>();
+  try {
+    const elkResult = await elk.layout(elkGraph);
+    elkPositions = new Map(
+      (elkResult.children ?? [])
+        .filter(
+          (child): child is Required<Pick<ElkNode, 'id' | 'x' | 'y'>> =>
+            typeof child.id === 'string' &&
+            typeof child.x === 'number' &&
+            typeof child.y === 'number',
+        )
+        .map((child) => [child.id, { x: child.x, y: child.y }]),
+    );
+  } catch {
+    elkPositions = new Map();
+  }
+
+  const D3_WEIGHT = 0.15;
+  const DAGRE_WEIGHT = 0.35;
+  const ELK_WEIGHT = 0.5;
+  const preferredPosition = new Map<string, { x: number; y: number }>();
+  for (const id of orderedIds) {
+    const d3Position = d3Positions[id] ?? { x: START_X, y: START_Y };
+    const dagrePosition = dagrePositions.get(id) ?? d3Position;
+    const elkPosition = elkPositions.get(id) ?? dagrePosition;
+    preferredPosition.set(id, {
+      x:
+        d3Position.x * D3_WEIGHT +
+        dagrePosition.x * DAGRE_WEIGHT +
+        elkPosition.x * ELK_WEIGHT,
+      y:
+        d3Position.y * D3_WEIGHT +
+        dagrePosition.y * DAGRE_WEIGHT +
+        elkPosition.y * ELK_WEIGHT,
+    });
+  }
+
+  const nodesByDepth = new Map<number, string[]>();
+  for (const id of orderedIds) {
+    const depth = depthById.get(id) ?? 0;
+    const list = nodesByDepth.get(depth) ?? [];
+    list.push(id);
+    nodesByDepth.set(depth, list);
+  }
+
+  // Pack each depth column top-to-bottom to guarantee non-overlapping blocks.
   const nextPositions: Record<string, { x: number; y: number }> = {};
-
-  for (const component of components) {
-    const componentSet = new Set(component);
-    const depth = new Map<string, number>();
-    const indegree = new Map<string, number>();
-
-    for (const id of component) {
-      const count = (incoming.get(id) ?? []).filter((src) => componentSet.has(src)).length;
-      indegree.set(id, count);
+  for (const depth of [...nodesByDepth.keys()].sort((a, b) => a - b)) {
+    const columnIds = (nodesByDepth.get(depth) ?? []).sort((a, b) => {
+      const posA = preferredPosition.get(a)?.y ?? START_Y;
+      const posB = preferredPosition.get(b)?.y ?? START_Y;
+      if (posA !== posB) return posA - posB;
+      return sortByCurrentPosition(state, a, b);
+    });
+    let yCursor = START_Y;
+    for (const id of columnIds) {
+      const block = state.blocks[id];
+      if (!block) continue;
+      const preferredY = preferredPosition.get(id)?.y ?? yCursor;
+      const y = Math.max(preferredY, yCursor);
+      nextPositions[id] = {
+        x: START_X + depth * (NODE_WIDTH + COLUMN_GAP),
+        y: Math.round(y),
+      };
+      yCursor = y + estimateBlockHeight(block.data) + ROW_GAP;
     }
-
-    const roots = component
-      .filter((id) => (indegree.get(id) ?? 0) === 0)
-      .sort((a, b) => sortByCurrentPosition(state, a, b));
-    const queue = roots.length > 0 ? [...roots] : [...component].sort((a, b) => sortByCurrentPosition(state, a, b));
-    for (const rootId of queue) {
-      depth.set(rootId, virtualRootId && rootId === virtualRootId ? -1 : 0);
-    }
-
-    while (queue.length > 0) {
-      const current = queue.shift();
-      if (!current) break;
-      const currentDepth = depth.get(current) ?? 0;
-      const targets = (outgoing.get(current) ?? [])
-        .filter((target) => componentSet.has(target))
-        .sort((a, b) => sortByCurrentPosition(state, a, b));
-      for (const target of targets) {
-        const nextDepth = Math.max(depth.get(target) ?? 0, currentDepth + 1);
-        const changed = nextDepth !== (depth.get(target) ?? 0);
-        depth.set(target, nextDepth);
-        if (changed || !queue.includes(target)) {
-          queue.push(target);
-        }
-      }
-    }
-
-    for (const id of component) {
-      if (!depth.has(id)) depth.set(id, 0);
-    }
-
-    const columns = new Map<number, string[]>();
-    for (const id of component) {
-      if (virtualRootId && id === virtualRootId) continue;
-      const col = depth.get(id) ?? 0;
-      const list = columns.get(col) ?? [];
-      list.push(id);
-      columns.set(col, list);
-    }
-
-    let componentBottom = currentY;
-    const orderedColumns = [...columns.keys()].sort((a, b) => a - b);
-    for (const col of orderedColumns) {
-      const colIds = columns.get(col) ?? [];
-      colIds.sort((a, b) => sortByCurrentPosition(state, a, b));
-      let yCursor = currentY;
-      for (const id of colIds) {
-        nextPositions[id] = {
-          x: START_X + col * (NODE_WIDTH + COLUMN_GAP),
-          y: yCursor,
-        };
-        const block = state.blocks[id];
-        yCursor += estimateBlockHeight(block.data) + ROW_GAP;
-      }
-      if (yCursor > componentBottom) {
-        componentBottom = yCursor;
-      }
-    }
-
-    currentY = componentBottom + COMPONENT_GAP;
   }
 
   return nextPositions;
@@ -503,10 +624,10 @@ const Workspace = () => {
     return null;
   };
 
-  const onFormat = () => {
+  const onFormat = async (): Promise<void> => {
     const hidden = getHiddenDescendants(state, collapsedBlockIds);
     const visibleIds = new Set(Object.keys(state.blocks).filter((id) => !hidden.has(id)));
-    const nextPositions = formatPositionsLeftToRight(state, visibleIds);
+    const nextPositions = await formatPositionsLeftToRight(state, visibleIds);
     Object.entries(nextPositions).forEach(([id, position]) => {
       dispatch({
         type: 'setBlockPosition',

@@ -26,7 +26,7 @@ interface BoardCanvasProps {
   selectedLinkId: string | null;
   onAddObjectBlock: () => void;
   onAddArrayBlock: () => void;
-  onFormat: () => void;
+  onFormat: () => Promise<void> | void;
   onExport: () => void;
   onResetBoard: () => void;
   onSelectBlock: (id: string | null) => void;
@@ -287,13 +287,15 @@ const BoardCanvas = ({
   };
 
   const onAutoFormat = () => {
-    onFormat();
-    requestAnimationFrame(() => {
-      void fitView({
-        padding: 0.18,
-        duration: 260,
+    void (async () => {
+      await onFormat();
+      requestAnimationFrame(() => {
+        void fitView({
+          padding: 0.18,
+          duration: 260,
+        });
       });
-    });
+    })();
   };
 
   const onZoomIn = () => {
