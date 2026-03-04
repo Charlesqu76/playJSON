@@ -495,6 +495,21 @@ button.ghost,
   transition: box-shadow 120ms ease, border-color 120ms ease, background 120ms ease;
 }
 
+.block-node.kind-object {
+  background: #fff8ee;
+  border-color: #d7b691;
+}
+
+.block-node.kind-array {
+  background: #edf7ff;
+  border-color: #9fc3de;
+}
+
+.block-node.kind-other {
+  background: #f7f7f7;
+  border-color: #c6c6c6;
+}
+
 .block-node.is-selected {
   border-color: #2563eb;
   box-shadow: 0 0 0 2px rgba(37, 99, 235, 0.2);
@@ -527,8 +542,6 @@ button.ghost,
 .block-node-attrs,
 .block-node-array-values {
   margin-bottom: 0.3rem;
-  max-height: 130px;
-  overflow: auto;
   border: 1px solid #e9dfd1;
   border-radius: 8px;
   background: #ffffff;
@@ -553,6 +566,15 @@ button.ghost,
 .block-node-attr-key,
 .block-node-attr-value {
   cursor: pointer;
+}
+
+.block-node-attr-value {
+  min-width: 0;
+}
+
+.block-node-attr-link {
+  margin-left: auto;
+  flex-shrink: 0;
 }
 
 .block-node-attr-key:hover,

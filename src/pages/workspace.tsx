@@ -47,7 +47,7 @@ const addAttributeOnRootObject = (value: JsonValue): JsonValue => {
   }
   return {
     ...value,
-    [key]: '',
+    [key]: null,
   };
 };
 

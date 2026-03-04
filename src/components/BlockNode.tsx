@@ -43,7 +43,7 @@ const BlockNode = ({ data }: NodeProps) => {
 
   return (
     <div
-      className={`block-node ${nodeData.isSelected ? 'is-selected' : ''}`}
+      className={`block-node kind-${nodeData.blockKind} ${nodeData.isSelected ? 'is-selected' : ''}`}
       onDragOver={(event) => event.preventDefault()}
       onDrop={(event) => {
         event.preventDefault();
@@ -237,63 +237,61 @@ const BlockNode = ({ data }: NodeProps) => {
                     }}
                   />
                 ) : (
-                  <>
-                    <span
-                      className={`nodrag nopan attr-link-icon ${attr.isLinked ? '' : 'is-idle'}`}
-                      title={
-                        attr.isLinked
-                          ? `Linked to ${attr.targetTitle ?? 'target'} (drag to relink, click to unlink)`
-                          : 'Drag to another block to create link'
-                      }
-                      role="button"
-                      aria-label={
-                        attr.isLinked
-                          ? `Linked value ${attr.key}. Click to unlink or drag to relink.`
-                          : `Drag to link value ${attr.key} to another block.`
-                      }
-                      draggable
-                      onPointerDown={(event) => {
-                        event.stopPropagation();
-                      }}
-                      onMouseDown={(event) => {
-                        event.stopPropagation();
-                      }}
-                      onDragStart={(event) => {
-                        event.dataTransfer.effectAllowed = 'move';
-                        event.dataTransfer.setData(
-                          'application/x-json-attr-link',
-                          JSON.stringify({
-                            sourceBlockId: nodeData.blockId,
-                            sourceAttrKey: attr.key,
-                          }),
-                        );
-                      }}
-                      onClick={(event) => {
-                        event.stopPropagation();
-                        if (attr.isLinked) {
-                          nodeData.onRemoveAttrLink(nodeData.blockId, attr.key);
-                        }
-                      }}
-                    >
-                      <svg
-                        className="attr-link-glyph"
-                        viewBox="0 0 24 24"
-                        fill="none"
-                        xmlns="http://www.w3.org/2000/svg"
-                        aria-hidden="true"
-                      >
-                        <path
-                          d="M10.59 13.41a1 1 0 0 1 0-1.41l2.83-2.83a3 3 0 1 1 4.24 4.24l-1.41 1.41M13.41 10.59a1 1 0 0 1 0 1.41l-2.83 2.83a3 3 0 1 1-4.24-4.24l1.41-1.41"
-                          stroke="currentColor"
-                          strokeWidth="1.8"
-                          strokeLinecap="round"
-                          strokeLinejoin="round"
-                        />
-                      </svg>
-                    </span>{' '}
-                    {attr.valueText}
-                  </>
+                  attr.valueText
                 )}
+              </span>
+              <span
+                className={`nodrag nopan attr-link-icon block-node-attr-link ${attr.isLinked ? '' : 'is-idle'}`}
+                title={
+                  attr.isLinked
+                    ? `Linked to ${attr.targetTitle ?? 'target'} (drag to relink, click to unlink)`
+                    : 'Drag to another block to create link'
+                }
+                role="button"
+                aria-label={
+                  attr.isLinked
+                    ? `Linked value ${attr.key}. Click to unlink or drag to relink.`
+                    : `Drag to link value ${attr.key} to another block.`
+                }
+                draggable
+                onPointerDown={(event) => {
+                  event.stopPropagation();
+                }}
+                onMouseDown={(event) => {
+                  event.stopPropagation();
+                }}
+                onDragStart={(event) => {
+                  event.dataTransfer.effectAllowed = 'move';
+                  event.dataTransfer.setData(
+                    'application/x-json-attr-link',
+                    JSON.stringify({
+                      sourceBlockId: nodeData.blockId,
+                      sourceAttrKey: attr.key,
+                    }),
+                  );
+                }}
+                onClick={(event) => {
+                  event.stopPropagation();
+                  if (attr.isLinked) {
+                    nodeData.onRemoveAttrLink(nodeData.blockId, attr.key);
+                  }
+                }}
+              >
+                <svg
+                  className="attr-link-glyph"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  xmlns="http://www.w3.org/2000/svg"
+                  aria-hidden="true"
+                >
+                  <path
+                    d="M10.59 13.41a1 1 0 0 1 0-1.41l2.83-2.83a3 3 0 1 1 4.24 4.24l-1.41 1.41M13.41 10.59a1 1 0 0 1 0 1.41l-2.83 2.83a3 3 0 1 1-4.24-4.24l1.41-1.41"
+                    stroke="currentColor"
+                    strokeWidth="1.8"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
               </span>
             </div>
           ))}
