@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react';
 import { Link } from '@tanstack/react-router';
 import { ReactFlowProvider } from '@xyflow/react';
 import * as dagre from 'dagre';
@@ -38,6 +38,35 @@ const nextBlockPosition = (blockCount: number) => ({
 
 const AUTO_FORMAT_VIRTUAL_ROOT_ID = '__auto_format_virtual_root__';
 const elk = new ELK();
+const RESIZE_HANDLE_WIDTH = 10;
+const MIN_LEFT_PANEL_WIDTH = 260;
+const MIN_CENTER_PANEL_WIDTH = 360;
+const MIN_RIGHT_PANEL_WIDTH = 280;
+
+type ResizeHandleTarget = 'left' | 'right';
+
+interface ResizeDragState {
+  target: ResizeHandleTarget;
+  startX: number;
+  startLeftWidth: number;
+  startRightWidth: number;
+  containerWidth: number;
+}
+
+const clamp = (value: number, min: number, max: number): number =>
+  Math.min(Math.max(value, min), max);
+
+const maxLeftPanelWidth = (containerWidth: number, rightPanelWidth: number): number =>
+  Math.max(
+    MIN_LEFT_PANEL_WIDTH,
+    containerWidth - rightPanelWidth - MIN_CENTER_PANEL_WIDTH - RESIZE_HANDLE_WIDTH * 2,
+  );
+
+const maxRightPanelWidth = (containerWidth: number, leftPanelWidth: number): number =>
+  Math.max(
+    MIN_RIGHT_PANEL_WIDTH,
+    containerWidth - leftPanelWidth - MIN_CENTER_PANEL_WIDTH - RESIZE_HANDLE_WIDTH * 2,
+  );
 
 const isRootObject = (value: JsonValue): value is JsonObject =>
   Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -559,6 +588,10 @@ const Workspace = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const copiedBlockRef = useRef<CopiedBlock | null>(null);
+  const appShellRef = useRef<HTMLDivElement | null>(null);
+  const resizeDragStateRef = useRef<ResizeDragState | null>(null);
+  const [leftPanelWidth, setLeftPanelWidth] = useState(320);
+  const [rightPanelWidth, setRightPanelWidth] = useState(390);
 
   useEffect(() => {
     saveState(state);
@@ -587,6 +620,144 @@ const Workspace = () => {
       .filter((block) => !targets.has(block.id))
       .map((block) => ({ id: block.id, title: block.title }));
   }, [allBlocks, state.links]);
+
+  const applyResizeDelta = useCallback(
+    (
+      target: ResizeHandleTarget,
+      deltaX: number,
+      baseline: { leftWidth: number; rightWidth: number; containerWidth: number },
+    ) => {
+      const { leftWidth, rightWidth, containerWidth } = baseline;
+      if (containerWidth <= 0) return;
+
+      if (target === 'left') {
+        const next = Math.round(
+          clamp(
+            leftWidth + deltaX,
+            MIN_LEFT_PANEL_WIDTH,
+            maxLeftPanelWidth(containerWidth, rightWidth),
+          ),
+        );
+        setLeftPanelWidth((prev) => (prev === next ? prev : next));
+        return;
+      }
+
+      const next = Math.round(
+        clamp(
+          rightWidth - deltaX,
+          MIN_RIGHT_PANEL_WIDTH,
+          maxRightPanelWidth(containerWidth, leftWidth),
+        ),
+      );
+      setRightPanelWidth((prev) => (prev === next ? prev : next));
+    },
+    [],
+  );
+
+  const stopResizing = useCallback(() => {
+    if (!resizeDragStateRef.current) return;
+    resizeDragStateRef.current = null;
+    document.body.style.removeProperty('cursor');
+    document.body.style.removeProperty('user-select');
+  }, []);
+
+  const startResizing = useCallback(
+    (target: ResizeHandleTarget, clientX: number) => {
+      const containerWidth = appShellRef.current?.getBoundingClientRect().width ?? 0;
+      if (containerWidth <= 0) return;
+      resizeDragStateRef.current = {
+        target,
+        startX: clientX,
+        startLeftWidth: leftPanelWidth,
+        startRightWidth: rightPanelWidth,
+        containerWidth,
+      };
+      document.body.style.cursor = 'col-resize';
+      document.body.style.userSelect = 'none';
+    },
+    [leftPanelWidth, rightPanelWidth],
+  );
+
+  const resizeWithKeyboard = useCallback(
+    (target: ResizeHandleTarget, deltaX: number) => {
+      const containerWidth = appShellRef.current?.getBoundingClientRect().width ?? 0;
+      if (containerWidth <= 0) return;
+      applyResizeDelta(target, deltaX, {
+        leftWidth: leftPanelWidth,
+        rightWidth: rightPanelWidth,
+        containerWidth,
+      });
+    },
+    [applyResizeDelta, leftPanelWidth, rightPanelWidth],
+  );
+
+  useEffect(() => {
+    const onPointerMove = (event: PointerEvent) => {
+      const activeDrag = resizeDragStateRef.current;
+      if (!activeDrag) return;
+      applyResizeDelta(activeDrag.target, event.clientX - activeDrag.startX, {
+        leftWidth: activeDrag.startLeftWidth,
+        rightWidth: activeDrag.startRightWidth,
+        containerWidth: activeDrag.containerWidth,
+      });
+    };
+
+    const onPointerUp = () => {
+      stopResizing();
+    };
+
+    window.addEventListener('pointermove', onPointerMove);
+    window.addEventListener('pointerup', onPointerUp);
+    window.addEventListener('pointercancel', onPointerUp);
+    return () => {
+      window.removeEventListener('pointermove', onPointerMove);
+      window.removeEventListener('pointerup', onPointerUp);
+      window.removeEventListener('pointercancel', onPointerUp);
+      stopResizing();
+    };
+  }, [applyResizeDelta, stopResizing]);
+
+  useEffect(() => {
+    const element = appShellRef.current;
+    if (!element || typeof ResizeObserver === 'undefined') return;
+
+    const observer = new ResizeObserver(([entry]) => {
+      if (!entry) return;
+      const containerWidth = entry.contentRect.width;
+      const clampedLeft = Math.round(
+        clamp(
+          leftPanelWidth,
+          MIN_LEFT_PANEL_WIDTH,
+          maxLeftPanelWidth(containerWidth, rightPanelWidth),
+        ),
+      );
+      const clampedRight = Math.round(
+        clamp(
+          rightPanelWidth,
+          MIN_RIGHT_PANEL_WIDTH,
+          maxRightPanelWidth(containerWidth, clampedLeft),
+        ),
+      );
+      if (clampedLeft !== leftPanelWidth) {
+        setLeftPanelWidth(clampedLeft);
+      }
+      if (clampedRight !== rightPanelWidth) {
+        setRightPanelWidth(clampedRight);
+      }
+    });
+
+    observer.observe(element);
+    return () => observer.disconnect();
+  }, [leftPanelWidth, rightPanelWidth]);
+
+  const appShellStyle = useMemo(
+    () =>
+      ({
+        '--left-panel-width': `${leftPanelWidth}px`,
+        '--right-panel-width': `${rightPanelWidth}px`,
+      }) as CSSProperties,
+    [leftPanelWidth, rightPanelWidth],
+  );
 
   const createBlock = (title: string, data: JsonValue): void => {
     dispatch({
@@ -856,7 +1027,7 @@ const Workspace = () => {
         </div>
       </header>
 
-      <div className="app-shell">
+      <div className="app-shell" ref={appShellRef} style={appShellStyle}>
         <LeftPanel
           onCreate={onCreate}
           rootResults={rootResults}
@@ -868,64 +1039,112 @@ const Workspace = () => {
           onImport={onImport}
         />
 
-        <ReactFlowProvider>
-          <BoardCanvas
-            state={state}
-            collapsedBlockIds={collapsedBlockIds}
-            selectedLinkId={selectedLinkId}
-            onAddObjectBlock={() => createBlock('Object Block', {})}
-            onAddArrayBlock={() => createBlock('Array Block', [])}
-            onFormat={onFormat}
-            onExport={() => downloadFile('playjson-board.json', exportState(state))}
-            onResetBoard={() => {
-              dispatch({ type: 'resetBoard' });
-              setCollapsedBlockIds(new Set());
-              setSelectedLinkId(null);
-            }}
-            onSelectBlock={(id) => dispatch({ type: 'selectBlock', payload: { id } })}
-            onSelectLink={setSelectedLinkId}
-            onToggleExpand={(id) => {
-              setCollapsedBlockIds((prev) => {
-                const next = new Set(prev);
-                if (next.has(id)) {
-                  next.delete(id);
-                } else {
-                  next.add(id);
-                }
-                return next;
-              });
-            }}
-            onMoveBlock={(id, x, y) =>
-              dispatch({
-                type: 'setBlockPosition',
-                payload: { id, x, y },
-              })
+        <div
+          className="workspace-resize-handle"
+          role="separator"
+          tabIndex={0}
+          aria-label="Resize left and center panels"
+          aria-orientation="vertical"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            startResizing('left', event.clientX);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault();
+              resizeWithKeyboard('left', -20);
+              return;
             }
-            onRenameAttrLinkKey={(blockId, oldKey, newKey) =>
-              dispatch({
-                type: 'renameAttrLinkKey',
-                payload: { sourceBlockId: blockId, oldKey, newKey },
-              })
+            if (event.key === 'ArrowRight') {
+              event.preventDefault();
+              resizeWithKeyboard('left', 20);
             }
-            onCreateAttrLink={(sourceBlockId, sourceAttrKey, targetBlockId) =>
-              dispatch({
-                type: 'upsertAttrLink',
-                payload: { sourceBlockId, sourceAttrKey, targetBlockId },
-              })
+          }}
+        />
+
+        <div className="workspace-center-panel">
+          <ReactFlowProvider>
+            <BoardCanvas
+              state={state}
+              collapsedBlockIds={collapsedBlockIds}
+              selectedLinkId={selectedLinkId}
+              onAddObjectBlock={() => createBlock('Object Block', {})}
+              onAddArrayBlock={() => createBlock('Array Block', [])}
+              onFormat={onFormat}
+              onExport={() => downloadFile('playjson-board.json', exportState(state))}
+              onResetBoard={() => {
+                dispatch({ type: 'resetBoard' });
+                setCollapsedBlockIds(new Set());
+                setSelectedLinkId(null);
+              }}
+              onSelectBlock={(id) => dispatch({ type: 'selectBlock', payload: { id } })}
+              onSelectLink={setSelectedLinkId}
+              onToggleExpand={(id) => {
+                setCollapsedBlockIds((prev) => {
+                  const next = new Set(prev);
+                  if (next.has(id)) {
+                    next.delete(id);
+                  } else {
+                    next.add(id);
+                  }
+                  return next;
+                });
+              }}
+              onMoveBlock={(id, x, y) =>
+                dispatch({
+                  type: 'setBlockPosition',
+                  payload: { id, x, y },
+                })
+              }
+              onRenameAttrLinkKey={(blockId, oldKey, newKey) =>
+                dispatch({
+                  type: 'renameAttrLinkKey',
+                  payload: { sourceBlockId: blockId, oldKey, newKey },
+                })
+              }
+              onCreateAttrLink={(sourceBlockId, sourceAttrKey, targetBlockId) =>
+                dispatch({
+                  type: 'upsertAttrLink',
+                  payload: { sourceBlockId, sourceAttrKey, targetBlockId },
+                })
+              }
+              onMoveAttrToBlock={(sourceBlockId, sourceAttrKey, targetBlockId) =>
+                dispatch({
+                  type: 'moveAttrToBlock',
+                  payload: { sourceBlockId, sourceAttrKey, targetBlockId },
+                })
+              }
+              onRemoveAttrLink={(sourceBlockId, sourceAttrKey) =>
+                dispatch({ type: 'removeAttrLink', payload: { sourceBlockId, sourceAttrKey } })
+              }
+              onDeleteLink={(id) => dispatch({ type: 'deleteLink', payload: { id } })}
+              onUpdateData={(id, data) => dispatch({ type: 'setBlockData', payload: { id, data } })}
+            />
+          </ReactFlowProvider>
+        </div>
+
+        <div
+          className="workspace-resize-handle"
+          role="separator"
+          tabIndex={0}
+          aria-label="Resize center and right panels"
+          aria-orientation="vertical"
+          onPointerDown={(event) => {
+            event.preventDefault();
+            startResizing('right', event.clientX);
+          }}
+          onKeyDown={(event) => {
+            if (event.key === 'ArrowLeft') {
+              event.preventDefault();
+              resizeWithKeyboard('right', -20);
+              return;
             }
-            onMoveAttrToBlock={(sourceBlockId, sourceAttrKey, targetBlockId) =>
-              dispatch({
-                type: 'moveAttrToBlock',
-                payload: { sourceBlockId, sourceAttrKey, targetBlockId },
-              })
+            if (event.key === 'ArrowRight') {
+              event.preventDefault();
+              resizeWithKeyboard('right', 20);
             }
-            onRemoveAttrLink={(sourceBlockId, sourceAttrKey) =>
-              dispatch({ type: 'removeAttrLink', payload: { sourceBlockId, sourceAttrKey } })
-            }
-            onDeleteLink={(id) => dispatch({ type: 'deleteLink', payload: { id } })}
-            onUpdateData={(id, data) => dispatch({ type: 'setBlockData', payload: { id, data } })}
-          />
-        </ReactFlowProvider>
+          }}
+        />
 
         <Card className="right-panel">
           <CardHeader>

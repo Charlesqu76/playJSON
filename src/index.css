@@ -429,10 +429,40 @@ body {
 }
 
 .app-shell {
+  --left-panel-width: 320px;
+  --right-panel-width: 390px;
+  --resize-handle-width: 10px;
   height: calc(100vh - 84px);
   display: grid;
-  grid-template-columns: 320px 1fr 390px;
-  gap: 10px;
+  grid-template-columns:
+    var(--left-panel-width)
+    var(--resize-handle-width)
+    minmax(0, 1fr)
+    var(--resize-handle-width)
+    var(--right-panel-width);
+  gap: 0;
+  align-items: stretch;
+}
+
+.workspace-center-panel {
+  min-width: 0;
+}
+
+.workspace-resize-handle {
+  position: relative;
+  border: none;
+  padding: 0;
+  margin: 0;
+  width: 100%;
+  cursor: col-resize;
+  background: transparent;
+  touch-action: none;
+  transition: background-color 120ms ease;
+}
+
+.workspace-resize-handle:hover,
+.workspace-resize-handle:focus-visible {
+  background: rgba(184, 171, 152, 0.22);
 }
 
 .left-panel,
@@ -495,6 +525,7 @@ body {
 
 .board-canvas {
   position: relative;
+  height: 100%;
   border: 1px solid #d9d0c4;
   border-radius: 12px;
   overflow: hidden;
@@ -745,6 +776,10 @@ body {
   .app-shell {
     grid-template-columns: 1fr;
     height: auto;
+  }
+
+  .workspace-resize-handle {
+    display: none;
   }
 
   .board-canvas {
