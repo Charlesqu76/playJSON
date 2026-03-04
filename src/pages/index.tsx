@@ -21,6 +21,12 @@ const workflow = [
   { step: '03', title: 'Export final model', detail: 'Download the resolved structure when it is ready to ship.' },
 ];
 
+const metrics = [
+  { value: '<10s', label: 'from paste to map' },
+  { value: '3 views', label: 'board, tree, raw' },
+  { value: 'Local', label: 'storage by default' },
+];
+
 const HomePage = () => (
   <div className="home-page">
     <header className="topbar">
@@ -28,9 +34,6 @@ const HomePage = () => (
         <div className="brand">PlayJSON</div>
         <span className="brand-chip">Visual JSON Builder</span>
       </div>
-      <Link to="/workspace" className="nav-link-button ghost">
-        Launch App
-      </Link>
     </header>
 
     <main className="home-main">
@@ -42,24 +45,20 @@ const HomePage = () => (
             PlayJSON turns deeply nested payloads into an editable map so you can structure data
             faster, review changes clearly, and avoid schema drift.
           </p>
+          <div className="hero-metrics" aria-label="Key metrics">
+            {metrics.map((metric) => (
+              <div className="hero-metric" key={metric.label}>
+                <p>{metric.value}</p>
+                <span>{metric.label}</span>
+              </div>
+            ))}
+          </div>
           <div className="hero-actions">
             <Link to="/workspace" className="nav-link-button">
               Start Building
             </Link>
-            <a href="#capabilities" className="nav-link-button ghost">
-              Explore Features
-            </a>
           </div>
         </div>
-
-        <aside className="hero-panel" aria-label="Product summary">
-          <p className="panel-kicker">What you get</p>
-          <ul>
-            <li>Board, tree, and raw editing in one workspace</li>
-            <li>Reference linking with keyboard-first flow</li>
-            <li>Local-first storage and exportable JSON state</li>
-          </ul>
-        </aside>
       </section>
 
       <section className="capabilities" id="capabilities" aria-label="Key capabilities">
@@ -82,13 +81,6 @@ const HomePage = () => (
             </article>
           ))}
         </div>
-      </section>
-
-      <section className="final-cta" aria-label="Call to action">
-        <p>Stop wrestling with unreadable payloads.</p>
-        <Link to="/workspace" className="nav-link-button">
-          Open PlayJSON Workspace
-        </Link>
       </section>
     </main>
   </div>

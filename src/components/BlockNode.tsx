@@ -155,8 +155,13 @@ const BlockNode = ({ data }: NodeProps) => {
                 onMouseDown={(event) => {
                   event.stopPropagation();
                 }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'move';
+                }}
                 onClick={() => setSelectedAttrId(attrId)}
                 onDragStart={(event) => {
+                  event.stopPropagation();
                   setSelectedAttrId(attrId);
                   nodeData.onStartAttrDrag('move', nodeData.blockId, sourceAttrKey);
                   event.dataTransfer.effectAllowed = 'move';
@@ -251,8 +256,13 @@ const BlockNode = ({ data }: NodeProps) => {
                 onMouseDown={(event) => {
                   event.stopPropagation();
                 }}
+                onDragOver={(event) => {
+                  event.preventDefault();
+                  event.dataTransfer.dropEffect = 'move';
+                }}
                 onClick={() => setSelectedAttrId(attrId)}
                 onDragStart={(event) => {
+                  event.stopPropagation();
                   if (isEditing) {
                     event.preventDefault();
                     return;

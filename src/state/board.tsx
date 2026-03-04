@@ -376,7 +376,7 @@ export const boardReducer = (state: BoardState, action: BoardAction): BoardState
         nextLinks = Object.fromEntries(
           Object.entries(state.links).filter(([, link]) => {
             if (link.sourceBlockId !== action.payload.id) return true;
-            if (!link.sourceAttrKey) return false;
+            if (link.sourceAttrKey === undefined) return true;
             return rootKeys.has(link.sourceAttrKey);
           }),
         );
@@ -384,7 +384,7 @@ export const boardReducer = (state: BoardState, action: BoardAction): BoardState
         nextLinks = Object.fromEntries(
           Object.entries(state.links).filter(([, link]) => {
             if (link.sourceBlockId !== action.payload.id) return true;
-            if (!link.sourceAttrKey) return false;
+            if (link.sourceAttrKey === undefined) return true;
             const index = Number(link.sourceAttrKey);
             if (!Number.isInteger(index) || index < 0 || index >= nextData.length) return false;
             const value = nextData[index];
@@ -477,7 +477,7 @@ export const boardReducer = (state: BoardState, action: BoardAction): BoardState
           ([, link]) => {
             const shouldRemove =
               (link.sourceBlockId === sourceBlockId && link.sourceAttrKey === sourceAttrKey) ||
-              link.targetBlockId === targetBlockId;
+              (link.targetBlockId === targetBlockId && link.sourceAttrKey !== undefined);
             if (shouldRemove) removedLinks.push(link);
             return !shouldRemove;
           },
@@ -544,8 +544,17 @@ export const boardReducer = (state: BoardState, action: BoardAction): BoardState
       const sourceValue = getAttributeValue(sourceBlock, sourceAttrKey);
       if (sourceValue === undefined) return state;
 
-      const nextSourceData = setAttributeValue(sourceBlock, sourceAttrKey, null);
-      if (!nextSourceData) return state;
+      let nextSourceData: JsonValue;
+      if (Array.isArray(sourceBlock.data)) {
+        const result = setAttributeValue(sourceBlock, sourceAttrKey, null);
+        if (!result) return state;
+        nextSourceData = result;
+      } else if (sourceBlock.data && typeof sourceBlock.data === 'object') {
+        const { [sourceAttrKey]: _, ...rest } = sourceBlock.data as Record<string, JsonValue>;
+        nextSourceData = rest;
+      } else {
+        return state;
+      }
 
       const movedTarget = moveValueIntoTarget(targetBlock, sourceAttrKey, sourceValue);
       if (!movedTarget) return state;
@@ -668,6 +677,24 @@ export const boardReducer = (state: BoardState, action: BoardAction): BoardState
             ),
         ),
       );
+      const sourceBlock = state.blocks[sourceBlockId];
+      if (sourceBlock) {
+        const resetData = setAttributeValue(sourceBlock, sourceAttrKey, null);
+        if (resetData) {
+          return {
+            ...state,
+            links: nextLinks,
+            blocks: {
+              ...state.blocks,
+              [sourceBlockId]: {
+                ...sourceBlock,
+                data: resetData,
+                updatedAt: new Date().toISOString(),
+              },
+            },
+          };
+        }
+      }
       return {
         ...state,
         links: nextLinks,

@@ -5,7 +5,6 @@ import { v4 as uuidv4 } from 'uuid';
 import BoardCanvas from '../components/BoardCanvas';
 import JsonEditor from '../components/JsonEditor';
 import LeftPanel, { type SearchResult } from '../components/LeftPanel';
-import { Button } from '../components/ui/button';
 import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
 import { Input } from '../components/ui/input';
 import { BoardProvider, useBoardDispatch, useBoardState } from '../state/board';
@@ -33,6 +32,8 @@ const nextBlockPosition = (blockCount: number) => ({
   x: 80 + (blockCount % 5) * 220,
   y: 80 + Math.floor(blockCount / 5) * 140,
 });
+
+const AUTO_FORMAT_VIRTUAL_ROOT_ID = '__auto_format_virtual_root__';
 
 const isRootObject = (value: JsonValue): value is JsonObject =>
   Boolean(value && typeof value === 'object' && !Array.isArray(value));
@@ -211,20 +212,24 @@ const sortByCurrentPosition = (state: BoardState, a: string, b: string) => {
   const posB = state.positions[b] ?? { x: 0, y: 0 };
   if (posA.y !== posB.y) return posA.y - posB.y;
   if (posA.x !== posB.x) return posA.x - posB.x;
-  return state.blocks[a].title.localeCompare(state.blocks[b].title);
+  const titleA = state.blocks[a]?.title;
+  const titleB = state.blocks[b]?.title;
+  if (titleA && titleB) return titleA.localeCompare(titleB);
+  if (titleA) return -1;
+  if (titleB) return 1;
+  return a.localeCompare(b);
 };
 
 const estimateBlockHeight = (data: JsonValue): number => {
-  const BASE = 110;
-  const ROW_HEIGHT = 20;
-  const FOOTER = 30;
-  const MAX_VISIBLE_ROWS = 7;
+  const BASE = 118;
+  const ROW_HEIGHT = 24;
+  const FOOTER = 24;
 
   if (Array.isArray(data)) {
-    return BASE + Math.min(data.length, MAX_VISIBLE_ROWS) * ROW_HEIGHT + FOOTER;
+    return BASE + data.length * ROW_HEIGHT + FOOTER;
   }
   if (isRootObject(data)) {
-    return BASE + Math.min(Object.keys(data).length, MAX_VISIBLE_ROWS) * ROW_HEIGHT + FOOTER;
+    return BASE + Object.keys(data).length * ROW_HEIGHT + FOOTER;
   }
   return 140;
 };
@@ -285,6 +290,24 @@ const formatPositionsLeftToRight = (
     undirected.get(link.sourceBlockId)?.add(link.targetBlockId);
     undirected.get(link.targetBlockId)?.add(link.sourceBlockId);
   }
+  const parentlessBlockIds = ids.filter((id) => (incoming.get(id) ?? []).length === 0);
+  let virtualRootId: string | null = null;
+  if (parentlessBlockIds.length > 1) {
+    virtualRootId = AUTO_FORMAT_VIRTUAL_ROOT_ID;
+    let suffix = 1;
+    while (active.has(virtualRootId)) {
+      virtualRootId = `${AUTO_FORMAT_VIRTUAL_ROOT_ID}_${suffix}`;
+      suffix += 1;
+    }
+
+    outgoing.set(virtualRootId, [...parentlessBlockIds]);
+    incoming.set(virtualRootId, []);
+    undirected.set(virtualRootId, new Set(parentlessBlockIds));
+    for (const id of parentlessBlockIds) {
+      incoming.get(id)?.push(virtualRootId);
+      undirected.get(id)?.add(virtualRootId);
+    }
+  }
 
   const components: string[][] = [];
   const seen = new Set<string>();
@@ -333,7 +356,9 @@ const formatPositionsLeftToRight = (
       .filter((id) => (indegree.get(id) ?? 0) === 0)
       .sort((a, b) => sortByCurrentPosition(state, a, b));
     const queue = roots.length > 0 ? [...roots] : [...component].sort((a, b) => sortByCurrentPosition(state, a, b));
-    for (const rootId of queue) depth.set(rootId, 0);
+    for (const rootId of queue) {
+      depth.set(rootId, virtualRootId && rootId === virtualRootId ? -1 : 0);
+    }
 
     while (queue.length > 0) {
       const current = queue.shift();
@@ -358,6 +383,7 @@ const formatPositionsLeftToRight = (
 
     const columns = new Map<number, string[]>();
     for (const id of component) {
+      if (virtualRootId && id === virtualRootId) continue;
       const col = depth.get(id) ?? 0;
       const list = columns.get(col) ?? [];
       list.push(id);
@@ -623,15 +649,13 @@ const Workspace = () => {
   return (
     <div className="workspace-shell">
       <header className="workspace-header">
-        <div className="workspace-header-main">
-          <Button asChild variant="outline">
-            <Link to="/">Back Home</Link>
-          </Button>
-          <h1>PlayJSON Workspace</h1>
-        </div>
+        <Link className="workspace-logo" to="/">
+          PlayJSON
+        </Link>
         <div className="workspace-header-search">
           <div className="workspace-header-search-row">
             <Input
+              id="workspace-search-input"
               role="combobox"
               aria-expanded={isSearchOpen && state.searchQuery.trim().length > 0}
               aria-controls="workspace-search-listbox"
@@ -684,20 +708,6 @@ const Workspace = () => {
               }}
               placeholder="Search blocks by title, key, value..."
             />
-            {state.searchQuery.trim() ? (
-              <Button
-                size="sm"
-                variant="ghost"
-                onClick={() => dispatch({ type: 'setSearchQuery', payload: { query: '' } })}
-              >
-                Clear
-              </Button>
-            ) : null}
-          </div>
-          <div className="workspace-header-search-meta">
-            {state.searchQuery.trim()
-              ? `${searchResults.length} match${searchResults.length === 1 ? '' : 'es'} • Press Enter to jump to the first match`
-              : 'Type to search blocks quickly'}
           </div>
           {state.searchQuery.trim() && isSearchOpen ? (
             <div id="workspace-search-listbox" role="listbox" className="workspace-header-search-results">
