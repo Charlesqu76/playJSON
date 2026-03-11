@@ -26,6 +26,7 @@ describe('findByJsonPath', () => {
       tags: ['alpha', 'beta'],
       meta: { 'display name': 'Alice W' },
     },
+    projects: [{ name: 'North' }, { name: 'South' }],
   };
 
   it('resolves nested object path', () => {
@@ -40,6 +41,18 @@ describe('findByJsonPath', () => {
     expect(findByJsonPath(value, '$.profile.meta["display name"]')).toBe('Alice W');
   });
 
+  it('resolves wildcard object path', () => {
+    expect(findByJsonPath(value, '$.profile.*')).toBe('Alice');
+  });
+
+  it('resolves wildcard array path', () => {
+    expect(findByJsonPath(value, '$.projects[*].name')).toBe('North');
+  });
+
+  it('resolves recursive key path', () => {
+    expect(findByJsonPath(value, '$..name')).toBe('Alice');
+  });
+
   it('returns undefined for missing path', () => {
     expect(findByJsonPath(value, '$.profile.missing')).toBeUndefined();
   });
@@ -50,6 +63,11 @@ describe('matchesSearchQuery', () => {
     profile: {
       age: 30,
       tags: ['alpha', 'beta'],
+    },
+    nested: {
+      child: {
+        tags: ['gamma'],
+      },
     },
     active: true,
   };
@@ -62,6 +80,16 @@ describe('matchesSearchQuery', () => {
   it('supports json path value query', () => {
     expect(matchesSearchQuery('Customer', data, '$.profile.age=30')).toBe(true);
     expect(matchesSearchQuery('Customer', data, '$.profile.age=31')).toBe(false);
+  });
+
+  it('supports wildcard json path value query', () => {
+    expect(matchesSearchQuery('Customer', data, '$.profile.tags[*]=beta')).toBe(true);
+    expect(matchesSearchQuery('Customer', data, '$.profile.tags[*]=gamma')).toBe(false);
+  });
+
+  it('supports recursive json path value query', () => {
+    expect(matchesSearchQuery('Customer', data, '$..tags[*]=gamma')).toBe(true);
+    expect(matchesSearchQuery('Customer', data, '$..tags[*]=delta')).toBe(false);
   });
 
   it('falls back to text search for non-path query', () => {

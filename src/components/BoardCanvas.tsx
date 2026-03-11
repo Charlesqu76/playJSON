@@ -20,6 +20,9 @@ import BlockNode, {
 } from "./BlockNode";
 import { Button } from "./ui/button";
 
+const BackgroundView = Background as unknown as React.ComponentType;
+const ControlsView = Controls as unknown as React.ComponentType;
+
 const nodeTypes = {
   blockNode: BlockNode,
 };
@@ -84,7 +87,7 @@ const BoardCanvas = ({
   onDeleteLink,
   onUpdateData,
 }: BoardCanvasProps) => {
-  const { setCenter, fitView, zoomIn, zoomOut } = useReactFlow();
+  const { setCenter, fitView, zoomIn, zoomOut, getZoom } = useReactFlow();
   const activeAttrDragRef = useRef<ActiveAttrDrag | null>(null);
   const clearDragTimerRef = useRef<number | null>(null);
   const allLinks = useMemo(() => Object.values(state.links), [state.links]);
@@ -304,8 +307,11 @@ const BoardCanvas = ({
     if (!state.selectedBlockId) return;
     const position = state.positions[state.selectedBlockId];
     if (!position) return;
-    // setCenter(position.x + 120, position.y + 40, { zoom: 1.2, duration: 250 });
-  }, [setCenter, state.positions, state.selectedBlockId]);
+    setCenter(position.x + 120, position.y + 40, {
+      zoom: getZoom(),
+      duration: 250,
+    });
+  }, [setCenter, getZoom, state.positions, state.selectedBlockId]);
 
   const onNodesChange = (changes: NodeChange<Node>[]) => {
     const updatedNodes = applyNodeChanges(changes, nodes);
@@ -427,9 +433,9 @@ const BoardCanvas = ({
         nodesConnectable={false}
         nodeTypes={nodeTypes}
       >
-        <Background />
+        <BackgroundView />
         <MiniMap />
-        <Controls />
+        <ControlsView />
       </ReactFlow>
     </div>
   );

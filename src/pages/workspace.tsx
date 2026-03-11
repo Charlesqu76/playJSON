@@ -433,7 +433,7 @@ const Workspace = () => {
                 event.preventDefault();
                 selectSearchResult(chosen.id);
               }}
-              placeholder="Search blocks by title, key, value..."
+              placeholder="Search title/key/value or JSONPath (e.g. $.profile.name, $..tags[*]=beta)"
             />
           </div>
           {state.searchQuery.trim() && isSearchOpen ? (

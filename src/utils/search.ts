@@ -1,6 +1,11 @@
 import type { JsonValue } from '../types/model';
 
-type JsonPathSegment = string | number;
+type JsonPathSegment =
+  | { type: 'key'; value: string }
+  | { type: 'index'; value: number }
+  | { type: 'wildcard' }
+  | { type: 'recursive-key'; value: string }
+  | { type: 'recursive-wildcard' };
 
 const collectParts = (value: JsonValue, out: string[]): void => {
   if (value === null) {
@@ -39,23 +44,59 @@ const parseJsonPath = (path: string): JsonPathSegment[] | null => {
   const segments: JsonPathSegment[] = [];
   let index = 1;
 
+  const readKey = (): string | null => {
+    const start = index;
+    while (index < input.length && input[index] !== '.' && input[index] !== '[') {
+      index += 1;
+    }
+    if (start === index) return null;
+    return input.slice(start, index);
+  };
+
   while (index < input.length) {
     const char = input[index];
 
     if (char === '.') {
-      index += 1;
-      const start = index;
-      while (index < input.length && input[index] !== '.' && input[index] !== '[') {
-        index += 1;
+      if (input[index + 1] === '.') {
+        index += 2;
+        if (index >= input.length) return null;
+
+        if (input[index] === '*') {
+          segments.push({ type: 'recursive-wildcard' });
+          index += 1;
+          continue;
+        }
+
+        const recursiveKey = readKey();
+        if (!recursiveKey) return null;
+        segments.push({ type: 'recursive-key', value: recursiveKey });
+        continue;
       }
-      if (start === index) return null;
-      segments.push(input.slice(start, index));
+
+      index += 1;
+      if (input[index] === '*') {
+        segments.push({ type: 'wildcard' });
+        index += 1;
+        continue;
+      }
+
+      const key = readKey();
+      if (!key) return null;
+      segments.push({ type: 'key', value: key });
       continue;
     }
 
     if (char === '[') {
       index += 1;
       if (index >= input.length) return null;
+
+      if (input[index] === '*') {
+        index += 1;
+        if (input[index] !== ']') return null;
+        index += 1;
+        segments.push({ type: 'wildcard' });
+        continue;
+      }
 
       const quote = input[index];
       if (quote === '"' || quote === "'") {
@@ -65,21 +106,36 @@ const parseJsonPath = (path: string): JsonPathSegment[] | null => {
           index += 1;
         }
         if (index >= input.length) return null;
+
         const key = input.slice(start, index);
         index += 1;
         if (input[index] !== ']') return null;
         index += 1;
-        segments.push(key);
+        segments.push({ type: 'key', value: key });
         continue;
       }
 
-      const start = index;
+      const numericStart = index;
       while (index < input.length && /[0-9]/.test(input[index])) {
         index += 1;
       }
-      if (start === index || input[index] !== ']') return null;
-      segments.push(Number(input.slice(start, index)));
+      if (numericStart !== index && input[index] === ']') {
+        const arrayIndex = Number(input.slice(numericStart, index));
+        index += 1;
+        segments.push({ type: 'index', value: arrayIndex });
+        continue;
+      }
+
+      index = numericStart;
+      while (index < input.length && input[index] !== ']') {
+        index += 1;
+      }
+      if (index >= input.length) return null;
+
+      const key = input.slice(numericStart, index).trim();
+      if (!key) return null;
       index += 1;
+      segments.push({ type: 'key', value: key });
       continue;
     }
 
@@ -89,25 +145,100 @@ const parseJsonPath = (path: string): JsonPathSegment[] | null => {
   return segments;
 };
 
-export const findByJsonPath = (data: JsonValue, path: string): JsonValue | undefined => {
-  const segments = parseJsonPath(path);
-  if (!segments) return undefined;
+const getObjectValues = (value: JsonValue): JsonValue[] => {
+  if (!value || typeof value !== 'object') return [];
+  if (Array.isArray(value)) return value;
+  return Object.values(value) as JsonValue[];
+};
 
-  let current: JsonValue | undefined = data;
+const collectRecursiveByKey = (value: JsonValue, key: string, out: JsonValue[]): void => {
+  if (!value || typeof value !== 'object') return;
+
+  if (Array.isArray(value)) {
+    for (const item of value) {
+      collectRecursiveByKey(item, key, out);
+    }
+    return;
+  }
+
+  const objectValue = value as Record<string, JsonValue>;
+  if (Object.prototype.hasOwnProperty.call(objectValue, key)) {
+    out.push(objectValue[key]);
+  }
+
+  for (const nested of Object.values(objectValue)) {
+    collectRecursiveByKey(nested, key, out);
+  }
+};
+
+const collectRecursiveWildcard = (value: JsonValue, out: JsonValue[]): void => {
+  if (!value || typeof value !== 'object') return;
+
+  for (const nested of getObjectValues(value)) {
+    out.push(nested);
+    collectRecursiveWildcard(nested, out);
+  }
+};
+
+const findAllByJsonPath = (data: JsonValue, path: string): JsonValue[] => {
+  const segments = parseJsonPath(path);
+  if (!segments) return [];
+
+  let current: JsonValue[] = [data];
+
   for (const segment of segments) {
-    if (typeof segment === 'number') {
-      if (!Array.isArray(current)) return undefined;
-      current = current[segment];
-      if (current === undefined) return undefined;
+    const next: JsonValue[] = [];
+
+    if (segment.type === 'key') {
+      for (const value of current) {
+        if (!value || typeof value !== 'object' || Array.isArray(value)) continue;
+        if (!Object.prototype.hasOwnProperty.call(value, segment.value)) continue;
+        next.push((value as Record<string, JsonValue>)[segment.value]);
+      }
+      current = next;
       continue;
     }
 
-    if (!current || typeof current !== 'object' || Array.isArray(current)) return undefined;
-    if (!Object.prototype.hasOwnProperty.call(current, segment)) return undefined;
-    current = (current as Record<string, JsonValue>)[segment];
+    if (segment.type === 'index') {
+      for (const value of current) {
+        if (!Array.isArray(value)) continue;
+        const indexedValue = value[segment.value];
+        if (indexedValue !== undefined) {
+          next.push(indexedValue);
+        }
+      }
+      current = next;
+      continue;
+    }
+
+    if (segment.type === 'wildcard') {
+      for (const value of current) {
+        next.push(...getObjectValues(value));
+      }
+      current = next;
+      continue;
+    }
+
+    if (segment.type === 'recursive-key') {
+      for (const value of current) {
+        collectRecursiveByKey(value, segment.value, next);
+      }
+      current = next;
+      continue;
+    }
+
+    for (const value of current) {
+      collectRecursiveWildcard(value, next);
+    }
+    current = next;
   }
 
   return current;
+};
+
+export const findByJsonPath = (data: JsonValue, path: string): JsonValue | undefined => {
+  const matches = findAllByJsonPath(data, path);
+  return matches[0];
 };
 
 const tryParseJsonPathQuery = (
@@ -137,10 +268,12 @@ export const matchesSearchQuery = (title: string, data: JsonValue, rawQuery: str
 
   const jsonPathQuery = tryParseJsonPathQuery(query);
   if (jsonPathQuery) {
-    const found = findByJsonPath(data, jsonPathQuery.path);
-    if (found === undefined) return false;
+    const found = findAllByJsonPath(data, jsonPathQuery.path);
+    if (found.length === 0) return false;
     if (!jsonPathQuery.expectedValue) return true;
-    return jsonValueToSearchText(found).includes(jsonPathQuery.expectedValue.toLowerCase());
+
+    const expected = jsonPathQuery.expectedValue.toLowerCase();
+    return found.some((value) => jsonValueToSearchText(value).includes(expected));
   }
 
   return flattenSearchText(title, data).includes(query.toLowerCase());
