@@ -15,7 +15,11 @@ interface MiddlePanelProps {
   onSelectLink: (id: string | null) => void;
   onToggleExpand: (id: string) => void;
   onMoveBlock: (id: string, x: number, y: number) => void;
-  onRenameAttrLinkKey: (blockId: string, oldKey: string, newKey: string) => void;
+  onRenameAttrLinkKey: (
+    blockId: string,
+    oldKey: string,
+    newKey: string,
+  ) => void;
   onCreateAttrLink: (
     sourceBlockId: string,
     sourceAttrKey: string,
@@ -33,7 +37,7 @@ interface MiddlePanelProps {
 
 const MiddlePanel = (props: MiddlePanelProps) => {
   return (
-    <div className="min-w-0 max-[1280px]:min-h-[55vh]">
+    <div className="min-w-0 max-[1280px]:min-h-[55vh] flex-1 relative">
       <ReactFlowProvider>
         <BoardCanvas {...props} />
       </ReactFlowProvider>

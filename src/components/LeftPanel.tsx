@@ -1,9 +1,9 @@
-import { useRef, useState } from 'react';
-import { Button } from './ui/button';
-import { Card, CardContent, CardHeader, CardTitle } from './ui/card';
-import { Input } from './ui/input';
-import { Separator } from './ui/separator';
-import { Textarea } from './ui/textarea';
+import { useRef, useState } from "react";
+import { Button } from "./ui/button";
+import { Card, CardContent, CardHeader, CardTitle } from "./ui/card";
+import { Input } from "./ui/input";
+import { Separator } from "./ui/separator";
+import { Textarea } from "./ui/textarea";
 
 export interface SearchResult {
   id: string;
@@ -23,14 +23,14 @@ const LeftPanel = ({
   onSelectResult,
   onImport,
 }: LeftPanelProps) => {
-  const [title, setTitle] = useState('New JSON Block');
-  const [rawJson, setRawJson] = useState('');
+  const [title, setTitle] = useState("New JSON Block");
+  const [rawJson, setRawJson] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [importError, setImportError] = useState<string | null>(null);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   return (
-    <Card className="overflow-auto p-0">
+    <Card className="overflow-auto p-0 w-1/5">
       <CardHeader>
         <CardTitle>Create Block</CardTitle>
       </CardHeader>
@@ -62,12 +62,15 @@ const LeftPanel = ({
                 return;
               }
               setError(null);
-              setRawJson('');
+              setRawJson("");
             }}
           >
             Create JSON Block
           </Button>
-          <Button variant="outline" onClick={() => fileInputRef.current?.click()}>
+          <Button
+            variant="outline"
+            onClick={() => fileInputRef.current?.click()}
+          >
             Import
           </Button>
         </div>
@@ -78,7 +81,7 @@ const LeftPanel = ({
           hidden
           onChange={async (event) => {
             const file = event.target.files?.[0];
-            event.target.value = '';
+            event.target.value = "";
             if (!file) return;
             const text = await file.text();
             const resultError = onImport(text);
@@ -107,11 +110,12 @@ const LeftPanel = ({
               </Button>
             ))}
             {rootResults.length === 0 ? (
-              <div className="text-[0.9rem] text-[#6f655d]">No root blocks.</div>
+              <div className="text-[0.9rem] text-[#6f655d]">
+                No root blocks.
+              </div>
             ) : null}
           </div>
         </div>
-
       </CardContent>
     </Card>
   );

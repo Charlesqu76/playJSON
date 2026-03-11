@@ -1,11 +1,4 @@
-import {
-  useCallback,
-  useEffect,
-  useMemo,
-  useRef,
-  useState,
-  type CSSProperties,
-} from "react";
+import { useMemo, useRef, useState, useEffect } from "react";
 import LeftPanel, { type SearchResult } from "../components/LeftPanel";
 import MiddlePanel from "../components/MiddlePanel";
 import RightPanel from "../components/RightPanel";
@@ -29,21 +22,12 @@ import { downloadFile, nextBlockPosition } from "../utils/dom-utils";
 import { formatPositionsLeftToRight } from "../utils/layout-algorithms";
 import { getHiddenDescendants } from "../utils/block-utils";
 import { expandNestedJsonIntoLinkedBlocks } from "../utils/json-blocks";
-import {
-  clamp,
-  maxLeftPanelWidth,
-  maxRightPanelWidth,
-} from "../utils/resize-utils";
-import {
-  MIN_LEFT_PANEL_WIDTH,
-  MIN_RIGHT_PANEL_WIDTH,
-} from "../utils/workspace-constants";
-import type {
-  ResizeHandleTarget,
-  CopiedBlock,
-  ResizeDragState,
-} from "../utils/workspace-types";
+import type { CopiedBlock } from "../utils/workspace-types";
+import { createFileRoute } from "@tanstack/react-router";
 
+export const Route = createFileRoute("/workspace")({
+  component: RouteComponent,
+});
 const Workspace = () => {
   const state = useBoardState();
   const {
@@ -70,10 +54,6 @@ const Workspace = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const copiedBlockRef = useRef<CopiedBlock | null>(null);
-  const appShellRef = useRef<HTMLDivElement | null>(null);
-  const resizeDragStateRef = useRef<ResizeDragState | null>(null);
-  const [leftPanelWidth, setLeftPanelWidth] = useState(320);
-  const [rightPanelWidth, setRightPanelWidth] = useState(390);
 
   useEffect(() => {
     saveState(state);
@@ -110,150 +90,6 @@ const Workspace = () => {
       .filter((block) => !targets.has(block.id))
       .map((block) => ({ id: block.id, title: block.title }));
   }, [allBlocks, state.links]);
-
-  const applyResizeDelta = useCallback(
-    (
-      target: ResizeHandleTarget,
-      deltaX: number,
-      baseline: {
-        leftWidth: number;
-        rightWidth: number;
-        containerWidth: number;
-      },
-    ) => {
-      const { leftWidth, rightWidth, containerWidth } = baseline;
-      if (containerWidth <= 0) return;
-
-      if (target === "left") {
-        const next = Math.round(
-          clamp(
-            leftWidth + deltaX,
-            MIN_LEFT_PANEL_WIDTH,
-            maxLeftPanelWidth(containerWidth, rightWidth),
-          ),
-        );
-        setLeftPanelWidth((prev) => (prev === next ? prev : next));
-        return;
-      }
-
-      const next = Math.round(
-        clamp(
-          rightWidth - deltaX,
-          MIN_RIGHT_PANEL_WIDTH,
-          maxRightPanelWidth(containerWidth, leftWidth),
-        ),
-      );
-      setRightPanelWidth((prev) => (prev === next ? prev : next));
-    },
-    [],
-  );
-
-  const stopResizing = useCallback(() => {
-    if (!resizeDragStateRef.current) return;
-    resizeDragStateRef.current = null;
-    document.body.style.removeProperty("cursor");
-    document.body.style.removeProperty("user-select");
-  }, []);
-
-  const startResizing = useCallback(
-    (target: ResizeHandleTarget, clientX: number) => {
-      const containerWidth =
-        appShellRef.current?.getBoundingClientRect().width ?? 0;
-      if (containerWidth <= 0) return;
-      resizeDragStateRef.current = {
-        target,
-        startX: clientX,
-        startLeftWidth: leftPanelWidth,
-        startRightWidth: rightPanelWidth,
-        containerWidth,
-      };
-      document.body.style.cursor = "col-resize";
-      document.body.style.userSelect = "none";
-    },
-    [leftPanelWidth, rightPanelWidth],
-  );
-
-  const resizeWithKeyboard = useCallback(
-    (target: ResizeHandleTarget, deltaX: number) => {
-      const containerWidth =
-        appShellRef.current?.getBoundingClientRect().width ?? 0;
-      if (containerWidth <= 0) return;
-      applyResizeDelta(target, deltaX, {
-        leftWidth: leftPanelWidth,
-        rightWidth: rightPanelWidth,
-        containerWidth,
-      });
-    },
-    [applyResizeDelta, leftPanelWidth, rightPanelWidth],
-  );
-
-  useEffect(() => {
-    const onPointerMove = (event: PointerEvent) => {
-      const activeDrag = resizeDragStateRef.current;
-      if (!activeDrag) return;
-      applyResizeDelta(activeDrag.target, event.clientX - activeDrag.startX, {
-        leftWidth: activeDrag.startLeftWidth,
-        rightWidth: activeDrag.startRightWidth,
-        containerWidth: activeDrag.containerWidth,
-      });
-    };
-
-    const onPointerUp = () => {
-      stopResizing();
-    };
-
-    window.addEventListener("pointermove", onPointerMove);
-    window.addEventListener("pointerup", onPointerUp);
-    window.addEventListener("pointercancel", onPointerUp);
-    return () => {
-      window.removeEventListener("pointermove", onPointerMove);
-      window.removeEventListener("pointerup", onPointerUp);
-      window.removeEventListener("pointercancel", onPointerUp);
-      stopResizing();
-    };
-  }, [applyResizeDelta, stopResizing]);
-
-  useEffect(() => {
-    const element = appShellRef.current;
-    if (!element || typeof ResizeObserver === "undefined") return;
-
-    const observer = new ResizeObserver(([entry]) => {
-      if (!entry) return;
-      const containerWidth = entry.contentRect.width;
-      const clampedLeft = Math.round(
-        clamp(
-          leftPanelWidth,
-          MIN_LEFT_PANEL_WIDTH,
-          maxLeftPanelWidth(containerWidth, rightPanelWidth),
-        ),
-      );
-      const clampedRight = Math.round(
-        clamp(
-          rightPanelWidth,
-          MIN_RIGHT_PANEL_WIDTH,
-          maxRightPanelWidth(containerWidth, clampedLeft),
-        ),
-      );
-      if (clampedLeft !== leftPanelWidth) {
-        setLeftPanelWidth(clampedLeft);
-      }
-      if (clampedRight !== rightPanelWidth) {
-        setRightPanelWidth(clampedRight);
-      }
-    });
-
-    observer.observe(element);
-    return () => observer.disconnect();
-  }, [leftPanelWidth, rightPanelWidth]);
-
-  const appShellStyle = useMemo(
-    () =>
-      ({
-        "--left-panel-width": `${leftPanelWidth}px`,
-        "--right-panel-width": `${rightPanelWidth}px`,
-      }) as CSSProperties,
-    [leftPanelWidth, rightPanelWidth],
-  );
 
   const createBlock = (title: string, data: JsonValue): void => {
     createBoardBlock({
@@ -365,7 +201,7 @@ const Workspace = () => {
   });
 
   return (
-    <div className="min-h-screen p-3">
+    <div className="min-h-screen p-3  flex flex-col">
       <header className="mb-[0.7rem] grid grid-cols-[auto_minmax(320px,460px)] items-center gap-[0.85rem] max-[860px]:grid-cols-1">
         <a
           className="[font-family:'Space_Grotesk','Avenir_Next','Segoe_UI',sans-serif] text-[1.15rem] font-bold tracking-[0.02em] text-[#2f2a25] no-underline"
@@ -472,11 +308,7 @@ const Workspace = () => {
         </div>
       </header>
 
-      <div
-        className="grid h-[calc(100vh-84px)] items-stretch gap-0 [grid-template-columns:var(--left-panel-width)_10px_minmax(0,1fr)_10px_var(--right-panel-width)] max-[1280px]:h-auto max-[1280px]:grid-cols-1"
-        ref={appShellRef}
-        style={appShellStyle}
-      >
+      <div className="flex-1 flex flex-row gap-2 ">
         <LeftPanel
           onCreate={onCreate}
           rootResults={rootResults}
@@ -486,29 +318,6 @@ const Workspace = () => {
             setSelectedLinkId(null);
           }}
           onImport={onImport}
-        />
-
-        <div
-          className="relative m-0 w-full cursor-col-resize border-0 bg-transparent p-0 touch-none transition-colors duration-100 hover:bg-[rgba(184,171,152,0.22)] focus-visible:bg-[rgba(184,171,152,0.22)] max-[1280px]:hidden"
-          role="separator"
-          tabIndex={0}
-          aria-label="Resize left and center panels"
-          aria-orientation="vertical"
-          onPointerDown={(event) => {
-            event.preventDefault();
-            startResizing("left", event.clientX);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowLeft") {
-              event.preventDefault();
-              resizeWithKeyboard("left", -20);
-              return;
-            }
-            if (event.key === "ArrowRight") {
-              event.preventDefault();
-              resizeWithKeyboard("left", 20);
-            }
-          }}
         />
 
         <MiddlePanel
@@ -553,41 +362,17 @@ const Workspace = () => {
           onDeleteLink={deleteLink}
           onUpdateData={setBlockData}
         />
-
-        <div
-          className="relative m-0 w-full cursor-col-resize border-0 bg-transparent p-0 touch-none transition-colors duration-100 hover:bg-[rgba(184,171,152,0.22)] focus-visible:bg-[rgba(184,171,152,0.22)] max-[1280px]:hidden"
-          role="separator"
-          tabIndex={0}
-          aria-label="Resize center and right panels"
-          aria-orientation="vertical"
-          onPointerDown={(event) => {
-            event.preventDefault();
-            startResizing("right", event.clientX);
-          }}
-          onKeyDown={(event) => {
-            if (event.key === "ArrowLeft") {
-              event.preventDefault();
-              resizeWithKeyboard("right", -20);
-              return;
-            }
-            if (event.key === "ArrowRight") {
-              event.preventDefault();
-              resizeWithKeyboard("right", 20);
-            }
-          }}
-        />
-
-        <RightPanel
-          selectedBlock={selectedBlock}
-          allBlocks={allBlocks}
-          links={Object.values(state.links)}
-        />
       </div>
+      <RightPanel
+        selectedBlock={selectedBlock}
+        allBlocks={allBlocks}
+        links={Object.values(state.links)}
+      />
     </div>
   );
 };
 
-export const WorkspacePage = () => {
+function RouteComponent() {
   const hasInitializedStoreRef = useRef(false);
 
   if (!hasInitializedStoreRef.current) {
@@ -596,6 +381,4 @@ export const WorkspacePage = () => {
   }
 
   return <Workspace />;
-};
-
-export default WorkspacePage;
+}

@@ -83,11 +83,7 @@ const JsonEditor = ({ block, allBlocks, links }: JsonEditorProps) => {
 
   return (
     <div className="grid gap-[0.45rem]">
-      <div>
-        <pre className="mb-[0.7rem] mt-[0.35rem] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem]">
-          <JsonView src={resolvedValue} />
-        </pre>
-      </div>
+      <JsonView src={resolvedValue} className="max-w-lg" />
     </div>
   );
 };
