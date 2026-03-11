@@ -107,7 +107,7 @@
 }
 
 /*
-! tailwindcss v3.4.17 | MIT License | https://tailwindcss.com
+! tailwindcss v3.4.19 | MIT License | https://tailwindcss.com
 */
 
 /*
@@ -1336,7 +1336,7 @@ body {
 }
 
 .p-\[clamp\(1\.35rem\2c 3vw\2c 2\.65rem\)\] {
-  padding: clamp(1.35rem,3vw,2.65rem);
+  padding: clamp(1.35rem, 3vw, 2.65rem);
 }
 
 .px-3\.5 {
@@ -1552,7 +1552,7 @@ body {
 }
 
 .text-\[clamp\(2rem\2c 6vw\2c 4\.4rem\)\] {
-  font-size: clamp(2rem,6vw,4.4rem);
+  font-size: clamp(2rem, 6vw, 4.4rem);
 }
 
 .text-base {
@@ -1768,6 +1768,7 @@ body {
 
 .backdrop-blur-\[2px\] {
   --tw-backdrop-blur: blur(2px);
+  -webkit-backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
   backdrop-filter: var(--tw-backdrop-blur) var(--tw-backdrop-brightness) var(--tw-backdrop-contrast) var(--tw-backdrop-grayscale) var(--tw-backdrop-hue-rotate) var(--tw-backdrop-invert) var(--tw-backdrop-opacity) var(--tw-backdrop-saturate) var(--tw-backdrop-sepia);
 }
 
