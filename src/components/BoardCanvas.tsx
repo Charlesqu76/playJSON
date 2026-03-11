@@ -383,6 +383,7 @@ const BoardCanvas = ({
         nodes={nodes}
         edges={edges}
         onNodesChange={onNodesChange}
+        onlyRenderVisibleElements
         onNodeClick={(_, node) => {
           onSelectBlock(node.id);
           onSelectLink(null);

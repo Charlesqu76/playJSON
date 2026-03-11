@@ -25,6 +25,14 @@ export const isCompositeValue = (value: JsonValue): value is JsonObject | JsonVa
   isRootObject(value) || Array.isArray(value);
 
 /**
+ * Append a null item to a root array
+ */
+export const addItemOnArray = (value: JsonValue): JsonValue => {
+  if (!Array.isArray(value)) return value;
+  return [...value, null];
+};
+
+/**
  * Add a new attribute to a root object
  */
 export const addAttributeOnRootObject = (value: JsonValue): JsonValue => {

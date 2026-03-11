@@ -5,6 +5,7 @@ import type { BoardState } from "../types/model";
 import { isEditableTarget } from "../utils/dom-utils";
 import {
   addAttributeOnRootObject,
+  addItemOnArray,
   resolveBlockValue,
 } from "../utils/json-blocks";
 
@@ -49,7 +50,10 @@ const handleTabShortcut = ({
   if (state.selectedBlockId) {
     const selected = state.blocks[state.selectedBlockId];
     if (selected) {
-      actions.setBlockData(selected.id, addAttributeOnRootObject(selected.data));
+      const updater = Array.isArray(selected.data)
+        ? addItemOnArray
+        : addAttributeOnRootObject;
+      actions.setBlockData(selected.id, updater(selected.data));
     }
     return true;
   }

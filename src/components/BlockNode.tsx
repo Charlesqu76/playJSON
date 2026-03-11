@@ -235,6 +235,12 @@ const BlockNode = ({ data }: NodeProps) => {
                 }}
               >
                 <span
+                  className="min-w-0 flex-1 whitespace-normal"
+                  style={twoLineClampStyle}
+                >
+                  {item.valueText}
+                </span>
+                <span
                   className={cn(
                     "nodrag nopan inline-flex h-4 w-4 cursor-grab items-center justify-center rounded-full bg-[rgba(37,99,235,0.12)] text-[#2563eb]",
                     !item.isLinked &&
@@ -302,12 +308,6 @@ const BlockNode = ({ data }: NodeProps) => {
                       strokeLinejoin="round"
                     />
                   </svg>
-                </span>
-                <span
-                  className="min-w-0 flex-1 whitespace-normal"
-                  style={twoLineClampStyle}
-                >
-                  {item.valueText}
                 </span>
                 <Handle
                   type="source"
@@ -559,7 +559,7 @@ const BlockNode = ({ data }: NodeProps) => {
                   type="source"
                   position={Position.Right}
                   id={getAttrHandleId(attr.key)}
-                  className="pointer-events-none !right-[-8px] !top-1/2 !h-[10px] !w-[10px] !translate-x-1/2 !-translate-y-1/2 !border-2 !border-[#2563eb] !bg-white"
+                  className="pointer-events-none !h-[10px] !w-[10px]   !border-2 !border-[#2563eb] !bg-white"
                 />
               </div>
             );
