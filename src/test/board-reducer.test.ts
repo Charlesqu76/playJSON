@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { boardReducer } from '../state/board';
+import { boardStore, initializeBoardStore } from '../state/board';
 import type { BoardState } from '../types/model';
 
 const baseState = (): BoardState => ({
@@ -43,12 +43,68 @@ const baseState = (): BoardState => ({
   version: 1,
 });
 
+const runWithState = (initialState: BoardState, run: () => void): BoardState => {
+  initializeBoardStore(initialState);
+  run();
+  return boardStore.getState().state;
+};
+
+const boardActions = {
+  createLink: (initialState: BoardState, sourceBlockId: string, targetBlockId: string) =>
+    runWithState(initialState, () => {
+      boardStore.getState().createLink({ sourceBlockId, targetBlockId });
+    }),
+  deleteBlock: (initialState: BoardState, id: string) =>
+    runWithState(initialState, () => {
+      boardStore.getState().deleteBlock(id);
+    }),
+  deleteLink: (initialState: BoardState, id: string) =>
+    runWithState(initialState, () => {
+      boardStore.getState().deleteLink(id);
+    }),
+  moveAttrToBlock: (
+    initialState: BoardState,
+    sourceBlockId: string,
+    sourceAttrKey: string,
+    targetBlockId: string,
+  ) =>
+    runWithState(initialState, () => {
+      boardStore
+        .getState()
+        .moveAttrToBlock({ sourceBlockId, sourceAttrKey, targetBlockId });
+    }),
+  removeAttrLink: (
+    initialState: BoardState,
+    sourceBlockId: string,
+    sourceAttrKey: string,
+  ) =>
+    runWithState(initialState, () => {
+      boardStore.getState().removeAttrLink(sourceBlockId, sourceAttrKey);
+    }),
+  setBlockData: (initialState: BoardState, id: string, data: BoardState['blocks'][string]['data']) =>
+    runWithState(initialState, () => {
+      boardStore.getState().setBlockData(id, data);
+    }),
+  setBlockPosition: (initialState: BoardState, id: string, x: number, y: number) =>
+    runWithState(initialState, () => {
+      boardStore.getState().setBlockPosition(id, x, y);
+    }),
+  upsertAttrLink: (
+    initialState: BoardState,
+    sourceBlockId: string,
+    sourceAttrKey: string,
+    targetBlockId: string,
+  ) =>
+    runWithState(initialState, () => {
+      boardStore
+        .getState()
+        .upsertAttrLink({ sourceBlockId, sourceAttrKey, targetBlockId });
+    }),
+};
+
 describe('board reducer', () => {
   it('deletes block and related links', () => {
-    const state = boardReducer(baseState(), {
-      type: 'deleteBlock',
-      payload: { id: 'a' },
-    });
+    const state = boardActions.deleteBlock(baseState(), 'a');
 
     expect(state.blocks.a).toBeUndefined();
     expect(state.links.l1).toBeUndefined();
@@ -56,19 +112,13 @@ describe('board reducer', () => {
   });
 
   it('updates selected block position', () => {
-    const state = boardReducer(baseState(), {
-      type: 'setBlockPosition',
-      payload: { id: 'b', x: 250, y: 360 },
-    });
+    const state = boardActions.setBlockPosition(baseState(), 'b', 250, 360);
 
     expect(state.positions.b).toEqual({ x: 250, y: 360 });
   });
 
   it('prevents duplicate directional links', () => {
-    const state = boardReducer(baseState(), {
-      type: 'createLink',
-      payload: { sourceBlockId: 'a', targetBlockId: 'b' },
-    });
+    const state = boardActions.createLink(baseState(), 'a', 'b');
 
     expect(Object.keys(state.links)).toHaveLength(1);
   });
@@ -78,10 +128,7 @@ describe('board reducer', () => {
     initial.blocks.a.data = { user: 'old' };
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'upsertAttrLink',
-      payload: { sourceBlockId: 'a', sourceAttrKey: 'user', targetBlockId: 'b' },
-    });
+    const state = boardActions.upsertAttrLink(initial, 'a', 'user', 'b');
 
     expect(Object.values(state.links)).toHaveLength(1);
     expect(state.blocks.a.data).toEqual({
@@ -95,15 +142,9 @@ describe('board reducer', () => {
     initial.blocks.c.data = { profile: 'old' };
     initial.links = {};
 
-    const first = boardReducer(initial, {
-      type: 'upsertAttrLink',
-      payload: { sourceBlockId: 'a', sourceAttrKey: 'user', targetBlockId: 'b' },
-    });
+    const first = boardActions.upsertAttrLink(initial, 'a', 'user', 'b');
 
-    const second = boardReducer(first, {
-      type: 'upsertAttrLink',
-      payload: { sourceBlockId: 'c', sourceAttrKey: 'profile', targetBlockId: 'b' },
-    });
+    const second = boardActions.upsertAttrLink(first, 'c', 'profile', 'b');
 
     const links = Object.values(second.links).filter((link) => link.targetBlockId === 'b');
     expect(links).toHaveLength(1);
@@ -126,10 +167,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'upsertAttrLink',
-      payload: { sourceBlockId: 'c', sourceAttrKey: 'profile', targetBlockId: 'b' },
-    });
+    const state = boardActions.upsertAttrLink(initial, 'c', 'profile', 'b');
 
     expect(state.blocks.a.data).toEqual([null]);
     expect(state.blocks.c.data).toEqual({ profile: { $ref: 'b' } });
@@ -142,10 +180,7 @@ describe('board reducer', () => {
     initial.blocks.b.data = { ok: false };
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: 'user', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', 'user', 'b');
 
     expect(state.blocks.a.data).toEqual({});
     expect(state.blocks.b.data).toEqual({ ok: false, user: 'charles' });
@@ -157,10 +192,7 @@ describe('board reducer', () => {
     initial.blocks.b.data = ['y'];
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: '0', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', '0', 'b');
 
     expect(state.blocks.a.data).toEqual([null, null]);
     expect(state.blocks.b.data).toEqual(['y', 'x']);
@@ -172,10 +204,7 @@ describe('board reducer', () => {
     initial.blocks.b.data = 'base';
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: 'user', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', 'user', 'b');
 
     expect(state.blocks.a.data).toEqual({});
     expect(state.blocks.b.data).toEqual(['base', 'charles']);
@@ -194,10 +223,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: 'user', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', 'user', 'b');
 
     expect(state.blocks.a.data).toEqual({});
     expect(state.blocks.b.data).toEqual({ user: { $ref: 'c' } });
@@ -219,10 +245,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'deleteLink',
-      payload: { id: 'link1' },
-    });
+    const state = boardActions.deleteLink(initial, 'link1');
 
     expect(state.links.link1).toBeUndefined();
     expect(state.blocks.a.data).toEqual({ user: null });
@@ -233,19 +256,13 @@ describe('board reducer', () => {
     initial.blocks.a.data = ['x', null];
     initial.links = {};
 
-    const linked = boardReducer(initial, {
-      type: 'upsertAttrLink',
-      payload: { sourceBlockId: 'a', sourceAttrKey: '0', targetBlockId: 'b' },
-    });
+    const linked = boardActions.upsertAttrLink(initial, 'a', '0', 'b');
 
     expect(linked.blocks.a.data).toEqual([{ $ref: 'b' }, null]);
     const link = Object.values(linked.links)[0];
     expect(link?.sourceAttrKey).toBe('0');
 
-    const afterDelete = boardReducer(linked, {
-      type: 'deleteLink',
-      payload: { id: link.id },
-    });
+    const afterDelete = boardActions.deleteLink(linked, link.id);
     expect(afterDelete.blocks.a.data).toEqual([null, null]);
   });
 
@@ -261,10 +278,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'upsertAttrLink',
-      payload: { sourceBlockId: 'c', sourceAttrKey: 'alt', targetBlockId: 'b' },
-    });
+    const state = boardActions.upsertAttrLink(initial, 'c', 'alt', 'b');
 
     // Regular link l1 should still exist
     expect(state.links.l1).toBeDefined();
@@ -288,10 +302,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'removeAttrLink',
-      payload: { sourceBlockId: 'a', sourceAttrKey: 'user' },
-    });
+    const state = boardActions.removeAttrLink(initial, 'a', 'user');
 
     expect(state.links.link1).toBeUndefined();
     expect(state.blocks.a.data).toEqual({ user: null });
@@ -308,10 +319,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'setBlockData',
-      payload: { id: 'a', data: { newKey: 'value' } },
-    });
+    const state = boardActions.setBlockData(initial, 'a', { newKey: 'value' });
 
     expect(state.links.l1).toBeDefined();
   });
@@ -327,10 +335,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'setBlockData',
-      payload: { id: 'a', data: ['y', 'z'] },
-    });
+    const state = boardActions.setBlockData(initial, 'a', ['y', 'z']);
 
     expect(state.links.l1).toBeDefined();
   });
@@ -341,10 +346,7 @@ describe('board reducer', () => {
     initial.blocks.b.data = {};
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: 'user', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', 'user', 'b');
 
     expect(state.blocks.a.data).toEqual({ age: 30 });
     expect(Object.keys(state.blocks.a.data as Record<string, unknown>)).not.toContain('user');
@@ -357,10 +359,7 @@ describe('board reducer', () => {
     initial.blocks.b.data = { existing: true };
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: '0', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', '0', 'b');
 
     expect(state.blocks.a.data).toEqual([null, 'world']);
     expect(state.blocks.b.data).toEqual({ existing: true, item_0: 'hello' });
@@ -372,10 +371,7 @@ describe('board reducer', () => {
     initial.blocks.b.data = ['x'];
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: 'name', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', 'name', 'b');
 
     expect(state.blocks.a.data).toEqual({});
     expect(state.blocks.b.data).toEqual(['x', 'test']);
@@ -386,10 +382,7 @@ describe('board reducer', () => {
     initial.blocks.a.data = ['val1', 'val2'];
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'upsertAttrLink',
-      payload: { sourceBlockId: 'a', sourceAttrKey: '0', targetBlockId: 'b' },
-    });
+    const state = boardActions.upsertAttrLink(initial, 'a', '0', 'b');
 
     expect(state.blocks.a.data).toEqual([{ $ref: 'b' }, 'val2']);
     const link = Object.values(state.links).find(l => l.sourceAttrKey === '0');
@@ -411,10 +404,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: '0', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', '0', 'b');
 
     expect(state.blocks.a.data).toEqual([null, 'other']);
     expect(state.blocks.b.data).toEqual({ item_0: { $ref: 'c' } });
@@ -429,10 +419,7 @@ describe('board reducer', () => {
     initial.blocks.b.data = ['one'];
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: '1', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', '1', 'b');
 
     expect(state.blocks.a.data).toEqual(['alpha', null]);
     expect(state.blocks.b.data).toEqual(['one', 'beta']);
@@ -444,10 +431,7 @@ describe('board reducer', () => {
     initial.blocks.b.data = ['existing'];
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: 'key', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', 'key', 'b');
 
     expect(state.blocks.a.data).toEqual({});
     expect(state.blocks.b.data).toEqual(['existing', 'val']);
@@ -458,10 +442,7 @@ describe('board reducer', () => {
     initial.blocks.a.data = ['first', 'second'];
     initial.links = {};
 
-    const state = boardReducer(initial, {
-      type: 'upsertAttrLink',
-      payload: { sourceBlockId: 'a', sourceAttrKey: '1', targetBlockId: 'b' },
-    });
+    const state = boardActions.upsertAttrLink(initial, 'a', '1', 'b');
 
     expect(state.blocks.a.data).toEqual(['first', { $ref: 'b' }]);
     const links = Object.values(state.links);
@@ -483,10 +464,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'removeAttrLink',
-      payload: { sourceBlockId: 'a', sourceAttrKey: '0' },
-    });
+    const state = boardActions.removeAttrLink(initial, 'a', '0');
 
     expect(state.links.link1).toBeUndefined();
     expect(state.blocks.a.data).toEqual([null, 'test']);
@@ -505,10 +483,7 @@ describe('board reducer', () => {
       },
     };
 
-    const state = boardReducer(initial, {
-      type: 'moveAttrToBlock',
-      payload: { sourceBlockId: 'a', sourceAttrKey: '0', targetBlockId: 'b' },
-    });
+    const state = boardActions.moveAttrToBlock(initial, 'a', '0', 'b');
 
     expect(state.blocks.a.data).toEqual([null]);
     expect(state.blocks.b.data).toEqual(['x', { $ref: 'c' }]);

@@ -1,6 +1,7 @@
-import { useMemo } from 'react';
-import type { BlockLink, JsonBlock, JsonValue } from '../types/model';
-import { formatJson } from '../utils/json';
+import { useMemo } from "react";
+import type { BlockLink, JsonBlock, JsonValue } from "../types/model";
+import JsonView from "react18-json-view";
+import "react18-json-view/src/style.css";
 
 interface JsonEditorProps {
   block: JsonBlock | null;
@@ -11,9 +12,9 @@ interface JsonEditorProps {
 const isRefObject = (value: JsonValue): value is { $ref: string } =>
   Boolean(
     value &&
-      typeof value === 'object' &&
-      !Array.isArray(value) &&
-      typeof (value as Record<string, unknown>).$ref === 'string',
+    typeof value === "object" &&
+    !Array.isArray(value) &&
+    typeof (value as Record<string, unknown>).$ref === "string",
   );
 
 const resolveReferences = (
@@ -24,7 +25,7 @@ const resolveReferences = (
   if (Array.isArray(value)) {
     return value.map((item) => resolveReferences(item, blocksById, seen));
   }
-  if (!value || typeof value !== 'object') {
+  if (!value || typeof value !== "object") {
     return value;
   }
   if (isRefObject(value)) {
@@ -43,11 +44,7 @@ const resolveReferences = (
   return result;
 };
 
-const JsonEditor = ({
-  block,
-  allBlocks,
-  links,
-}: JsonEditorProps) => {
+const JsonEditor = ({ block, allBlocks, links }: JsonEditorProps) => {
   const linkByAttrKey = useMemo(() => {
     if (!block) return new Map<string, string>();
     const map = new Map<string, string>();
@@ -60,10 +57,14 @@ const JsonEditor = ({
 
   const resolvedValue = useMemo(() => {
     if (!block) return null;
-    const byId = new Map(allBlocks.map((candidate) => [candidate.id, candidate]));
+    const byId = new Map(
+      allBlocks.map((candidate) => [candidate.id, candidate]),
+    );
     let seeded = block.data;
-    if (seeded && typeof seeded === 'object' && !Array.isArray(seeded)) {
-      const nextRoot: Record<string, JsonValue> = { ...(seeded as Record<string, JsonValue>) };
+    if (seeded && typeof seeded === "object" && !Array.isArray(seeded)) {
+      const nextRoot: Record<string, JsonValue> = {
+        ...(seeded as Record<string, JsonValue>),
+      };
       for (const [attrKey, targetId] of linkByAttrKey.entries()) {
         const target = byId.get(targetId);
         if (!target) continue;
@@ -75,21 +76,16 @@ const JsonEditor = ({
   }, [allBlocks, block, linkByAttrKey]);
 
   if (!block) {
-    return <div className="text-[0.9rem] text-[#6f655d]">Select a JSON block.</div>;
+    return (
+      <div className="text-[0.9rem] text-[#6f655d]">Select a JSON block.</div>
+    );
   }
 
   return (
     <div className="grid gap-[0.45rem]">
       <div>
-        <div className="text-[0.85rem] text-[#6f655d]">Resolved Value</div>
         <pre className="mb-[0.7rem] mt-[0.35rem] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem]">
-          {formatJson(resolvedValue ?? block.data)}
-        </pre>
-      </div>
-      <div>
-        <div className="text-[0.85rem] text-[#6f655d]">Preview JSON</div>
-        <pre className="mb-[0.7rem] mt-[0.35rem] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem]">
-          {formatJson(block.data)}
+          <JsonView src={resolvedValue} />
         </pre>
       </div>
     </div>

@@ -95,7 +95,7 @@ const BlockNode = ({ data }: NodeProps) => {
   return (
     <div
       className={cn(
-        'max-w-[320px] min-w-[170px] rounded-xl border p-2 transition-[box-shadow,border-color,background] duration-100',
+        'max-w-[320px] min-w-[170px] overflow-hidden rounded-xl border p-2 transition-[box-shadow,border-color,background] duration-100',
         nodeData.blockKind === 'object' && 'border-[#d7b691] bg-[#fff8ee]',
         nodeData.blockKind === 'array' && 'border-[#9fc3de] bg-[#edf7ff]',
         nodeData.blockKind === 'other' && 'border-[#c6c6c6] bg-[#f7f7f7]',
@@ -131,7 +131,7 @@ const BlockNode = ({ data }: NodeProps) => {
         className="pointer-events-none !left-[-7px] !h-[10px] !w-[10px] !border-2 !border-[#2563eb] !bg-white"
       />
       <div className="flex items-center justify-between gap-[0.45rem]">
-        <div className="font-bold">{nodeData.title}</div>
+        <div className="min-w-0 truncate font-bold">{nodeData.title}</div>
         {nodeData.hasLinkedChildren ? (
           <button
             className="nodrag nopan rounded-md border border-[#d9d0c4] bg-[#fffefb] px-[0.4rem] py-[0.18rem] text-[0.72rem] hover:bg-[#f3ede3]"
@@ -144,7 +144,7 @@ const BlockNode = ({ data }: NodeProps) => {
           </button>
         ) : null}
       </div>
-      <div className="mb-[0.45rem] mt-[0.2rem] text-[0.85rem] text-[#61564f]">{nodeData.summary}</div>
+      <div className="mb-[0.45rem] mt-[0.2rem] truncate text-[0.85rem] text-[#61564f]">{nodeData.summary}</div>
 
       {nodeData.blockKind === 'array' && nodeData.arrayValues.length > 0 ? (
         <div className="mb-[0.3rem] rounded-lg border border-[#e9dfd1] bg-white">
@@ -155,7 +155,7 @@ const BlockNode = ({ data }: NodeProps) => {
               <div
                 key={`${nodeData.blockId}-array-${item.index}`}
                 className={cn(
-                  'nodrag nopan relative flex items-center gap-[0.2rem] border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] pr-[0.95rem] font-mono text-[0.75rem] last:border-b-0',
+                  'nodrag nopan relative flex min-w-0 items-center gap-[0.2rem] border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] pr-[0.95rem] font-mono text-[0.75rem] last:border-b-0',
                   selectedAttrId === attrId && 'bg-[#edf4ff]',
                 )}
                 draggable
@@ -239,8 +239,8 @@ const BlockNode = ({ data }: NodeProps) => {
                       strokeLinejoin="round"
                     />
                   </svg>
-                </span>{' '}
-                {item.valueText}
+                </span>
+                <span className="min-w-0 flex-1 truncate">{item.valueText}</span>
                 <Handle
                   type="source"
                   position={Position.Right}
@@ -262,7 +262,7 @@ const BlockNode = ({ data }: NodeProps) => {
               <div
                 key={attr.key}
                 className={cn(
-                  'nodrag nopan relative flex items-center gap-[0.2rem] border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] pr-[0.95rem] font-mono text-[0.75rem] last:border-b-0',
+                  'nodrag nopan relative flex min-w-0 items-center gap-[0.2rem] border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] pr-[0.95rem] font-mono text-[0.75rem] last:border-b-0',
                   selectedAttrId === attrId && 'bg-[#edf4ff]',
                 )}
                 draggable={!isEditing}
@@ -295,7 +295,7 @@ const BlockNode = ({ data }: NodeProps) => {
                 }}
               >
                 <span
-                  className="cursor-pointer rounded-[2px] hover:bg-[#f4f8ff]"
+                  className="min-w-0 shrink-0 cursor-pointer rounded-[2px] hover:bg-[#f4f8ff]"
                   onDoubleClick={() =>
                     setEditingAttr({
                       key: attr.key,
@@ -346,7 +346,7 @@ const BlockNode = ({ data }: NodeProps) => {
                 </span>
                 <span>: </span>
                 <span
-                  className="min-w-0 cursor-pointer rounded-[2px] hover:bg-[#f4f8ff]"
+                  className="min-w-0 flex-1 cursor-pointer truncate rounded-[2px] hover:bg-[#f4f8ff]"
                   onDoubleClick={() =>
                     setEditingAttr({
                       key: attr.key,

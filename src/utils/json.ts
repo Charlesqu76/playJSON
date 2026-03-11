@@ -1,46 +1,61 @@
-import { jsonValueSchema, type JsonArray, type JsonObject, type JsonValue } from '../types/model';
+import {
+  jsonValueSchema,
+  type JsonArray,
+  type JsonObject,
+  type JsonValue,
+} from "../types/model";
 
 export interface JsonParseError {
   message: string;
 }
 
-export const parseJsonText = (text: string): { value?: JsonValue; error?: JsonParseError } => {
+export const parseJsonText = (
+  text: string,
+): { value?: JsonValue; error?: JsonParseError } => {
   try {
     const parsed = JSON.parse(text) as unknown;
     const checked = jsonValueSchema.safeParse(parsed);
     if (!checked.success) {
-      return { error: { message: checked.error.issues[0]?.message ?? 'Invalid JSON value.' } };
+      return {
+        error: {
+          message: checked.error.issues[0]?.message ?? "Invalid JSON value.",
+        },
+      };
     }
     return { value: checked.data };
   } catch (error) {
     return {
       error: {
-        message: error instanceof Error ? error.message : 'Failed to parse JSON.',
+        message:
+          error instanceof Error ? error.message : "Failed to parse JSON.",
       },
     };
   }
 };
 
-export const formatJson = (value: JsonValue): string => JSON.stringify(value, null, 2);
+export const formatJson = (value: JsonValue): string =>
+  JSON.stringify(value, null, 2);
 
 export const summarizeJson = (value: JsonValue): string => {
-  if (value === null) return 'null';
+  if (value === null) return "null";
   if (Array.isArray(value)) return `Array(${value.length})`;
-  if (typeof value === 'object') return `Object(${Object.keys(value).length})`;
+  if (typeof value === "object") return `Object(${Object.keys(value).length})`;
   return String(value);
 };
 
 export const isObject = (value: JsonValue): value is JsonObject =>
-  typeof value === 'object' && value !== null && !Array.isArray(value);
+  typeof value === "object" && value !== null && !Array.isArray(value);
 
-export const isArray = (value: JsonValue): value is JsonArray => Array.isArray(value);
+export const isArray = (value: JsonValue): value is JsonArray =>
+  Array.isArray(value);
 
 export const primitiveFromInput = (raw: string): JsonValue => {
   const trimmed = raw.trim();
-  if (trimmed === 'null') return null;
-  if (trimmed === 'true') return true;
-  if (trimmed === 'false') return false;
-  if (trimmed.length > 0 && !Number.isNaN(Number(trimmed))) return Number(trimmed);
+  if (trimmed === "null") return null;
+  if (trimmed === "true") return true;
+  if (trimmed === "false") return false;
+  if (trimmed.length > 0 && !Number.isNaN(Number(trimmed)))
+    return Number(trimmed);
   return raw;
 };
 
@@ -56,7 +71,11 @@ export const findByPath = (root: JsonValue, path: string[]): JsonValue => {
   return current;
 };
 
-export const setByPath = (root: JsonValue, path: string[], nextValue: JsonValue): JsonValue => {
+export const setByPath = (
+  root: JsonValue,
+  path: string[],
+  nextValue: JsonValue,
+): JsonValue => {
   if (path.length === 0) return nextValue;
 
   const [head, ...tail] = path;
@@ -118,7 +137,7 @@ export const renameObjectKey = (
 ): { value?: JsonValue; error?: string } => {
   const parent = findByPath(root, pathToObject);
   if (!isObject(parent)) {
-    return { error: 'Parent is not an object.' };
+    return { error: "Parent is not an object." };
   }
 
   if (fromKey === toKey) {
@@ -145,7 +164,7 @@ export const addObjectKey = (
 ): { value?: JsonValue; error?: string } => {
   const parent = findByPath(root, pathToObject);
   if (!isObject(parent)) {
-    return { error: 'Parent is not an object.' };
+    return { error: "Parent is not an object." };
   }
   if (key in parent) {
     return { error: `Key "${key}" already exists.` };
@@ -161,7 +180,7 @@ export const appendArrayItem = (
 ): { value?: JsonValue; error?: string } => {
   const parent = findByPath(root, pathToArray);
   if (!Array.isArray(parent)) {
-    return { error: 'Parent is not an array.' };
+    return { error: "Parent is not an array." };
   }
 
   return { value: setByPath(root, pathToArray, [...parent, value]) };

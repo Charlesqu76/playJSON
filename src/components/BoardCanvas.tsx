@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import {
   Background,
   Controls,
@@ -9,12 +9,16 @@ import {
   type Edge,
   type Node,
   type NodeChange,
-} from '@xyflow/react';
-import '@xyflow/react/dist/style.css';
-import type { BoardState, JsonValue } from '../types/model';
-import { summarizeJson } from '../utils/json';
-import BlockNode, { getAttrHandleId, type ActiveAttrDrag, type BlockNodeData } from './BlockNode';
-import { Button } from './ui/button';
+} from "@xyflow/react";
+import "@xyflow/react/dist/style.css";
+import type { BoardState, JsonValue } from "../types/model";
+import { summarizeJson } from "../utils/json";
+import BlockNode, {
+  getAttrHandleId,
+  type ActiveAttrDrag,
+  type BlockNodeData,
+} from "./BlockNode";
+import { Button } from "./ui/button";
 
 const nodeTypes = {
   blockNode: BlockNode,
@@ -33,7 +37,11 @@ interface BoardCanvasProps {
   onSelectLink: (id: string | null) => void;
   onToggleExpand: (id: string) => void;
   onMoveBlock: (id: string, x: number, y: number) => void;
-  onRenameAttrLinkKey: (blockId: string, oldKey: string, newKey: string) => void;
+  onRenameAttrLinkKey: (
+    blockId: string,
+    oldKey: string,
+    newKey: string,
+  ) => void;
   onCreateAttrLink: (
     sourceBlockId: string,
     sourceAttrKey: string,
@@ -50,9 +58,9 @@ interface BoardCanvasProps {
 }
 
 const toInlineValue = (value: unknown): string => {
-  if (value === null) return 'null';
-  if (Array.isArray(value)) return '[array]';
-  if (typeof value === 'object') return '[object]';
+  if (value === null) return "null";
+  if (Array.isArray(value)) return "[array]";
+  if (typeof value === "object") return "[object]";
   return String(value);
 };
 
@@ -81,7 +89,11 @@ const BoardCanvas = ({
   const clearDragTimerRef = useRef<number | null>(null);
   const allLinks = useMemo(() => Object.values(state.links), [state.links]);
   const onStartAttrDrag = useCallback(
-    (mode: ActiveAttrDrag['mode'], sourceBlockId: string, sourceAttrKey: string) => {
+    (
+      mode: ActiveAttrDrag["mode"],
+      sourceBlockId: string,
+      sourceAttrKey: string,
+    ) => {
       if (clearDragTimerRef.current !== null) {
         window.clearTimeout(clearDragTimerRef.current);
         clearDragTimerRef.current = null;
@@ -133,9 +145,12 @@ const BoardCanvas = ({
 
   const nodes = useMemo<Node[]>(() => {
     const outgoingCount = new Map<string, number>();
-    const attrLinkByKey = new Map<string, BoardState['links'][string]>();
+    const attrLinkByKey = new Map<string, BoardState["links"][string]>();
     for (const link of allLinks) {
-      outgoingCount.set(link.sourceBlockId, (outgoingCount.get(link.sourceBlockId) ?? 0) + 1);
+      outgoingCount.set(
+        link.sourceBlockId,
+        (outgoingCount.get(link.sourceBlockId) ?? 0) + 1,
+      );
       if (link.sourceAttrKey) {
         attrLinkByKey.set(`${link.sourceBlockId}::${link.sourceAttrKey}`, link);
       }
@@ -144,25 +159,26 @@ const BoardCanvas = ({
     return visibleBlockIds.map((id) => {
       const block = state.blocks[id];
       return {
-      id: block.id,
-      type: 'blockNode',
-      position: state.positions[block.id] ?? { x: 100, y: 100 },
-      data: {
-        blockId: block.id,
-        isSelected: state.selectedBlockId === block.id,
-        isExpanded: !collapsedBlockIds.has(block.id),
-        hasLinkedChildren: (outgoingCount.get(block.id) ?? 0) > 0,
-        title: block.title,
-        summary: summarizeJson(block.data),
-        blockKind: Array.isArray(block.data)
-          ? 'array'
-          : block.data && typeof block.data === 'object'
-            ? 'object'
-            : 'other',
-        attributes:
-          block.data && typeof block.data === 'object' && !Array.isArray(block.data)
-            ? Object.entries(block.data)
-                .map(([key, value]) => {
+        id: block.id,
+        type: "blockNode",
+        position: state.positions[block.id] ?? { x: 100, y: 100 },
+        data: {
+          blockId: block.id,
+          isSelected: state.selectedBlockId === block.id,
+          isExpanded: !collapsedBlockIds.has(block.id),
+          hasLinkedChildren: (outgoingCount.get(block.id) ?? 0) > 0,
+          title: block.title,
+          summary: summarizeJson(block.data),
+          blockKind: Array.isArray(block.data)
+            ? "array"
+            : block.data && typeof block.data === "object"
+              ? "object"
+              : "other",
+          attributes:
+            block.data &&
+            typeof block.data === "object" &&
+            !Array.isArray(block.data)
+              ? Object.entries(block.data).map(([key, value]) => {
                   const link = attrLinkByKey.get(`${block.id}::${key}`);
                   const targetTitle =
                     link && state.blocks[link.targetBlockId]
@@ -175,65 +191,76 @@ const BoardCanvas = ({
                     targetTitle,
                   };
                 })
+              : [],
+          arrayValues: Array.isArray(block.data)
+            ? block.data.map((value, index) => {
+                const link = attrLinkByKey.get(`${block.id}::${index}`);
+                const targetTitle =
+                  link && state.blocks[link.targetBlockId]
+                    ? state.blocks[link.targetBlockId].title
+                    : undefined;
+                return {
+                  index,
+                  valueText: toInlineValue(value),
+                  isLinked: Boolean(link),
+                  targetTitle,
+                };
+              })
             : [],
-        arrayValues: Array.isArray(block.data)
-          ? block.data.map((value, index) => {
-              const link = attrLinkByKey.get(`${block.id}::${index}`);
-              const targetTitle =
-                link && state.blocks[link.targetBlockId]
-                  ? state.blocks[link.targetBlockId].title
-                  : undefined;
-              return {
-                index,
-                valueText: toInlineValue(value),
-                isLinked: Boolean(link),
-                targetTitle,
-              };
-            })
-          : [],
-        onRenameAttribute: (oldKey: string, newKey: string) => {
-          const nextKey = newKey.trim();
-          if (!nextKey) return 'Key cannot be empty.';
-          if (!block.data || typeof block.data !== 'object' || Array.isArray(block.data)) {
-            return 'Block root is not an object.';
-          }
-          const root = block.data as Record<string, JsonValue>;
-          if (oldKey !== nextKey && Object.prototype.hasOwnProperty.call(root, nextKey)) {
-            return `Key "${nextKey}" already exists.`;
-          }
-          const updated: Record<string, JsonValue> = {};
-          for (const [key, value] of Object.entries(root)) {
-            updated[key === oldKey ? nextKey : key] = value;
-          }
-          onRenameAttrLinkKey(block.id, oldKey, nextKey);
-          onUpdateData(block.id, updated);
-          return null;
-        },
-        onUpdateAttributeValue: (key: string, rawValue: string) => {
-          if (!block.data || typeof block.data !== 'object' || Array.isArray(block.data)) {
-            return 'Block root is not an object.';
-          }
-          const root = block.data as Record<string, JsonValue>;
-          if (!Object.prototype.hasOwnProperty.call(root, key)) {
-            return `Attribute "${key}" not found.`;
-          }
-          onUpdateData(block.id, {
-            ...root,
-            [key]: rawValue,
-          });
-          onRemoveAttrLink(block.id, key);
-          return null;
-        },
-        onCreateAttrLink,
-        onMoveAttrToBlock,
-        onStartAttrDrag,
-        onEndAttrDrag,
-        getActiveAttrDrag,
-        onRemoveAttrLink,
-        onToggleExpand,
-      } satisfies BlockNodeData,
-      selected: state.selectedBlockId === block.id,
-    };
+          onRenameAttribute: (oldKey: string, newKey: string) => {
+            const nextKey = newKey.trim();
+            if (!nextKey) return "Key cannot be empty.";
+            if (
+              !block.data ||
+              typeof block.data !== "object" ||
+              Array.isArray(block.data)
+            ) {
+              return "Block root is not an object.";
+            }
+            const root = block.data as Record<string, JsonValue>;
+            if (
+              oldKey !== nextKey &&
+              Object.prototype.hasOwnProperty.call(root, nextKey)
+            ) {
+              return `Key "${nextKey}" already exists.`;
+            }
+            const updated: Record<string, JsonValue> = {};
+            for (const [key, value] of Object.entries(root)) {
+              updated[key === oldKey ? nextKey : key] = value;
+            }
+            onRenameAttrLinkKey(block.id, oldKey, nextKey);
+            onUpdateData(block.id, updated);
+            return null;
+          },
+          onUpdateAttributeValue: (key: string, rawValue: string) => {
+            if (
+              !block.data ||
+              typeof block.data !== "object" ||
+              Array.isArray(block.data)
+            ) {
+              return "Block root is not an object.";
+            }
+            const root = block.data as Record<string, JsonValue>;
+            if (!Object.prototype.hasOwnProperty.call(root, key)) {
+              return `Attribute "${key}" not found.`;
+            }
+            onUpdateData(block.id, {
+              ...root,
+              [key]: rawValue,
+            });
+            onRemoveAttrLink(block.id, key);
+            return null;
+          },
+          onCreateAttrLink,
+          onMoveAttrToBlock,
+          onStartAttrDrag,
+          onEndAttrDrag,
+          getActiveAttrDrag,
+          onRemoveAttrLink,
+          onToggleExpand,
+        } satisfies BlockNodeData,
+        selected: state.selectedBlockId === block.id,
+      };
     });
   }, [
     allLinks,
@@ -256,13 +283,18 @@ const BoardCanvas = ({
   const edges = useMemo<Edge[]>(() => {
     const visible = new Set(visibleBlockIds);
     return allLinks
-      .filter((link) => visible.has(link.sourceBlockId) && visible.has(link.targetBlockId))
+      .filter(
+        (link) =>
+          visible.has(link.sourceBlockId) && visible.has(link.targetBlockId),
+      )
       .map((link) => ({
         id: link.id,
         source: link.sourceBlockId,
-        sourceHandle: link.sourceAttrKey ? getAttrHandleId(link.sourceAttrKey) : 'block-source',
+        sourceHandle: link.sourceAttrKey
+          ? getAttrHandleId(link.sourceAttrKey)
+          : "block-source",
         target: link.targetBlockId,
-        targetHandle: 'block-target',
+        targetHandle: "block-target",
         animated: false,
         selected: selectedLinkId === link.id,
       }));
@@ -272,7 +304,7 @@ const BoardCanvas = ({
     if (!state.selectedBlockId) return;
     const position = state.positions[state.selectedBlockId];
     if (!position) return;
-    setCenter(position.x + 120, position.y + 40, { zoom: 1.2, duration: 250 });
+    // setCenter(position.x + 120, position.y + 40, { zoom: 1.2, duration: 250 });
   }, [setCenter, state.positions, state.selectedBlockId]);
 
   const onNodesChange = (changes: NodeChange<Node>[]) => {
@@ -309,10 +341,18 @@ const BoardCanvas = ({
   return (
     <div className="relative h-full overflow-hidden rounded-xl border border-[#d9d0c4] bg-white">
       <div className="absolute right-[0.6rem] top-[0.6rem] z-[6] flex flex-wrap justify-end gap-[0.45rem]">
-        <Button className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]" size="sm" onClick={onAddObjectBlock}>
+        <Button
+          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+          size="sm"
+          onClick={onAddObjectBlock}
+        >
           Add Object
         </Button>
-        <Button className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]" size="sm" onClick={onAddArrayBlock}>
+        <Button
+          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+          size="sm"
+          onClick={onAddArrayBlock}
+        >
           Add Array
         </Button>
         <Button
