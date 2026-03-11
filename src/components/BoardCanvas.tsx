@@ -74,7 +74,6 @@ const BoardCanvas = ({
   onAddObjectBlock,
   onAddArrayBlock,
   onFormat,
-  onExport,
   onResetBoard,
   onSelectBlock,
   onSelectLink,
@@ -87,7 +86,7 @@ const BoardCanvas = ({
   onDeleteLink,
   onUpdateData,
 }: BoardCanvasProps) => {
-  const { setCenter, fitView, zoomIn, zoomOut, getZoom } = useReactFlow();
+  const { setCenter, fitView, getZoom } = useReactFlow();
   const activeAttrDragRef = useRef<ActiveAttrDrag | null>(null);
   const clearDragTimerRef = useRef<number | null>(null);
   const allLinks = useMemo(() => Object.values(state.links), [state.links]);

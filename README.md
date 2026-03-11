@@ -1,97 +1,110 @@
 # PlayJSON
 
-PlayJSON is a React + Vite app for building and exploring linked JSON structures on a visual whiteboard.
-
-It includes:
-- A landing page at `/`
-- A routed workspace at `/workspace` (TanStack Router)
-- React Flow whiteboard for JSON blocks
-- Tree + JSON preview editors for selected blocks
-- Search, import/export, and local persistence
-
-## Tech Stack
-
-- React 18
-- TypeScript
-- Vite
-- TanStack Router
-- React Flow (`@xyflow/react`)
-- Zod (schema validation)
-- shadcn-style UI primitives (`Button`, `Card`, `Input`, `Textarea`, `Separator`)
-
-## Routes
-
-- `/` - Home page
-- `/workspace` - PlayJSON editor workspace
+A visual whiteboard for building and exploring linked JSON structures. Paste in JSON, arrange blocks on a canvas, and connect them to model relationships across your data.
 
 ## Getting Started
 
-### Install
-
 ```bash
 pnpm install
-```
-
-### Run dev server
-
-```bash
 pnpm dev
 ```
 
-### Build
+| Command | Description |
+|---|---|
+| `pnpm dev` | Start the dev server |
+| `pnpm build` | Type-check and build for production |
+| `pnpm preview` | Preview the production build |
+| `pnpm test` | Run the test suite |
 
-```bash
-pnpm build
-```
+## Features
 
-### Run tests
+**Canvas**
+- Create JSON blocks by pasting any valid JSON (objects or arrays)
+- Drag, resize, and arrange blocks freely on the board
+- Link block attributes to other blocks to model `$ref`-style references
+- Auto-layout powered by a weighted blend of D3-hierarchy, Dagre, and ELK
 
-```bash
-pnpm test
-```
+**Editing**
+- Tree editor for structured, field-by-field updates
+- Raw JSON editor for direct text editing
+- Resolved JSON preview that follows links and expands references
 
-## Workspace Features
-
-- Create object/array blocks from JSON input
-- Select, move, and format blocks on the board
-- Link attributes/array items to other blocks using `$ref` style references
-- Edit selected block title and data
-- Tree editor for nested updates
-- Resolved JSON preview + raw JSON preview
+**Search & Navigation**
 - Search blocks by title, key, value, or JSONPath-like query
-- Export/import board state as JSON
-- Auto-save workspace state to `localStorage`
+- Tab through blocks in alphabetical order
+- Keyboard shortcuts for delete, duplicate, and navigation
+
+**Persistence**
+- Board state auto-saved to `localStorage`
+- Export board as JSON and re-import it later
+
+## Tech Stack
+
+- **React 18** + **TypeScript** + **Vite**
+- **TanStack Router** — file-based routing
+- **React Flow** (`@xyflow/react`) — canvas and node rendering
+- **Zustand** — board state management
+- **Zod** — import/export schema validation
+- **D3-hierarchy / Dagre / ELK** — auto-layout algorithms
+- **Tailwind CSS v4** + shadcn-style primitives
+
+## Routes
+
+| Route | Description |
+|---|---|
+| `/` | Landing page |
+| `/workspace` | Main editor |
 
 ## Project Structure
 
-```text
+```
 src/
   components/
-    ui/                # shadcn-style primitives
-    BlockNode.tsx      # custom React Flow node
-    BoardCanvas.tsx    # board rendering and interactions
-    LeftPanel.tsx      # create/search/import/export controls
-    TreeEditor.tsx     # hierarchical JSON editor
-    JsonEditor.tsx     # resolved/raw JSON previews
+    ui/                   # Button, Card, Input, Textarea, Separator
+    BlockNode.tsx         # React Flow custom node
+    BoardCanvas.tsx       # Canvas rendering and interactions
+    LeftPanel.tsx         # Create / search / import / export
+    MiddlePanel.tsx       # Canvas + layout controls
+    RightPanel.tsx        # Block editor panel
+    TreeEditor.tsx        # Hierarchical JSON editor
+    JsonEditor.tsx        # Resolved + raw JSON preview
   state/
-    board.tsx          # reducer and context state management
-    storage.ts         # localStorage + import/export helpers
+    board.tsx             # Zustand store and actions
+    storage.ts            # localStorage + import/export
   utils/
-    json.ts            # JSON helpers/edit ops
-    search.ts          # search + JSONPath-like matching
-  router.tsx           # TanStack Router route tree
-  App.tsx              # Home + Workspace page components
-  main.tsx             # RouterProvider app entry
+    json.ts               # JSON edit operations
+    json-blocks.ts        # Block-level JSON helpers
+    layout-algorithms.ts  # D3 / Dagre / ELK layout
+    search.ts             # Search and JSONPath matching
+    block-utils.ts        # Height estimation, sorting
+  hooks/
+    useKeyboardShortcuts.ts
+  types/
+    model.ts              # JsonBlock, BlockLink, BoardState, Zod schemas
+  routes/
+    __root.tsx
+    index.tsx
+    workspace.tsx
 ```
 
-## Data Model Notes
+## Data Model
 
-- Each block stores:
-  - `id`, `title`, `data`, timestamps
-- Links store:
-  - `sourceBlockId`, `targetBlockId`, optional `sourceAttrKey`
-- Imported/exported board data is validated with Zod schema (`version: 1`).
+```ts
+interface JsonBlock {
+  id: string;
+  title: string;
+  data: JsonValue;       // any JSON value
+  createdAt: string;
+  updatedAt: string;
+}
 
-## Known Caveat
+interface BlockLink {
+  id: string;
+  sourceBlockId: string;
+  targetBlockId: string;
+  sourceAttrKey?: string; // which attribute on the source points to target
+  label?: string;
+}
+```
 
-`pnpm build` may fail due to existing test typing issues in `src/test/search.test.ts` (readonly tuple vs mutable `JsonArray`), which are unrelated to workspace runtime behavior.
+Board state (blocks + positions + links) is validated against a versioned Zod schema on import (`version: 1`).
