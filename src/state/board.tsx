@@ -1,6 +1,8 @@
 import { create } from "zustand";
+import { persist } from "zustand/middleware";
 import { useShallow } from "zustand/react/shallow";
 import { v4 as uuidv4 } from "uuid";
+import { boardStateSchema } from "../types/model";
 import { createEmptyState } from "./storage";
 import type { BoardState, JsonValue } from "../types/model";
 
@@ -336,7 +338,8 @@ const deleteBlockState = (state: BoardState, id: string): BoardState => {
     blocks: nextBlocks,
     positions: nextPositions,
     links: nextLinks,
-    selectedBlockId: state.selectedBlockId === id ? null : state.selectedBlockId,
+    selectedBlockId:
+      state.selectedBlockId === id ? null : state.selectedBlockId,
   };
 };
 
@@ -361,7 +364,10 @@ const renameBlockState = (
   };
 };
 
-const selectBlockState = (state: BoardState, id: string | null): BoardState => ({
+const selectBlockState = (
+  state: BoardState,
+  id: string | null,
+): BoardState => ({
   ...state,
   selectedBlockId: id,
 });
@@ -407,7 +413,9 @@ const setBlockDataState = (
     );
   } else {
     nextLinks = Object.fromEntries(
-      Object.entries(state.links).filter(([, link]) => link.sourceBlockId !== id),
+      Object.entries(state.links).filter(
+        ([, link]) => link.sourceBlockId !== id,
+      ),
     );
   }
 
@@ -450,7 +458,9 @@ const createLinkState = (
     return state;
   }
   if (sourceBlockId === targetBlockId) return state;
-  if (hasDuplicateLink(state.links, sourceBlockId, targetBlockId, sourceAttrKey)) {
+  if (
+    hasDuplicateLink(state.links, sourceBlockId, targetBlockId, sourceAttrKey)
+  ) {
     return state;
   }
   if (wouldCreateCycle(state.links, sourceBlockId, targetBlockId)) {
@@ -494,7 +504,8 @@ const upsertAttrLinkState = (
       const shouldRemove =
         (link.sourceBlockId === sourceBlockId &&
           link.sourceAttrKey === sourceAttrKey) ||
-        (link.targetBlockId === targetBlockId && link.sourceAttrKey !== undefined);
+        (link.targetBlockId === targetBlockId &&
+          link.sourceAttrKey !== undefined);
       if (shouldRemove) removedLinks.push(link);
       return !shouldRemove;
     }),
@@ -584,17 +595,25 @@ const moveAttrToBlockState = (
     return state;
   }
 
-  const movedTarget = moveValueIntoTarget(targetBlock, sourceAttrKey, sourceValue);
+  const movedTarget = moveValueIntoTarget(
+    targetBlock,
+    sourceAttrKey,
+    sourceValue,
+  );
   if (!movedTarget) return state;
 
   const movedLinks = Object.values(state.links).filter(
     (link) =>
-      link.sourceBlockId === sourceBlockId && link.sourceAttrKey === sourceAttrKey,
+      link.sourceBlockId === sourceBlockId &&
+      link.sourceAttrKey === sourceAttrKey,
   );
   const nextLinks = Object.fromEntries(
     Object.entries(state.links).filter(
       ([, link]) =>
-        !(link.sourceBlockId === sourceBlockId && link.sourceAttrKey === sourceAttrKey),
+        !(
+          link.sourceBlockId === sourceBlockId &&
+          link.sourceAttrKey === sourceAttrKey
+        ),
     ),
   );
 
@@ -652,13 +671,18 @@ const deleteLinkState = (state: BoardState, id: string): BoardState => {
     let index = -1;
     if (link.sourceAttrKey !== undefined) {
       const parsed = Number(link.sourceAttrKey);
-      if (Number.isInteger(parsed) && parsed >= 0 && parsed < nextArray.length) {
+      if (
+        Number.isInteger(parsed) &&
+        parsed >= 0 &&
+        parsed < nextArray.length
+      ) {
         index = parsed;
       }
     }
     if (index < 0) {
       index = nextArray.findIndex((item) => {
-        if (!item || typeof item !== "object" || Array.isArray(item)) return false;
+        if (!item || typeof item !== "object" || Array.isArray(item))
+          return false;
         return (item as Record<string, unknown>).$ref === link.targetBlockId;
       });
     }
@@ -705,7 +729,10 @@ const removeAttrLinkState = (
   const nextLinks = Object.fromEntries(
     Object.entries(state.links).filter(
       ([, link]) =>
-        !(link.sourceBlockId === sourceBlockId && link.sourceAttrKey === sourceAttrKey),
+        !(
+          link.sourceBlockId === sourceBlockId &&
+          link.sourceAttrKey === sourceAttrKey
+        ),
     ),
   );
   const sourceBlock = state.blocks[sourceBlockId];
@@ -742,7 +769,10 @@ const renameAttrLinkKeyState = (
 
   const nextLinks = Object.fromEntries(
     Object.entries(state.links).map(([id, link]) => {
-      if (link.sourceBlockId !== sourceBlockId || link.sourceAttrKey !== oldKey) {
+      if (
+        link.sourceBlockId !== sourceBlockId ||
+        link.sourceAttrKey !== oldKey
+      ) {
         return [id, link];
       }
       return [
@@ -784,69 +814,91 @@ interface BoardStore extends BoardStoreActions {
   state: BoardState;
 }
 
-const useBoardStore = create<BoardStore>((set) => ({
-  state: createEmptyState(),
-  createBlock: (payload) =>
-    set((current) => ({
-      state: createBlockState(current.state, payload),
-    })),
-  duplicateSubgraph: (payload) =>
-    set((current) => ({
-      state: duplicateSubgraphState(current.state, payload),
-    })),
-  deleteBlock: (id) =>
-    set((current) => ({
-      state: deleteBlockState(current.state, id),
-    })),
-  renameBlock: (id, title) =>
-    set((current) => ({
-      state: renameBlockState(current.state, id, title),
-    })),
-  selectBlock: (id) =>
-    set((current) => ({
-      state: selectBlockState(current.state, id),
-    })),
-  setSearchQuery: (query) =>
-    set((current) => ({
-      state: setSearchQueryState(current.state, query),
-    })),
-  setBlockData: (id, data) =>
-    set((current) => ({
-      state: setBlockDataState(current.state, id, data),
-    })),
-  setBlockPosition: (id, x, y) =>
-    set((current) => ({
-      state: setBlockPositionState(current.state, id, x, y),
-    })),
-  createLink: (payload) =>
-    set((current) => ({
-      state: createLinkState(current.state, payload),
-    })),
-  upsertAttrLink: (payload) =>
-    set((current) => ({
-      state: upsertAttrLinkState(current.state, payload),
-    })),
-  moveAttrToBlock: (payload) =>
-    set((current) => ({
-      state: moveAttrToBlockState(current.state, payload),
-    })),
-  deleteLink: (id) =>
-    set((current) => ({
-      state: deleteLinkState(current.state, id),
-    })),
-  removeAttrLink: (sourceBlockId, sourceAttrKey) =>
-    set((current) => ({
-      state: removeAttrLinkState(current.state, sourceBlockId, sourceAttrKey),
-    })),
-  renameAttrLinkKey: (payload) =>
-    set((current) => ({
-      state: renameAttrLinkKeyState(current.state, payload),
-    })),
-  importState: (state) =>
-    set(() => ({ state })),
-  resetBoard: () =>
-    set(() => ({ state: createEmptyState() })),
-}));
+const useBoardStore = create<BoardStore>()(
+  persist(
+    (set) => ({
+      state: createEmptyState(),
+      createBlock: (payload) =>
+        set((current) => ({
+          state: createBlockState(current.state, payload),
+        })),
+      duplicateSubgraph: (payload) =>
+        set((current) => ({
+          state: duplicateSubgraphState(current.state, payload),
+        })),
+      deleteBlock: (id) =>
+        set((current) => ({
+          state: deleteBlockState(current.state, id),
+        })),
+      renameBlock: (id, title) =>
+        set((current) => ({
+          state: renameBlockState(current.state, id, title),
+        })),
+      selectBlock: (id) =>
+        set((current) => ({
+          state: selectBlockState(current.state, id),
+        })),
+      setSearchQuery: (query) =>
+        set((current) => ({
+          state: setSearchQueryState(current.state, query),
+        })),
+      setBlockData: (id, data) =>
+        set((current) => ({
+          state: setBlockDataState(current.state, id, data),
+        })),
+      setBlockPosition: (id, x, y) =>
+        set((current) => ({
+          state: setBlockPositionState(current.state, id, x, y),
+        })),
+      createLink: (payload) =>
+        set((current) => ({
+          state: createLinkState(current.state, payload),
+        })),
+      upsertAttrLink: (payload) =>
+        set((current) => ({
+          state: upsertAttrLinkState(current.state, payload),
+        })),
+      moveAttrToBlock: (payload) =>
+        set((current) => ({
+          state: moveAttrToBlockState(current.state, payload),
+        })),
+      deleteLink: (id) =>
+        set((current) => ({
+          state: deleteLinkState(current.state, id),
+        })),
+      removeAttrLink: (sourceBlockId, sourceAttrKey) =>
+        set((current) => ({
+          state: removeAttrLinkState(
+            current.state,
+            sourceBlockId,
+            sourceAttrKey,
+          ),
+        })),
+      renameAttrLinkKey: (payload) =>
+        set((current) => ({
+          state: renameAttrLinkKeyState(current.state, payload),
+        })),
+      importState: (state) => set(() => ({ state })),
+      resetBoard: () => set(() => ({ state: createEmptyState() })),
+    }),
+    {
+      name: "json-visual-board-v1",
+      partialize: (store) => ({ state: store.state }),
+      merge: (persisted, current) => {
+        const persistedState = (persisted as Partial<BoardStore> | undefined)
+          ?.state;
+        const parsed = boardStateSchema.safeParse(persistedState);
+        if (!parsed.success) {
+          return current;
+        }
+        return {
+          ...current,
+          state: parsed.data,
+        };
+      },
+    },
+  ),
+);
 
 export const boardStore = useBoardStore;
 

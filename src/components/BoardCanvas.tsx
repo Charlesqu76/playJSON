@@ -247,11 +247,11 @@ const BoardCanvas = ({
             if (!Object.prototype.hasOwnProperty.call(root, key)) {
               return `Attribute "${key}" not found.`;
             }
+            onRemoveAttrLink(block.id, key);
             onUpdateData(block.id, {
               ...root,
               [key]: rawValue,
             });
-            onRemoveAttrLink(block.id, key);
             return null;
           },
           onCreateAttrLink,
@@ -336,17 +336,26 @@ const BoardCanvas = ({
     })();
   };
 
-  const onZoomIn = () => {
-    void zoomIn({ duration: 180 });
-  };
-
-  const onZoomOut = () => {
-    void zoomOut({ duration: 180 });
-  };
-
   return (
     <div className="relative h-full overflow-hidden rounded-xl border border-[#d9d0c4] bg-white">
       <div className="absolute right-[0.6rem] top-[0.6rem] z-[6] flex flex-wrap justify-end gap-[0.45rem]">
+        {/* <Button
+          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+          size="sm"
+          variant="secondary"
+          onClick={onExport}
+        >
+          Export
+        </Button> */}
+
+        <Button
+          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+          size="sm"
+          variant="secondary"
+          onClick={onAutoFormat}
+        >
+          Auto-Format
+        </Button>
         <Button
           className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
           size="sm"
@@ -360,38 +369,6 @@ const BoardCanvas = ({
           onClick={onAddArrayBlock}
         >
           Add Array
-        </Button>
-        <Button
-          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
-          size="sm"
-          variant="secondary"
-          onClick={onExport}
-        >
-          Export
-        </Button>
-        <Button
-          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
-          size="sm"
-          variant="outline"
-          onClick={onZoomOut}
-        >
-          Zoom Out
-        </Button>
-        <Button
-          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
-          size="sm"
-          variant="outline"
-          onClick={onZoomIn}
-        >
-          Zoom In
-        </Button>
-        <Button
-          className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
-          size="sm"
-          variant="secondary"
-          onClick={onAutoFormat}
-        >
-          Auto-Format
         </Button>
         <Button
           className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"

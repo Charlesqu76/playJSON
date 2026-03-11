@@ -1,8 +1,8 @@
 import { describe, expect, it } from 'vitest';
-import { createEmptyState, exportState, importState, loadState, saveState } from '../state/storage';
+import { createEmptyState, exportState, importState } from '../state/storage';
 
 describe('storage', () => {
-  it('roundtrips through save/load and export/import', () => {
+  it('roundtrips through export/import', () => {
     const state = createEmptyState();
     state.blocks.x = {
       id: 'x',
@@ -12,9 +12,6 @@ describe('storage', () => {
       updatedAt: new Date().toISOString(),
     };
     state.positions.x = { x: 10, y: 20 };
-
-    saveState(state);
-    expect(loadState()).toEqual(state);
 
     const exported = exportState(state);
     const imported = importState(exported);

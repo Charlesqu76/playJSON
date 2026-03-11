@@ -4,15 +4,12 @@ import MiddlePanel from "../components/MiddlePanel";
 import RightPanel from "../components/RightPanel";
 import { Input } from "../components/ui/input";
 import {
-  initializeBoardStore,
   useBoardActions,
   useBoardState,
 } from "../state/board";
 import {
   exportState,
   importState as importBoardState,
-  loadState,
-  saveState,
 } from "../state/storage";
 import type { JsonValue } from "../types/model";
 import { parseJsonText } from "../utils/json";
@@ -54,10 +51,6 @@ const Workspace = () => {
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
   const copiedBlockRef = useRef<CopiedBlock | null>(null);
-
-  useEffect(() => {
-    saveState(state);
-  }, [state]);
 
   const allBlocks = useMemo(() => Object.values(state.blocks), [state.blocks]);
 
@@ -373,12 +366,5 @@ const Workspace = () => {
 };
 
 function RouteComponent() {
-  const hasInitializedStoreRef = useRef(false);
-
-  if (!hasInitializedStoreRef.current) {
-    initializeBoardStore(loadState());
-    hasInitializedStoreRef.current = true;
-  }
-
   return <Workspace />;
 }
