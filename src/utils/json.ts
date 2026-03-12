@@ -1,4 +1,9 @@
 import {
+  InputData,
+  jsonInputForTargetLanguage,
+  quicktype,
+} from "quicktype-core";
+import {
   jsonValueSchema,
   type JsonArray,
   type JsonObject,
@@ -7,6 +12,19 @@ import {
 
 export interface JsonParseError {
   message: string;
+}
+
+export interface JsonSchemaConversionResult {
+  schema: JsonValue;
+  schemaText: string;
+}
+
+export interface TypeScriptTypeConversionResult {
+  typeText: string;
+}
+
+export interface TypeScriptToJsonSchemaOptions {
+  typeName?: string;
 }
 
 export const parseJsonText = (
@@ -30,6 +48,164 @@ export const parseJsonText = (
           error instanceof Error ? error.message : "Failed to parse JSON.",
       },
     };
+  }
+};
+
+export const convertJsonToJsonSchema = async (
+  value: JsonValue,
+  rootName = "Root",
+): Promise<JsonSchemaConversionResult> => {
+  const schemaInput = jsonInputForTargetLanguage("schema");
+  await schemaInput.addSource({
+    name: rootName,
+    samples: [JSON.stringify(value)],
+  });
+
+  const inputData = new InputData();
+  inputData.addInput(schemaInput);
+
+  const result = await quicktype({
+    inputData,
+    lang: "schema",
+  });
+
+  const schemaText = result.lines.join("\n");
+  const parsed = parseJsonText(schemaText);
+  if (!parsed.value) {
+    throw new Error(
+      parsed.error?.message ?? "Failed to convert JSON to JSON Schema.",
+    );
+  }
+
+  return {
+    schema: parsed.value,
+    schemaText,
+  };
+};
+
+export const convertJsonToTypeScriptType = async (
+  value: JsonValue,
+  rootName = "Root",
+): Promise<TypeScriptTypeConversionResult> => {
+  const typeInput = jsonInputForTargetLanguage("typescript");
+  await typeInput.addSource({
+    name: rootName,
+    samples: [JSON.stringify(value)],
+  });
+
+  const inputData = new InputData();
+  inputData.addInput(typeInput);
+
+  const result = await quicktype({
+    inputData,
+    lang: "typescript",
+    rendererOptions: {
+      "just-types": "true",
+    },
+  });
+
+  return {
+    typeText: result.lines.join("\n"),
+  };
+};
+
+export const convertTypeScriptTypeToJsonSchema = async (
+  typeText: string,
+  options: TypeScriptToJsonSchemaOptions = {},
+): Promise<JsonSchemaConversionResult> => {
+  const typeName = options.typeName ?? "Root";
+  const random = Math.random().toString(36).slice(2);
+  const modulePrefix = "node:";
+  const fsModuleName = `${modulePrefix}fs/promises`;
+  const pathModuleName = `${modulePrefix}path`;
+  const osModuleName = `${modulePrefix}os`;
+  const schemaModuleName = "typescript-json-schema";
+
+  let fsPromises: {
+    mkdir: (path: string, options?: { recursive?: boolean }) => Promise<void>;
+    rm: (path: string, options?: { recursive?: boolean; force?: boolean }) => Promise<void>;
+    writeFile: (path: string, data: string) => Promise<void>;
+  };
+  let path: {
+    join: (...parts: string[]) => string;
+  };
+  let os: {
+    tmpdir: () => string;
+  };
+
+  try {
+    fsPromises = (await import(/* @vite-ignore */ fsModuleName)) as {
+      mkdir: (path: string, options?: { recursive?: boolean }) => Promise<void>;
+      rm: (path: string, options?: { recursive?: boolean; force?: boolean }) => Promise<void>;
+      writeFile: (path: string, data: string) => Promise<void>;
+    };
+    path = (await import(/* @vite-ignore */ pathModuleName)) as {
+      join: (...parts: string[]) => string;
+    };
+    os = (await import(/* @vite-ignore */ osModuleName)) as {
+      tmpdir: () => string;
+    };
+  } catch {
+    throw new Error(
+      "convertTypeScriptTypeToJsonSchema can only run in a Node.js environment.",
+    );
+  }
+
+  const tjs = (await import(/* @vite-ignore */ schemaModuleName)) as {
+    getProgramFromFiles: (
+      files: string[],
+      compilerOptions?: Record<string, unknown>,
+    ) => unknown;
+    generateSchema: (
+      program: unknown,
+      fullTypeName: string,
+      args?: Record<string, unknown>,
+      onlyIncludeFiles?: string[],
+      externalGenerator?: unknown,
+    ) => unknown;
+  };
+
+  const tmpDir = path.join(os.tmpdir(), `playjson-schema-${Date.now()}-${random}`);
+  const typeFile = path.join(tmpDir, "types.ts");
+  const hasNamedType = new RegExp(
+    `\\b(?:interface|type)\\s+${typeName}\\b`,
+  ).test(typeText);
+  const sourceText = hasNamedType
+    ? typeText
+    : `export type ${typeName} = ${typeText};`;
+
+  await fsPromises.mkdir(tmpDir, { recursive: true });
+
+  try {
+    await fsPromises.writeFile(typeFile, sourceText);
+    const program = tjs.getProgramFromFiles([typeFile], {
+      strictNullChecks: true,
+    });
+    const schema = tjs.generateSchema(program, typeName, {
+      required: true,
+      noExtraProps: false,
+    });
+
+    if (!schema) {
+      throw new Error(
+        `Failed to generate JSON Schema for type \"${typeName}\".`,
+      );
+    }
+
+    const schemaText = JSON.stringify(schema, null, 2);
+    const parsed = parseJsonText(schemaText);
+    if (!parsed.value) {
+      throw new Error(
+        parsed.error?.message ?? "Failed to parse generated JSON Schema.",
+      );
+    }
+
+    return {
+      schema: parsed.value,
+      schemaText,
+    };
+  } finally {
+    await fsPromises.rm(tmpDir, { recursive: true, force: true });
   }
 };
 

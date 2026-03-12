@@ -2,6 +2,9 @@ import { describe, expect, it } from 'vitest';
 import {
   addObjectKey,
   appendArrayItem,
+  convertJsonToJsonSchema,
+  convertTypeScriptTypeToJsonSchema,
+  convertJsonToTypeScriptType,
   deleteByPath,
   formatJson,
   parseJsonText,
@@ -40,5 +43,78 @@ describe('json utils', () => {
     const root = { a: { one: 1, two: 2 } };
     const result = renameObjectKey(root, ['a'], 'one', 'two');
     expect(result.error).toContain('already exists');
+  });
+
+  it('converts json value to json schema', async () => {
+    const result = await convertJsonToJsonSchema({
+      id: 1,
+      name: 'Alice',
+      tags: ['admin'],
+      active: true,
+    });
+
+    const schema = result.schema as Record<string, unknown>;
+    expect(schema.$schema).toBe('http://json-schema.org/draft-06/schema#');
+    expect(schema.$ref).toBe('#/definitions/Root');
+
+    const definitions = schema.definitions as Record<string, unknown>;
+    const root = definitions.Root as Record<string, unknown>;
+    expect(root.type).toBe('object');
+
+    const properties = root.properties as Record<string, unknown>;
+    expect(properties).toBeTruthy();
+
+    const idProp = properties.id as Record<string, unknown>;
+    expect(idProp.type).toBe('integer');
+
+    const tagsProp = properties.tags as Record<string, unknown>;
+    expect(tagsProp.type).toBe('array');
+  });
+
+  it('converts json value to typescript type', async () => {
+    const result = await convertJsonToTypeScriptType(
+      {
+        id: 1,
+        name: 'Alice',
+        active: true,
+      },
+      'UserBlock',
+    );
+
+    expect(result.typeText).toContain('export interface UserBlock');
+    expect(result.typeText).toMatch(/id:\s+number;/);
+    expect(result.typeText).toMatch(/name:\s+string;/);
+    expect(result.typeText).toContain('active: boolean;');
+  });
+
+  it('converts typescript type to json schema', async () => {
+    const typeText = `
+      export interface UserBlock {
+        id: number;
+        name: string;
+        active: boolean;
+        tags?: string[];
+      }
+    `;
+
+    const result = await convertTypeScriptTypeToJsonSchema(typeText, {
+      typeName: 'UserBlock',
+    });
+
+    const schema = result.schema as Record<string, unknown>;
+    expect(schema.$schema).toBe('http://json-schema.org/draft-07/schema#');
+    expect(schema.type).toBe('object');
+
+    const properties = schema.properties as Record<string, unknown>;
+    expect(properties).toBeTruthy();
+    expect((properties.id as Record<string, unknown>).type).toBe('number');
+    expect((properties.name as Record<string, unknown>).type).toBe('string');
+    expect((properties.active as Record<string, unknown>).type).toBe('boolean');
+
+    const required = schema.required as string[];
+    expect(required).toContain('id');
+    expect(required).toContain('name');
+    expect(required).toContain('active');
+    expect(required).not.toContain('tags');
   });
 });
