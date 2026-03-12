@@ -313,7 +313,7 @@ const BlockNode = ({ data }: NodeProps) => {
                   type="source"
                   position={Position.Right}
                   id={getAttrHandleId(sourceAttrKey)}
-                  className="pointer-events-none !right-[-8px] !top-1/2 !h-[10px] !w-[10px] !translate-x-1/2 !-translate-y-1/2 !border-2 !border-[#2563eb] !bg-white"
+                  className="pointer-events-none h-2.5! w-2.5! border-2! border-[#2563eb]! bg-white!"
                 />
               </div>
             );
@@ -572,12 +572,12 @@ const BlockNode = ({ data }: NodeProps) => {
           {error}
         </div>
       ) : null}
-      <Handle
+      {/* <Handle
         type="source"
         position={Position.Right}
         id="block-source"
-        className="pointer-events-none !right-[-7px] !h-[10px] !w-[10px] !border-2 !border-[#2563eb] !bg-white"
-      />
+        className="pointer-events-none right-1.75! h-2.5! w-2.5! border-2! !border-[#2563eb]! bg-white!"
+      /> */}
     </div>
   );
 };

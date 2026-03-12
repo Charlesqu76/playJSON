@@ -158,7 +158,6 @@ export const formatPositionsLeftToRight = async (
     hierarchyNodes = [];
   }
 
-
   const d3VerticalOrder = new Map<string, number>();
   if (hierarchyNodes.length > 0) {
     for (const node of hierarchyNodes) {

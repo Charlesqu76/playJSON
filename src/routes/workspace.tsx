@@ -16,7 +16,7 @@ import { parseJsonText } from "../utils/json";
 import { matchesSearchQuery } from "../utils/search";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { downloadFile, nextBlockPosition } from "../utils/dom-utils";
-import { formatPositionsLeftToRight } from "../utils/layout-algorithms";
+import { formatPositionsLeftToRightInWorker } from "../utils/layout-worker";
 import { getHiddenDescendants } from "../utils/block-utils";
 import { expandNestedJsonIntoLinkedBlocks } from "../utils/json-blocks";
 import type { CopiedBlock } from "../utils/workspace-types";
@@ -127,7 +127,10 @@ const Workspace = () => {
     const visibleIds = new Set(
       Object.keys(state.blocks).filter((id) => !hidden.has(id)),
     );
-    const nextPositions = await formatPositionsLeftToRight(state, visibleIds);
+    const nextPositions = await formatPositionsLeftToRightInWorker(
+      state,
+      visibleIds,
+    );
     Object.entries(nextPositions).forEach(([id, position]) => {
       setBlockPosition(id, position.x, position.y);
     });
