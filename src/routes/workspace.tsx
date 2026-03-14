@@ -17,7 +17,6 @@ import { matchesSearchQuery } from "../utils/search";
 import { useKeyboardShortcuts } from "../hooks/useKeyboardShortcuts";
 import { downloadFile, nextBlockPosition } from "../utils/dom-utils";
 import { formatPositionsLeftToRightInWorker } from "../utils/layout-worker";
-import { getHiddenDescendants } from "../utils/block-utils";
 import { expandNestedJsonIntoLinkedBlocks } from "../utils/json-blocks";
 import type { CopiedBlock } from "../utils/workspace-types";
 import { createFileRoute } from "@tanstack/react-router";
@@ -44,12 +43,18 @@ const Workspace = () => {
     upsertAttrLink,
   } = useBoardActions();
 
+  const [collapsedAttrLinks, setCollapsedAttrLinks] = useState<Set<string>>(
+    new Set(),
+  );
   const [collapsedBlockIds, setCollapsedBlockIds] = useState<Set<string>>(
     new Set(),
   );
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
+  const [expandedNestedPaths, setExpandedNestedPaths] = useState<Set<string>>(
+    new Set(),
+  );
   const copiedBlockRef = useRef<CopiedBlock | null>(null);
 
   const allBlocks = useMemo(() => Object.values(state.blocks), [state.blocks]);
@@ -117,15 +122,39 @@ const Workspace = () => {
       return result.error ?? "Import failed.";
     }
     importState(result.state);
-    setCollapsedBlockIds(new Set());
+    setCollapsedAttrLinks(new Set());
     setSelectedLinkId(null);
     return null;
   };
 
   const onFormat = async (): Promise<void> => {
-    const hidden = getHiddenDescendants(state, collapsedBlockIds);
+    // Compute hidden blocks from collapsed attribute links
+    const hiddenBlockIds = new Set<string>();
+    const collapsedTargets = new Set<string>();
+    for (const link of Object.values(state.links)) {
+      if (link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`)) {
+        collapsedTargets.add(link.targetBlockId);
+      }
+    }
+    // A block is hidden if all its incoming links are collapsed (or it has no incoming links but is a collapsed target)
+    const incomingCount = new Map<string, number>();
+    const nonCollapsedIncoming = new Map<string, number>();
+    for (const link of Object.values(state.links)) {
+      incomingCount.set(link.targetBlockId, (incomingCount.get(link.targetBlockId) ?? 0) + 1);
+      if (!collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey ?? ""}`)) {
+        nonCollapsedIncoming.set(link.targetBlockId, (nonCollapsedIncoming.get(link.targetBlockId) ?? 0) + 1);
+      }
+    }
+    for (const targetId of collapsedTargets) {
+      const total = incomingCount.get(targetId) ?? 0;
+      const visible = nonCollapsedIncoming.get(targetId) ?? 0;
+      if (total === 0 || visible === 0) {
+        hiddenBlockIds.add(targetId);
+      }
+    }
+
     const visibleIds = new Set(
-      Object.keys(state.blocks).filter((id) => !hidden.has(id)),
+      Object.keys(state.blocks).filter((id) => !hiddenBlockIds.has(id)),
     );
     const nextPositions = await formatPositionsLeftToRightInWorker(
       state,
@@ -137,34 +166,49 @@ const Workspace = () => {
   };
 
   const expandCollapsedParents = (targetBlockId: string) => {
-    setCollapsedBlockIds((prev) => {
-      if (prev.size === 0) return prev;
+    // Build incoming link map
+    const incoming = new Map<string, string[]>();
+    for (const link of Object.values(state.links)) {
+      const next = incoming.get(link.targetBlockId) ?? [];
+      next.push(link.sourceBlockId);
+      incoming.set(link.targetBlockId, next);
+    }
 
-      const incoming = new Map<string, string[]>();
-      for (const link of Object.values(state.links)) {
-        const next = incoming.get(link.targetBlockId) ?? [];
-        next.push(link.sourceBlockId);
-        incoming.set(link.targetBlockId, next);
-      }
-
-      const ancestors = new Set<string>();
-      const seen = new Set<string>([targetBlockId]);
-      const stack = [targetBlockId];
-      while (stack.length > 0) {
-        const current = stack.pop();
-        if (!current) break;
-        for (const parent of incoming.get(current) ?? []) {
-          if (seen.has(parent)) continue;
-          seen.add(parent);
-          ancestors.add(parent);
+    // Find all ancestors
+    const visited = new Set<string>();
+    const stack = [targetBlockId];
+    while (stack.length > 0) {
+      const current = stack.pop();
+      if (!current || visited.has(current)) continue;
+      visited.add(current);
+      for (const parent of incoming.get(current) ?? []) {
+        if (!visited.has(parent)) {
           stack.push(parent);
         }
       }
+    }
 
+    // Expand collapsed blocks
+    setCollapsedBlockIds((prev) => {
+      if (prev.size === 0) return prev;
       let changed = false;
       const next = new Set(prev);
-      for (const ancestor of ancestors) {
+      for (const ancestor of visited) {
         if (next.delete(ancestor)) changed = true;
+      }
+      return changed ? next : prev;
+    });
+
+    // Expand collapsed attr links
+    setCollapsedAttrLinks((prev) => {
+      if (prev.size === 0) return prev;
+      let changed = false;
+      const next = new Set(prev);
+      for (const link of Object.values(state.links)) {
+        if (visited.has(link.targetBlockId) && link.sourceAttrKey) {
+          const key = `${link.sourceBlockId}::${link.sourceAttrKey}`;
+          if (next.delete(key)) changed = true;
+        }
       }
       return changed ? next : prev;
     });
@@ -318,6 +362,7 @@ const Workspace = () => {
 
         <MiddlePanel
           state={state}
+          collapsedAttrLinks={collapsedAttrLinks}
           collapsedBlockIds={collapsedBlockIds}
           selectedLinkId={selectedLinkId}
           onAddObjectBlock={() => createBlock("Object Block", {})}
@@ -328,12 +373,13 @@ const Workspace = () => {
           }
           onResetBoard={() => {
             resetBoard();
+            setCollapsedAttrLinks(new Set());
             setCollapsedBlockIds(new Set());
             setSelectedLinkId(null);
           }}
           onSelectBlock={selectBlock}
           onSelectLink={setSelectedLinkId}
-          onToggleExpand={(id) => {
+          onToggleBlockExpand={(id) => {
             setCollapsedBlockIds((prev) => {
               const next = new Set(prev);
               if (next.has(id)) {
@@ -344,6 +390,31 @@ const Workspace = () => {
               return next;
             });
           }}
+          onToggleAttrLinkCollapse={(blockId, attrKey) => {
+            setCollapsedAttrLinks((prev) => {
+              const key = `${blockId}::${attrKey}`;
+              const next = new Set(prev);
+              if (next.has(key)) {
+                next.delete(key);
+              } else {
+                next.add(key);
+              }
+              return next;
+            });
+          }}
+          onToggleNestedExpand={(blockId, path) => {
+            setExpandedNestedPaths((prev) => {
+              const key = `${blockId}::${path}`;
+              const next = new Set(prev);
+              if (next.has(key)) {
+                next.delete(key);
+              } else {
+                next.add(key);
+              }
+              return next;
+            });
+          }}
+          expandedNestedPaths={expandedNestedPaths}
           onMoveBlock={setBlockPosition}
           onRenameAttrLinkKey={(blockId, oldKey, newKey) =>
             renameAttrLinkKey({ sourceBlockId: blockId, oldKey, newKey })

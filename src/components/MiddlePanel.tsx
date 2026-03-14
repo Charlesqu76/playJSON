@@ -4,8 +4,10 @@ import type { BoardState, JsonValue } from "../types/model";
 
 interface MiddlePanelProps {
   state: BoardState;
+  collapsedAttrLinks: ReadonlySet<string>;
   collapsedBlockIds: ReadonlySet<string>;
   selectedLinkId: string | null;
+  expandedNestedPaths: ReadonlySet<string>;
   onAddObjectBlock: () => void;
   onAddArrayBlock: () => void;
   onFormat: () => Promise<void> | void;
@@ -13,7 +15,9 @@ interface MiddlePanelProps {
   onResetBoard: () => void;
   onSelectBlock: (id: string | null) => void;
   onSelectLink: (id: string | null) => void;
-  onToggleExpand: (id: string) => void;
+  onToggleBlockExpand: (blockId: string) => void;
+  onToggleAttrLinkCollapse: (blockId: string, attrKey: string) => void;
+  onToggleNestedExpand: (blockId: string, path: string) => void;
   onMoveBlock: (id: string, x: number, y: number) => void;
   onRenameAttrLinkKey: (
     blockId: string,
