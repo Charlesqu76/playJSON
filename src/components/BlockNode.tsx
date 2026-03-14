@@ -1,7 +1,6 @@
 import { useState, type CSSProperties, Fragment, memo } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { cn } from "../lib/utils";
-import type { JsonValue } from "../types/model";
 
 const ATTR_MOVE_MIME = "application/x-json-attr-move";
 const ATTR_LINK_MIME = "application/x-json-attr-link";
@@ -20,13 +19,9 @@ export const getAttrHandleId = (sourceAttrKey: string): string =>
 export interface NestedValue {
   key: string;
   valueText: string;
-  isExpandable: boolean;
-  isExpanded: boolean;
   isLinked: boolean;
   isCollapsed: boolean;
   targetTitle?: string;
-  nestedType: "object" | "array" | "primitive";
-  childCount?: number;
 }
 
 export interface BlockNodeData {
@@ -42,7 +37,6 @@ export interface BlockNodeData {
   blockKind: "object" | "array" | "other";
   attributes: NestedValue[];
   arrayValues: NestedValue[];
-  expandedPaths: ReadonlySet<string>;
   onRenameAttribute: (oldKey: string, newKey: string) => string | null;
   onUpdateAttributeValue: (key: string, rawValue: string) => string | null;
   onCreateAttrLink: (
@@ -66,8 +60,6 @@ export interface BlockNodeData {
   onToggleBlockExpand: (blockId: string) => void;
   onToggleArrayExpand: (blockId: string) => void;
   onToggleAttrLinkCollapse: (blockId: string, attrKey: string) => void;
-  onToggleNestedExpand: (blockId: string, path: string) => void;
-  getNestedValue: (path: string) => JsonValue | undefined;
 }
 
 const parseAttrDragPayload = (raw: string): ActiveAttrDrag | null => {
@@ -106,42 +98,6 @@ const twoLineClampStyle: CSSProperties = {
   WebkitLineClamp: 2,
   overflow: "hidden",
 };
-
-const ExpandToggle = memo(function ExpandToggle({
-  isExpanded,
-  onClick,
-}: {
-  isExpanded: boolean;
-  onClick: () => void;
-}) {
-  return (
-    <button
-      className="nodrag nopan inline-flex h-4 w-4 shrink-0 cursor-pointer items-center justify-center rounded-sm bg-[rgba(139,127,118,0.12)] text-[#6b5d52] hover:bg-[rgba(139,127,118,0.2)]"
-      onClick={(e) => {
-        e.stopPropagation();
-        onClick();
-      }}
-      title={isExpanded ? "Collapse" : "Expand"}
-      aria-label={isExpanded ? "Collapse nested value" : "Expand nested value"}
-    >
-      <svg
-        className="h-3 w-3 transition-transform"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        style={{ transform: isExpanded ? "rotate(90deg)" : "rotate(0deg)" }}
-      >
-        <path
-          d="M6 4L10 8L6 12"
-          stroke="currentColor"
-          strokeWidth="1.5"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </button>
-  );
-});
 
 const CollapseButton = memo(function CollapseButton({
   isCollapsed,
@@ -262,120 +218,6 @@ const LinkButton = memo(function LinkButton({
   );
 });
 
-const toInlineValue = (value: unknown): string => {
-  if (value === null) return "null";
-  if (Array.isArray(value)) return `[${value.length}]`;
-  if (typeof value === "object") return `{${Object.keys(value).length}}`;
-  if (typeof value === "string") return `"${value}"`;
-  return String(value);
-};
-
-const getNestedType = (value: unknown): "object" | "array" | "primitive" => {
-  if (Array.isArray(value)) return "array";
-  if (value && typeof value === "object") return "object";
-  return "primitive";
-};
-
-const NestedValueRenderer = memo(function NestedValueRenderer({
-  value,
-  path,
-  depth,
-  nodeData,
-  selectedAttrId,
-  setSelectedAttrId,
-  editingAttr,
-  setEditingAttr,
-  setError,
-}: {
-  value: JsonValue;
-  path: string;
-  depth: number;
-  nodeData: BlockNodeData;
-  selectedAttrId: string | null;
-  setSelectedAttrId: (id: string | null) => void;
-  editingAttr: { key: string; field: "key" | "value"; draft: string } | null;
-  setEditingAttr: (v: { key: string; field: "key" | "value"; draft: string } | null) => void;
-  setError: (err: string | null) => void;
-}) {
-  const isObject = value && typeof value === "object" && !Array.isArray(value);
-  const isArray = Array.isArray(value);
-
-  if (!isObject && !isArray) {
-    return null;
-  }
-
-  const entries: Array<[string, JsonValue]> = isObject
-    ? Object.entries(value as Record<string, JsonValue>)
-    : (value as JsonValue[]).map((v, i) => [String(i), v] as [string, JsonValue]);
-
-  const paddingLeft = depth * 8;
-
-  return (
-    <div
-      className="border-t border-[#f1ebe1] bg-[#faf8f5]"
-      style={{ paddingLeft }}
-    >
-      {entries.map(([key, val]) => {
-        const childPath = `${path}.${key}`;
-        const childExpanded = nodeData.expandedPaths.has(childPath);
-        const childType = getNestedType(val);
-        const childExpandable = childType !== "primitive";
-        const childValueText = toInlineValue(val);
-        const childIsObject = val && typeof val === "object" && !Array.isArray(val);
-        const childIsArray = Array.isArray(val);
-
-        return (
-          <Fragment key={childPath}>
-            <div
-              className={cn(
-                "nodrag nopan relative flex min-w-0 items-center gap-[0.2rem] border-b border-[#f1ebe1] px-[0.35rem] py-[0.15rem] font-mono text-[0.72rem] last:border-b-0",
-                selectedAttrId === childPath && "bg-[#edf4ff]",
-              )}
-              onClick={() => setSelectedAttrId(childPath)}
-            >
-              <div className="min-w-0 flex flex-1 items-center gap-[0.15rem]">
-                {childExpandable && (
-                  <ExpandToggle
-                    isExpanded={childExpanded}
-                    onClick={() => nodeData.onToggleNestedExpand(nodeData.blockId, childPath)}
-                  />
-                )}
-                <span className="min-w-0 shrink whitespace-normal text-[#6b5d52]">
-                  {key}
-                </span>
-                <span className="shrink-0 text-[#9b8d82]">:</span>
-                <span
-                  className={cn(
-                    "min-w-0 flex-1 whitespace-normal",
-                    childIsObject && "text-[#b87333]",
-                    childIsArray && "text-[#4a90c2]",
-                    !childExpandable && "text-[#5a5a5a]",
-                  )}
-                >
-                  {childValueText}
-                </span>
-              </div>
-            </div>
-            {childExpandable && childExpanded && (
-              <NestedValueRenderer
-                value={val}
-                path={childPath}
-                depth={depth + 1}
-                nodeData={nodeData}
-                selectedAttrId={selectedAttrId}
-                setSelectedAttrId={setSelectedAttrId}
-                editingAttr={editingAttr}
-                setEditingAttr={setEditingAttr}
-                setError={setError}
-              />
-            )}
-          </Fragment>
-        );
-      })}
-    </div>
-  );
-});
-
 const BlockNode = ({ data }: NodeProps) => {
   const nodeData = data as unknown as BlockNodeData;
   const [error, setError] = useState<string | null>(null);
@@ -474,8 +316,6 @@ const BlockNode = ({ data }: NodeProps) => {
           {nodeData.arrayValues.map((item) => {
             const sourceAttrKey = item.key;
             const attrId = `array:${sourceAttrKey}`;
-            const isExpanded = item.isExpanded;
-            const nestedValue = nodeData.getNestedValue(sourceAttrKey);
 
             return (
               <Fragment key={`${nodeData.blockId}-array-${sourceAttrKey}`}>
@@ -517,12 +357,6 @@ const BlockNode = ({ data }: NodeProps) => {
                     nodeData.onEndAttrDrag();
                   }}
                 >
-                  {item.isExpandable && (
-                    <ExpandToggle
-                      isExpanded={isExpanded}
-                      onClick={() => nodeData.onToggleNestedExpand(nodeData.blockId, sourceAttrKey)}
-                    />
-                  )}
                   <span
                     className="min-w-0 flex-1 whitespace-normal"
                     style={twoLineClampStyle}
@@ -551,19 +385,6 @@ const BlockNode = ({ data }: NodeProps) => {
                     className="pointer-events-none h-2.5! w-2.5! border-2! border-[#2563eb]! bg-white!"
                   />
                 </div>
-                {item.isExpandable && isExpanded && nestedValue && (
-                  <NestedValueRenderer
-                    value={nestedValue}
-                    path={sourceAttrKey}
-                    depth={1}
-                    nodeData={nodeData}
-                    selectedAttrId={selectedAttrId}
-                    setSelectedAttrId={setSelectedAttrId}
-                    editingAttr={editingAttr}
-                    setEditingAttr={setEditingAttr}
-                    setError={setError}
-                  />
-                )}
               </Fragment>
             );
           })}
@@ -591,8 +412,6 @@ const BlockNode = ({ data }: NodeProps) => {
           {nodeData.attributes.map((attr) => {
             const attrId = `object:${attr.key}`;
             const isEditing = editingAttr?.key === attr.key;
-            const isExpanded = attr.isExpanded;
-            const nestedValue = nodeData.getNestedValue(attr.key);
 
             return (
               <Fragment key={attr.key}>
@@ -635,12 +454,6 @@ const BlockNode = ({ data }: NodeProps) => {
                   }}
                 >
                   <div className="min-w-0 flex flex-1 items-center gap-[0.15rem]">
-                    {attr.isExpandable && (
-                      <ExpandToggle
-                        isExpanded={isExpanded}
-                        onClick={() => nodeData.onToggleNestedExpand(nodeData.blockId, attr.key)}
-                      />
-                    )}
                     <span
                       className="min-w-0 max-w-[45%] shrink cursor-pointer whitespace-normal rounded-[2px] hover:bg-[#f4f8ff]"
                       style={twoLineClampStyle}
@@ -703,11 +516,7 @@ const BlockNode = ({ data }: NodeProps) => {
                     </span>
                     <span className="shrink-0">: </span>
                     <span
-                      className={cn(
-                        "min-w-0 flex-1 cursor-pointer whitespace-normal rounded-[2px] hover:bg-[#f4f8ff]",
-                        attr.nestedType === "object" && "text-[#b87333]",
-                        attr.nestedType === "array" && "text-[#4a90c2]",
-                      )}
+                      className="min-w-0 flex-1 cursor-pointer whitespace-normal rounded-[2px] hover:bg-[#f4f8ff]"
                       style={twoLineClampStyle}
                       onDoubleClick={() =>
                         setEditingAttr({
@@ -789,19 +598,6 @@ const BlockNode = ({ data }: NodeProps) => {
                     className="pointer-events-none !h-[10px] !w-[10px] !border-2 !border-[#2563eb] !bg-white"
                   />
                 </div>
-                {attr.isExpandable && isExpanded && nestedValue && (
-                  <NestedValueRenderer
-                    value={nestedValue}
-                    path={attr.key}
-                    depth={1}
-                    nodeData={nodeData}
-                    selectedAttrId={selectedAttrId}
-                    setSelectedAttrId={setSelectedAttrId}
-                    editingAttr={editingAttr}
-                    setEditingAttr={setEditingAttr}
-                    setError={setError}
-                  />
-                )}
               </Fragment>
             );
           })}

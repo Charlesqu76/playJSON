@@ -56,9 +56,6 @@ const Workspace = () => {
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
-  const [expandedNestedPaths, setExpandedNestedPaths] = useState<Set<string>>(
-    new Set(),
-  );
   const copiedBlockRef = useRef<CopiedBlock | null>(null);
 
   const allBlocks = useMemo(() => Object.values(state.blocks), [state.blocks]);
@@ -492,19 +489,6 @@ const Workspace = () => {
               return next;
             });
           }}
-          onToggleNestedExpand={(blockId, path) => {
-            setExpandedNestedPaths((prev) => {
-              const key = `${blockId}::${path}`;
-              const next = new Set(prev);
-              if (next.has(key)) {
-                next.delete(key);
-              } else {
-                next.add(key);
-              }
-              return next;
-            });
-          }}
-          expandedNestedPaths={expandedNestedPaths}
           onMoveBlock={setBlockPosition}
           onRenameAttrLinkKey={(blockId, oldKey, newKey) =>
             renameAttrLinkKey({ sourceBlockId: blockId, oldKey, newKey })

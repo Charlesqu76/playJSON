@@ -33,7 +33,6 @@ interface BoardCanvasProps {
   collapsedBlockIds: ReadonlySet<string>;
   expandedArrayBlocks: ReadonlySet<string>;
   selectedLinkId: string | null;
-  expandedNestedPaths: ReadonlySet<string>;
   onAddObjectBlock: () => void;
   onAddArrayBlock: () => void;
   onFormat: () => Promise<void> | void;
@@ -44,7 +43,6 @@ interface BoardCanvasProps {
   onToggleBlockExpand: (blockId: string) => void;
   onToggleArrayExpand: (blockId: string) => void;
   onToggleAttrLinkCollapse: (blockId: string, attrKey: string) => void;
-  onToggleNestedExpand: (blockId: string, path: string) => void;
   onMoveBlock: (id: string, x: number, y: number) => void;
   onRenameAttrLinkKey: (
     blockId: string,
@@ -74,39 +72,12 @@ const toInlineValue = (value: unknown): string => {
   return String(value);
 };
 
-const getNestedType = (value: unknown): "object" | "array" | "primitive" => {
-  if (Array.isArray(value)) return "array";
-  if (value && typeof value === "object") return "object";
-  return "primitive";
-};
-
-const getNestedValueByPath = (data: JsonValue, path: string): JsonValue | undefined => {
-  if (!path) return data;
-  const parts = path.split(".");
-  let current: JsonValue = data;
-  for (const part of parts) {
-    if (current === null || current === undefined) return undefined;
-    if (typeof current !== "object") return undefined;
-    if (Array.isArray(current)) {
-      const index = Number(part);
-      if (!Number.isInteger(index) || index < 0 || index >= current.length) {
-        return undefined;
-      }
-      current = current[index];
-    } else {
-      current = (current as Record<string, JsonValue>)[part];
-    }
-  }
-  return current;
-};
-
 const BoardCanvas = ({
   state,
   collapsedAttrLinks,
   collapsedBlockIds,
   expandedArrayBlocks,
   selectedLinkId,
-  expandedNestedPaths,
   onAddObjectBlock,
   onAddArrayBlock,
   onFormat,
@@ -116,7 +87,6 @@ const BoardCanvas = ({
   onToggleBlockExpand,
   onToggleArrayExpand,
   onToggleAttrLinkCollapse,
-  onToggleNestedExpand,
   onMoveBlock,
   onRenameAttrLinkKey,
   onCreateAttrLink,
@@ -247,12 +217,6 @@ const BoardCanvas = ({
 
     return visibleBlockIds.map((id) => {
       const block = state.blocks[id];
-      const blockExpandedPaths = new Set<string>();
-      for (const key of expandedNestedPaths) {
-        if (key.startsWith(`${block.id}::`)) {
-          blockExpandedPaths.add(key.slice(block.id.length + 2));
-        }
-      }
 
       const hasLinkedChildren = (outgoingCount.get(block.id) ?? 0) > 0;
 
@@ -289,7 +253,6 @@ const BoardCanvas = ({
             : block.data && typeof block.data === "object"
               ? "object"
               : "other",
-          expandedPaths: blockExpandedPaths,
           attributes:
             block.data &&
             typeof block.data === "object" &&
@@ -300,23 +263,13 @@ const BoardCanvas = ({
                     link && state.blocks[link.targetBlockId]
                       ? state.blocks[link.targetBlockId].title
                       : undefined;
-                  const nestedType = getNestedType(value);
-                  const isExpandable = nestedType !== "primitive";
                   const isCollapsed = link ? collapsedAttrLinks.has(`${block.id}::${key}`) : false;
                   return {
                     key,
                     valueText: toInlineValue(value),
-                    isExpandable,
-                    isExpanded: blockExpandedPaths.has(key),
                     isLinked: Boolean(link),
                     isCollapsed,
                     targetTitle,
-                    nestedType,
-                    childCount: isExpandable
-                      ? Array.isArray(value)
-                        ? value.length
-                        : Object.keys(value as Record<string, JsonValue>).length
-                      : undefined,
                   };
                 })
               : [],
@@ -328,23 +281,13 @@ const BoardCanvas = ({
                   link && state.blocks[link.targetBlockId]
                     ? state.blocks[link.targetBlockId].title
                     : undefined;
-                const nestedType = getNestedType(value);
-                const isExpandable = nestedType !== "primitive";
                 const isCollapsed = link ? collapsedAttrLinks.has(`${block.id}::${key}`) : false;
                 return {
                   key,
                   valueText: toInlineValue(value),
-                  isExpandable,
-                  isExpanded: blockExpandedPaths.has(key),
                   isLinked: Boolean(link),
                   isCollapsed,
                   targetTitle,
-                  nestedType,
-                  childCount: isExpandable
-                    ? Array.isArray(value)
-                      ? value.length
-                      : Object.keys(value as Record<string, JsonValue>).length
-                    : undefined,
                 };
               })
             : [],
@@ -401,8 +344,6 @@ const BoardCanvas = ({
           onToggleBlockExpand,
           onToggleArrayExpand,
           onToggleAttrLinkCollapse,
-          onToggleNestedExpand,
-          getNestedValue: (path: string) => getNestedValueByPath(block.data, path),
         } satisfies BlockNodeData,
         selected: state.selectedBlockId === block.id,
       };
@@ -412,7 +353,6 @@ const BoardCanvas = ({
     collapsedAttrLinks,
     collapsedBlockIds,
     expandedArrayBlocks,
-    expandedNestedPaths,
     onCreateAttrLink,
     onMoveAttrToBlock,
     getActiveAttrDrag,
@@ -423,7 +363,6 @@ const BoardCanvas = ({
     onToggleBlockExpand,
     onToggleArrayExpand,
     onToggleAttrLinkCollapse,
-    onToggleNestedExpand,
     onUpdateData,
     state.blocks,
     state.positions,
