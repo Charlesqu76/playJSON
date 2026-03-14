@@ -6,6 +6,7 @@ interface MiddlePanelProps {
   state: BoardState;
   collapsedAttrLinks: ReadonlySet<string>;
   collapsedBlockIds: ReadonlySet<string>;
+  expandedArrayBlocks: ReadonlySet<string>;
   selectedLinkId: string | null;
   expandedNestedPaths: ReadonlySet<string>;
   onAddObjectBlock: () => void;
@@ -16,6 +17,7 @@ interface MiddlePanelProps {
   onSelectBlock: (id: string | null) => void;
   onSelectLink: (id: string | null) => void;
   onToggleBlockExpand: (blockId: string) => void;
+  onToggleArrayExpand: (blockId: string) => void;
   onToggleAttrLinkCollapse: (blockId: string, attrKey: string) => void;
   onToggleNestedExpand: (blockId: string, path: string) => void;
   onMoveBlock: (id: string, x: number, y: number) => void;

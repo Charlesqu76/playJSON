@@ -433,6 +433,20 @@ const setBlockDataState = (
   };
 };
 
+const deleteBlockPositionsState = (
+  state: BoardState,
+  ids: ReadonlySet<string>,
+): BoardState => {
+  const nextPositions = { ...state.positions };
+  for (const id of ids) {
+    delete nextPositions[id];
+  }
+  return {
+    ...state,
+    positions: nextPositions,
+  };
+};
+
 const setBlockPositionState = (
   state: BoardState,
   id: string,
@@ -800,6 +814,7 @@ export interface BoardStoreActions {
   setSearchQuery: (query: string) => void;
   setBlockData: (id: string, data: JsonValue) => void;
   setBlockPosition: (id: string, x: number, y: number) => void;
+  deleteBlockPositions: (ids: ReadonlySet<string>) => void;
   createLink: (payload: CreateLinkPayload) => void;
   upsertAttrLink: (payload: UpsertAttrLinkPayload) => void;
   moveAttrToBlock: (payload: MoveAttrToBlockPayload) => void;
@@ -849,6 +864,10 @@ const useBoardStore = create<BoardStore>()(
       setBlockPosition: (id, x, y) =>
         set((current) => ({
           state: setBlockPositionState(current.state, id, x, y),
+        })),
+      deleteBlockPositions: (ids) =>
+        set((current) => ({
+          state: deleteBlockPositionsState(current.state, ids),
         })),
       createLink: (payload) =>
         set((current) => ({
@@ -922,6 +941,7 @@ export const useBoardActions = (): BoardStoreActions =>
       setSearchQuery: store.setSearchQuery,
       setBlockData: store.setBlockData,
       setBlockPosition: store.setBlockPosition,
+      deleteBlockPositions: store.deleteBlockPositions,
       createLink: store.createLink,
       upsertAttrLink: store.upsertAttrLink,
       moveAttrToBlock: store.moveAttrToBlock,

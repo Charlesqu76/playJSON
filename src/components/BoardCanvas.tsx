@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import {
   Background,
   Controls,
@@ -31,6 +31,7 @@ interface BoardCanvasProps {
   state: BoardState;
   collapsedAttrLinks: ReadonlySet<string>;
   collapsedBlockIds: ReadonlySet<string>;
+  expandedArrayBlocks: ReadonlySet<string>;
   selectedLinkId: string | null;
   expandedNestedPaths: ReadonlySet<string>;
   onAddObjectBlock: () => void;
@@ -41,6 +42,7 @@ interface BoardCanvasProps {
   onSelectBlock: (id: string | null) => void;
   onSelectLink: (id: string | null) => void;
   onToggleBlockExpand: (blockId: string) => void;
+  onToggleArrayExpand: (blockId: string) => void;
   onToggleAttrLinkCollapse: (blockId: string, attrKey: string) => void;
   onToggleNestedExpand: (blockId: string, path: string) => void;
   onMoveBlock: (id: string, x: number, y: number) => void;
@@ -102,6 +104,7 @@ const BoardCanvas = ({
   state,
   collapsedAttrLinks,
   collapsedBlockIds,
+  expandedArrayBlocks,
   selectedLinkId,
   expandedNestedPaths,
   onAddObjectBlock,
@@ -111,6 +114,7 @@ const BoardCanvas = ({
   onSelectBlock,
   onSelectLink,
   onToggleBlockExpand,
+  onToggleArrayExpand,
   onToggleAttrLinkCollapse,
   onToggleNestedExpand,
   onMoveBlock,
@@ -124,6 +128,7 @@ const BoardCanvas = ({
   const { setCenter, fitView, getZoom } = useReactFlow();
   const activeAttrDragRef = useRef<ActiveAttrDrag | null>(null);
   const clearDragTimerRef = useRef<number | null>(null);
+  const [isFormatting, setIsFormatting] = useState(false);
   const allLinks = useMemo(() => Object.values(state.links), [state.links]);
   const onStartAttrDrag = useCallback(
     (
@@ -162,7 +167,6 @@ const BoardCanvas = ({
       outgoing.set(link.sourceBlockId, next);
     }
 
-    // 1. Hide blocks from block-level collapse (collapsedBlockIds)
     const hideDescendants = (blockId: string) => {
       for (const child of outgoing.get(blockId) ?? []) {
         if (!hidden.has(child)) {
@@ -172,42 +176,56 @@ const BoardCanvas = ({
       }
     };
 
+    // 1. Hide blocks from block-level collapse (collapsedBlockIds)
     for (const collapsedId of collapsedBlockIds) {
       hideDescendants(collapsedId);
     }
 
     // 2. Hide blocks from attribute-level collapse (collapsedAttrLinks)
-    if (collapsedAttrLinks.size === 0) return hidden;
+    if (collapsedAttrLinks.size > 0) {
+      const collapsedTargets = new Set<string>();
+      for (const link of allLinks) {
+        if (link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`)) {
+          collapsedTargets.add(link.targetBlockId);
+        }
+      }
 
-    // Find all blocks that are targets of collapsed links
-    const collapsedTargets = new Set<string>();
-    for (const link of allLinks) {
-      if (link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`)) {
-        collapsedTargets.add(link.targetBlockId);
+      const nonCollapsedIncoming = new Map<string, number>();
+      for (const link of allLinks) {
+        const isCollapsed = link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`);
+        if (!isCollapsed) {
+          nonCollapsedIncoming.set(link.targetBlockId, (nonCollapsedIncoming.get(link.targetBlockId) ?? 0) + 1);
+        }
+      }
+
+      for (const targetId of collapsedTargets) {
+        const visible = nonCollapsedIncoming.get(targetId) ?? 0;
+        if (visible === 0 && !hidden.has(targetId)) {
+          hidden.add(targetId);
+          hideDescendants(targetId);
+        }
       }
     }
 
-    // A block is hidden if all its incoming links are collapsed
-    const nonCollapsedIncoming = new Map<string, number>();
+    // 3. Hide array-linked blocks with index >= 2 (only show first 2)
+    // Skip if the array block has been explicitly expanded
     for (const link of allLinks) {
-      const isCollapsed = link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`);
-      if (!isCollapsed) {
-        nonCollapsedIncoming.set(link.targetBlockId, (nonCollapsedIncoming.get(link.targetBlockId) ?? 0) + 1);
-      }
-    }
-
-    for (const targetId of collapsedTargets) {
-      const visible = nonCollapsedIncoming.get(targetId) ?? 0;
-      // Hide if no visible incoming links and not already hidden
-      if (visible === 0 && !hidden.has(targetId)) {
-        hidden.add(targetId);
-        // Also hide descendants
-        hideDescendants(targetId);
+      if (!link.sourceAttrKey) continue;
+      const index = Number(link.sourceAttrKey);
+      if (Number.isInteger(index) && index >= 2) {
+        // Check if source block is an array and not expanded
+        const sourceBlock = state.blocks[link.sourceBlockId];
+        if (sourceBlock && Array.isArray(sourceBlock.data) && !expandedArrayBlocks.has(link.sourceBlockId)) {
+          if (!hidden.has(link.targetBlockId)) {
+            hidden.add(link.targetBlockId);
+            hideDescendants(link.targetBlockId);
+          }
+        }
       }
     }
 
     return hidden;
-  }, [allLinks, collapsedAttrLinks, collapsedBlockIds]);
+  }, [allLinks, collapsedAttrLinks, collapsedBlockIds, expandedArrayBlocks, state.blocks]);
 
   const visibleBlockIds = useMemo(
     () => Object.keys(state.blocks).filter((id) => !hiddenBlockIds.has(id)),
@@ -238,6 +256,20 @@ const BoardCanvas = ({
 
       const hasLinkedChildren = (outgoingCount.get(block.id) ?? 0) > 0;
 
+      // Check if this array block has hidden items (linked items with index >= 2)
+      let hasHiddenArrayItems = false;
+      let hiddenArrayItemCount = 0;
+      if (Array.isArray(block.data)) {
+        for (let i = 2; i < block.data.length; i++) {
+          const link = attrLinkByKey.get(`${block.id}::${i}`);
+          if (link) {
+            hasHiddenArrayItems = true;
+            hiddenArrayItemCount++;
+          }
+        }
+      }
+      const isExpandedArray = expandedArrayBlocks.has(block.id);
+
       return {
         id: block.id,
         type: "blockNode",
@@ -247,6 +279,9 @@ const BoardCanvas = ({
           isSelected: state.selectedBlockId === block.id,
           isExpanded: !collapsedBlockIds.has(block.id),
           hasLinkedChildren,
+          hasHiddenArrayItems,
+          hiddenArrayItemCount,
+          isExpandedArray,
           title: block.title,
           summary: summarizeJson(block.data),
           blockKind: Array.isArray(block.data)
@@ -364,6 +399,7 @@ const BoardCanvas = ({
           getActiveAttrDrag,
           onRemoveAttrLink,
           onToggleBlockExpand,
+          onToggleArrayExpand,
           onToggleAttrLinkCollapse,
           onToggleNestedExpand,
           getNestedValue: (path: string) => getNestedValueByPath(block.data, path),
@@ -375,6 +411,7 @@ const BoardCanvas = ({
     allLinks,
     collapsedAttrLinks,
     collapsedBlockIds,
+    expandedArrayBlocks,
     expandedNestedPaths,
     onCreateAttrLink,
     onMoveAttrToBlock,
@@ -384,6 +421,7 @@ const BoardCanvas = ({
     onRenameAttrLinkKey,
     onStartAttrDrag,
     onToggleBlockExpand,
+    onToggleArrayExpand,
     onToggleAttrLinkCollapse,
     onToggleNestedExpand,
     onUpdateData,
@@ -436,13 +474,18 @@ const BoardCanvas = ({
 
   const onAutoFormat = () => {
     void (async () => {
-      await onFormat();
-      requestAnimationFrame(() => {
-        void fitView({
-          padding: 0.18,
-          duration: 260,
+      setIsFormatting(true);
+      try {
+        await onFormat();
+        requestAnimationFrame(() => {
+          void fitView({
+            padding: 0.18,
+            duration: 260,
+          });
         });
-      });
+      } finally {
+        setIsFormatting(false);
+      }
     })();
   };
 
@@ -463,7 +506,30 @@ const BoardCanvas = ({
           size="sm"
           variant="secondary"
           onClick={onAutoFormat}
+          disabled={isFormatting}
         >
+          {isFormatting && (
+            <svg
+              className="mr-1.5 h-3.5 w-3.5 animate-spin"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+              />
+            </svg>
+          )}
           Auto-Format
         </Button>
         <Button

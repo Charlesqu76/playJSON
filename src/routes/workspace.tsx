@@ -29,6 +29,7 @@ const Workspace = () => {
   const {
     createBlock: createBoardBlock,
     deleteBlock,
+    deleteBlockPositions,
     deleteLink,
     duplicateSubgraph,
     importState,
@@ -47,6 +48,9 @@ const Workspace = () => {
     new Set(),
   );
   const [collapsedBlockIds, setCollapsedBlockIds] = useState<Set<string>>(
+    new Set(),
+  );
+  const [expandedArrayBlocks, setExpandedArrayBlocks] = useState<Set<string>>(
     new Set(),
   );
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
@@ -128,28 +132,70 @@ const Workspace = () => {
   };
 
   const onFormat = async (): Promise<void> => {
-    // Compute hidden blocks from collapsed attribute links
+    const allLinks = Object.values(state.links);
+
+    // Build outgoing links map
+    const outgoing = new Map<string, string[]>();
+    for (const link of allLinks) {
+      const next = outgoing.get(link.sourceBlockId) ?? [];
+      next.push(link.targetBlockId);
+      outgoing.set(link.sourceBlockId, next);
+    }
+
+    const hideDescendants = (blockId: string, hidden: Set<string>) => {
+      for (const child of outgoing.get(blockId) ?? []) {
+        if (!hidden.has(child)) {
+          hidden.add(child);
+          hideDescendants(child, hidden);
+        }
+      }
+    };
+
     const hiddenBlockIds = new Set<string>();
-    const collapsedTargets = new Set<string>();
-    for (const link of Object.values(state.links)) {
-      if (link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`)) {
-        collapsedTargets.add(link.targetBlockId);
+
+    // 1. Hide blocks from block-level collapse (collapsedBlockIds)
+    for (const collapsedId of collapsedBlockIds) {
+      hideDescendants(collapsedId, hiddenBlockIds);
+    }
+
+    // 2. Hide blocks from attribute-level collapse (collapsedAttrLinks)
+    if (collapsedAttrLinks.size > 0) {
+      const collapsedTargets = new Set<string>();
+      for (const link of allLinks) {
+        if (link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`)) {
+          collapsedTargets.add(link.targetBlockId);
+        }
+      }
+
+      const nonCollapsedIncoming = new Map<string, number>();
+      for (const link of allLinks) {
+        const isCollapsed = link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`);
+        if (!isCollapsed) {
+          nonCollapsedIncoming.set(link.targetBlockId, (nonCollapsedIncoming.get(link.targetBlockId) ?? 0) + 1);
+        }
+      }
+
+      for (const targetId of collapsedTargets) {
+        const visible = nonCollapsedIncoming.get(targetId) ?? 0;
+        if (visible === 0 && !hiddenBlockIds.has(targetId)) {
+          hiddenBlockIds.add(targetId);
+          hideDescendants(targetId, hiddenBlockIds);
+        }
       }
     }
-    // A block is hidden if all its incoming links are collapsed (or it has no incoming links but is a collapsed target)
-    const incomingCount = new Map<string, number>();
-    const nonCollapsedIncoming = new Map<string, number>();
-    for (const link of Object.values(state.links)) {
-      incomingCount.set(link.targetBlockId, (incomingCount.get(link.targetBlockId) ?? 0) + 1);
-      if (!collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey ?? ""}`)) {
-        nonCollapsedIncoming.set(link.targetBlockId, (nonCollapsedIncoming.get(link.targetBlockId) ?? 0) + 1);
-      }
-    }
-    for (const targetId of collapsedTargets) {
-      const total = incomingCount.get(targetId) ?? 0;
-      const visible = nonCollapsedIncoming.get(targetId) ?? 0;
-      if (total === 0 || visible === 0) {
-        hiddenBlockIds.add(targetId);
+
+    // 3. Hide array-linked blocks with index >= 2 (only show first 2)
+    for (const link of allLinks) {
+      if (!link.sourceAttrKey) continue;
+      const index = Number(link.sourceAttrKey);
+      if (Number.isInteger(index) && index >= 2) {
+        const sourceBlock = state.blocks[link.sourceBlockId];
+        if (sourceBlock && Array.isArray(sourceBlock.data) && !expandedArrayBlocks.has(link.sourceBlockId)) {
+          if (!hiddenBlockIds.has(link.targetBlockId)) {
+            hiddenBlockIds.add(link.targetBlockId);
+            hideDescendants(link.targetBlockId, hiddenBlockIds);
+          }
+        }
       }
     }
 
@@ -163,27 +209,43 @@ const Workspace = () => {
     Object.entries(nextPositions).forEach(([id, position]) => {
       setBlockPosition(id, position.x, position.y);
     });
+    // Remove positions for hidden blocks so they don't occupy space
+    if (hiddenBlockIds.size > 0) {
+      deleteBlockPositions(hiddenBlockIds);
+    }
   };
 
   const expandCollapsedParents = (targetBlockId: string) => {
     // Build incoming link map
-    const incoming = new Map<string, string[]>();
+    const incoming = new Map<string, Array<{ sourceBlockId: string; sourceAttrKey?: string }>>();
     for (const link of Object.values(state.links)) {
       const next = incoming.get(link.targetBlockId) ?? [];
-      next.push(link.sourceBlockId);
+      next.push({ sourceBlockId: link.sourceBlockId, sourceAttrKey: link.sourceAttrKey });
       incoming.set(link.targetBlockId, next);
     }
 
     // Find all ancestors
     const visited = new Set<string>();
+    const arrayBlocksToExpand = new Set<string>();
     const stack = [targetBlockId];
     while (stack.length > 0) {
       const current = stack.pop();
       if (!current || visited.has(current)) continue;
       visited.add(current);
-      for (const parent of incoming.get(current) ?? []) {
-        if (!visited.has(parent)) {
-          stack.push(parent);
+
+      for (const { sourceBlockId, sourceAttrKey } of incoming.get(current) ?? []) {
+        if (!visited.has(sourceBlockId)) {
+          stack.push(sourceBlockId);
+        }
+        // Check if this link comes from an array index >= 2
+        if (sourceAttrKey) {
+          const index = Number(sourceAttrKey);
+          if (Number.isInteger(index) && index >= 2) {
+            const sourceBlock = state.blocks[sourceBlockId];
+            if (sourceBlock && Array.isArray(sourceBlock.data)) {
+              arrayBlocksToExpand.add(sourceBlockId);
+            }
+          }
         }
       }
     }
@@ -212,6 +274,21 @@ const Workspace = () => {
       }
       return changed ? next : prev;
     });
+
+    // Expand array blocks to show hidden array items
+    if (arrayBlocksToExpand.size > 0) {
+      setExpandedArrayBlocks((prev) => {
+        const next = new Set(prev);
+        let changed = false;
+        for (const blockId of arrayBlocksToExpand) {
+          if (!next.has(blockId)) {
+            next.add(blockId);
+            changed = true;
+          }
+        }
+        return changed ? next : prev;
+      });
+    }
   };
 
   const selectSearchResult = (id: string) => {
@@ -364,6 +441,7 @@ const Workspace = () => {
           state={state}
           collapsedAttrLinks={collapsedAttrLinks}
           collapsedBlockIds={collapsedBlockIds}
+          expandedArrayBlocks={expandedArrayBlocks}
           selectedLinkId={selectedLinkId}
           onAddObjectBlock={() => createBlock("Object Block", {})}
           onAddArrayBlock={() => createBlock("Array Block", [])}
@@ -375,6 +453,7 @@ const Workspace = () => {
             resetBoard();
             setCollapsedAttrLinks(new Set());
             setCollapsedBlockIds(new Set());
+            setExpandedArrayBlocks(new Set());
             setSelectedLinkId(null);
           }}
           onSelectBlock={selectBlock}
@@ -386,6 +465,17 @@ const Workspace = () => {
                 next.delete(id);
               } else {
                 next.add(id);
+              }
+              return next;
+            });
+          }}
+          onToggleArrayExpand={(blockId) => {
+            setExpandedArrayBlocks((prev) => {
+              const next = new Set(prev);
+              if (next.has(blockId)) {
+                next.delete(blockId);
+              } else {
+                next.add(blockId);
               }
               return next;
             });

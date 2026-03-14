@@ -34,6 +34,9 @@ export interface BlockNodeData {
   isSelected: boolean;
   isExpanded: boolean;
   hasLinkedChildren: boolean;
+  hasHiddenArrayItems: boolean;
+  hiddenArrayItemCount: number;
+  isExpandedArray: boolean;
   title: string;
   summary: string;
   blockKind: "object" | "array" | "other";
@@ -61,6 +64,7 @@ export interface BlockNodeData {
   getActiveAttrDrag: () => ActiveAttrDrag | null;
   onRemoveAttrLink: (sourceBlockId: string, sourceAttrKey: string) => void;
   onToggleBlockExpand: (blockId: string) => void;
+  onToggleArrayExpand: (blockId: string) => void;
   onToggleAttrLinkCollapse: (blockId: string, attrKey: string) => void;
   onToggleNestedExpand: (blockId: string, path: string) => void;
   getNestedValue: (path: string) => JsonValue | undefined;
@@ -563,6 +567,22 @@ const BlockNode = ({ data }: NodeProps) => {
               </Fragment>
             );
           })}
+          {nodeData.hasHiddenArrayItems && !nodeData.isExpandedArray && (
+            <button
+              className="nodrag nopan w-full border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] text-left font-mono text-[0.72rem] text-[#2563eb] hover:bg-[#f4f8ff]"
+              onClick={() => nodeData.onToggleArrayExpand(nodeData.blockId)}
+            >
+              + Show {nodeData.hiddenArrayItemCount} more linked item{nodeData.hiddenArrayItemCount > 1 ? "s" : ""}
+            </button>
+          )}
+          {nodeData.isExpandedArray && nodeData.hasHiddenArrayItems && (
+            <button
+              className="nodrag nopan w-full border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] text-left font-mono text-[0.72rem] text-[#8a7f76] hover:bg-[#f4f8ff]"
+              onClick={() => nodeData.onToggleArrayExpand(nodeData.blockId)}
+            >
+              − Hide linked items
+            </button>
+          )}
         </div>
       ) : null}
 
