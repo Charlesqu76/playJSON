@@ -1,21 +1,30 @@
 import { memo } from "react";
 import { cn } from "../../lib/utils";
+import { ATTR_LINK_MIME } from "./const";
+
+const toLinkPayload = (blockId: string, attrKey: string): string =>
+  JSON.stringify({ mode: "link", sourceBlockId: blockId, sourceAttrKey: attrKey });
 
 const LinkButton = memo(function LinkButton({
   isLinked,
   targetTitle,
+  blockId,
+  attrKey,
   onLinkDragStart,
   onLinkDragEnd,
   onUnlink,
 }: {
   isLinked: boolean;
   targetTitle?: string;
+  blockId: string;
+  attrKey: string;
   onLinkDragStart: () => void;
   onLinkDragEnd: () => void;
   onUnlink: () => void;
 }) {
   return (
     <span
+      data-link-button
       className={cn(
         "nodrag nopan ml-auto inline-flex h-4 w-4 shrink-0 cursor-grab items-center justify-center rounded-full bg-[rgba(37,99,235,0.12)] text-[#2563eb]",
         !isLinked && "bg-[rgba(138,127,118,0.15)] text-[#8a7f76]",
@@ -42,6 +51,9 @@ const LinkButton = memo(function LinkButton({
         event.stopPropagation();
         onLinkDragStart();
         event.dataTransfer.effectAllowed = "move";
+        const payload = toLinkPayload(blockId, attrKey);
+        event.dataTransfer.setData(ATTR_LINK_MIME, payload);
+        event.dataTransfer.setData("text/plain", payload);
       }}
       onDragEnd={() => {
         onLinkDragEnd();

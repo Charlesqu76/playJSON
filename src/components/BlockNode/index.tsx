@@ -234,6 +234,9 @@ const BlockNode = ({ data }: NodeProps) => {
                 onStartDrag={() =>
                   nodeData.onStartAttrDrag("move", nodeData.blockId, item.key)
                 }
+                onStartLinkDrag={() =>
+                  nodeData.onStartAttrDrag("link", nodeData.blockId, item.key)
+                }
                 onEndDrag={() => nodeData.onEndAttrDrag()}
                 onToggleCollapse={() => {
                   if (item.isHiddenByArrayTruncation) {

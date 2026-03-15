@@ -194,7 +194,7 @@ describe('board reducer', () => {
 
     const state = boardActions.moveAttrToBlock(initial, 'a', '0', 'b');
 
-    expect(state.blocks.a.data).toEqual([null, null]);
+    expect(state.blocks.a.data).toEqual([null]);
     expect(state.blocks.b.data).toEqual(['y', 'x']);
   });
 
@@ -361,7 +361,7 @@ describe('board reducer', () => {
 
     const state = boardActions.moveAttrToBlock(initial, 'a', '0', 'b');
 
-    expect(state.blocks.a.data).toEqual([null, 'world']);
+    expect(state.blocks.a.data).toEqual(['world']);
     expect(state.blocks.b.data).toEqual({ existing: true, item_0: 'hello' });
   });
 
@@ -406,7 +406,7 @@ describe('board reducer', () => {
 
     const state = boardActions.moveAttrToBlock(initial, 'a', '0', 'b');
 
-    expect(state.blocks.a.data).toEqual([null, 'other']);
+    expect(state.blocks.a.data).toEqual(['other']);
     expect(state.blocks.b.data).toEqual({ item_0: { $ref: 'c' } });
     const movedLink = Object.values(state.links)[0];
     expect(movedLink?.sourceBlockId).toBe('b');
@@ -421,7 +421,7 @@ describe('board reducer', () => {
 
     const state = boardActions.moveAttrToBlock(initial, 'a', '1', 'b');
 
-    expect(state.blocks.a.data).toEqual(['alpha', null]);
+    expect(state.blocks.a.data).toEqual(['alpha']);
     expect(state.blocks.b.data).toEqual(['one', 'beta']);
   });
 
@@ -485,7 +485,7 @@ describe('board reducer', () => {
 
     const state = boardActions.moveAttrToBlock(initial, 'a', '0', 'b');
 
-    expect(state.blocks.a.data).toEqual([null]);
+    expect(state.blocks.a.data).toEqual([]);
     expect(state.blocks.b.data).toEqual(['x', { $ref: 'c' }]);
     const link = Object.values(state.links)[0];
     expect(link?.sourceBlockId).toBe('b');

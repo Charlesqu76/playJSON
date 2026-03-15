@@ -220,31 +220,51 @@ export const formatPositionsLeftToRight = async (
       "elk.layered.considerModelOrder.crossingCounterPortInfluence": "0.2",
       "elk.layered.thoroughness": "10",
     },
-    children: orderedIds.map((id) => {
-      const block = state.blocks[id];
-      const d3Position = d3Positions[id] ?? {
-        x: START_X + (depthById.get(id) ?? 0) * (NODE_WIDTH + COLUMN_GAP),
-        y: START_Y,
-      };
-      const visibleCount = Array.isArray(block.data)
-        ? (arrayVisibleCount?.get(id) ?? ARRAY_INITIAL_VISIBLE)
-        : undefined;
-      return {
-        id,
-        width: NODE_WIDTH,
-        height: estimateBlockHeight(block.data, visibleCount),
-        x: d3Position.x,
-        y: d3Position.y,
-      };
-    }),
-    edges: visibleLinks.map(
-      (link) =>
-        ({
-          id: link.id,
-          sources: [link.sourceBlockId],
-          targets: [link.targetBlockId],
-        }) satisfies ElkExtendedEdge,
-    ),
+    children: [
+      // Virtual root node to anchor all parent-less nodes
+      {
+        id: virtualRootId,
+        width: 1,
+        height: 1,
+        x: 0,
+        y: 0,
+      },
+      ...orderedIds.map((id) => {
+        const block = state.blocks[id];
+        const d3Position = d3Positions[id] ?? {
+          x: START_X + (depthById.get(id) ?? 0) * (NODE_WIDTH + COLUMN_GAP),
+          y: START_Y,
+        };
+        const visibleCount = Array.isArray(block.data)
+          ? (arrayVisibleCount?.get(id) ?? ARRAY_INITIAL_VISIBLE)
+          : undefined;
+        return {
+          id,
+          width: NODE_WIDTH,
+          height: estimateBlockHeight(block.data, visibleCount),
+          x: d3Position.x,
+          y: d3Position.y,
+        };
+      }),
+    ],
+    edges: [
+      // Virtual edges from root to all parent-less nodes to ensure vertical stacking
+      ...orderedIds
+        .filter((id) => (incoming.get(id)?.length ?? 0) === 0)
+        .map((id) => ({
+          id: `${virtualRootId}->${id}`,
+          sources: [virtualRootId],
+          targets: [id],
+        })),
+      ...visibleLinks.map(
+        (link) =>
+          ({
+            id: link.id,
+            sources: [link.sourceBlockId],
+            targets: [link.targetBlockId],
+          }) satisfies ElkExtendedEdge,
+      ),
+    ],
   };
 
   let elkPositions = new Map<string, { x: number; y: number }>();
@@ -256,7 +276,8 @@ export const formatPositionsLeftToRight = async (
           (child): child is Required<Pick<ElkNode, "id" | "x" | "y">> =>
             typeof child.id === "string" &&
             typeof child.x === "number" &&
-            typeof child.y === "number",
+            typeof child.y === "number" &&
+            child.id !== virtualRootId, // Exclude virtual root from positions
         )
         .map((child) => [child.id, { x: child.x, y: child.y }]),
     );

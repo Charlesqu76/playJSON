@@ -70,8 +70,8 @@ interface BoardCanvasProps {
 
 const toInlineValue = (value: unknown): string => {
   if (value === null) return "null";
-  if (Array.isArray(value)) return `[${value.length}]`;
-  if (typeof value === "object") return `{${Object.keys(value).length}}`;
+  if (Array.isArray(value)) return "[array]";
+  if (typeof value === "object") return "[object]";
   if (typeof value === "string") return `"${value}"`;
   return String(value);
 };

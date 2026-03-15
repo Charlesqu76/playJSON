@@ -60,7 +60,10 @@ const Workspace = () => {
   const allBlocks = useMemo(() => Object.values(state.blocks), [state.blocks]);
 
   const selectedBlock = useMemo(
-    () => (state.selectedBlockId ? state.blocks[state.selectedBlockId] ?? null : null),
+    () =>
+      state.selectedBlockId
+        ? (state.blocks[state.selectedBlockId] ?? null)
+        : null,
     [state.selectedBlockId, state.blocks],
   );
 
@@ -107,9 +110,10 @@ const Workspace = () => {
     );
     if (expanded) {
       importState(expanded);
-      return null;
+    } else {
+      createBlock(blockTitle, parsed.value);
     }
-    createBlock(blockTitle, parsed.value);
+    // void onFormat();
     return null;
   };
 
@@ -469,8 +473,12 @@ const Workspace = () => {
           showRightPanel={showRightPanel}
           onShowRightPanel={() => setShowRightPanel(true)}
           onHideRightPanel={() => setShowRightPanel(false)}
-          onAddObjectBlock={() => createBlock("Object Block", {})}
-          onAddArrayBlock={() => createBlock("Array Block", [])}
+          onAddObjectBlock={() => {
+            createBlock("Object Block", {});
+          }}
+          onAddArrayBlock={() => {
+            createBlock("Array Block", []);
+          }}
           onFormat={onFormat}
           onExport={() =>
             downloadFile("playjson-board.json", exportState(state))

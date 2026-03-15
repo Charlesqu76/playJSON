@@ -25,6 +25,7 @@ const ItemRow = memo(function ItemRow({
   onFinishEdit,
   onCancelEdit,
   onStartDrag,
+  onStartLinkDrag,
   onEndDrag,
   onToggleCollapse,
   onRemoveLink,
@@ -40,6 +41,7 @@ const ItemRow = memo(function ItemRow({
   onFinishEdit: (field: "key" | "value", draft: string) => void;
   onCancelEdit: () => void;
   onStartDrag: () => void;
+  onStartLinkDrag: () => void;
   onEndDrag: () => void;
   onToggleCollapse: () => void;
   onRemoveLink: () => void;
@@ -62,6 +64,11 @@ const ItemRow = memo(function ItemRow({
       onClick={onSelect}
       onDragStart={(event) => {
         event.stopPropagation();
+        // Check if drag started from LinkButton - if so, let LinkButton handle it
+        const target = event.target as HTMLElement;
+        if (target.closest("[data-link-button]")) {
+          return;
+        }
         if (isEditing) {
           event.preventDefault();
           return;
@@ -148,7 +155,9 @@ const ItemRow = memo(function ItemRow({
         <LinkButton
           isLinked={item.isLinked}
           targetTitle={item.targetTitle}
-          onLinkDragStart={onStartDrag}
+          blockId={blockId}
+          attrKey={item.key}
+          onLinkDragStart={onStartLinkDrag}
           onLinkDragEnd={onEndDrag}
           onUnlink={onRemoveLink}
         />

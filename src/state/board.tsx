@@ -596,9 +596,13 @@ const moveAttrToBlockState = (
 
   let nextSourceData: JsonValue;
   if (Array.isArray(sourceBlock.data)) {
-    const result = setAttributeValue(sourceBlock, sourceAttrKey, null);
-    if (!result) return state;
-    nextSourceData = result;
+    const index = Number(sourceAttrKey);
+    if (!Number.isInteger(index) || index < 0 || index >= sourceBlock.data.length) {
+      return state;
+    }
+    const nextArray = [...sourceBlock.data];
+    nextArray.splice(index, 1);
+    nextSourceData = nextArray;
   } else if (sourceBlock.data && typeof sourceBlock.data === "object") {
     const { [sourceAttrKey]: _removed, ...rest } = sourceBlock.data as Record<
       string,
