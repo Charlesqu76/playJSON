@@ -256,7 +256,7 @@ const JsonEditor = ({ block, allBlocks, links }: JsonEditorProps) => {
           <div className="absolute right-1 top-1 z-10">
             <CopyButton text={typeText} />
           </div>
-          <pre className="max-h-[55vh] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem] text-[0.83rem] leading-[1.4] text-[#2f2a25]">
+          <pre className="w-full min-w-0 max-h-[55vh] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem] text-[0.83rem] leading-[1.4] text-[#2f2a25]">
             {typeText}
           </pre>
         </div>
@@ -272,7 +272,7 @@ const JsonEditor = ({ block, allBlocks, links }: JsonEditorProps) => {
           <div className="absolute right-1 top-1 z-10">
             <CopyButton text={schemaText} />
           </div>
-          <pre className="max-h-[55vh] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem] text-[0.83rem] leading-[1.4] text-[#2f2a25]">
+          <pre className="w-full min-w-0 max-h-[55vh] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem] text-[0.83rem] leading-[1.4] text-[#2f2a25]">
             {schemaText}
           </pre>
         </div>
