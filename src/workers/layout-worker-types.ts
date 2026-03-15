@@ -4,6 +4,7 @@ export interface LayoutWorkerRequest {
   requestId: string;
   state: BoardState;
   targetBlockIds?: string[];
+  arrayVisibleCount?: Record<string, number>;
 }
 
 export interface LayoutWorkerSuccessResponse {

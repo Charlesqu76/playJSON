@@ -10,9 +10,13 @@ import { isRootObject } from './json-blocks';
 /**
  * Estimate the height of a block based on its data content
  */
-export const estimateBlockHeight = (data: JsonValue): number => {
+export const estimateBlockHeight = (
+  data: JsonValue,
+  visibleArrayCount?: number,
+): number => {
   if (Array.isArray(data)) {
-    return BLOCK_BASE_HEIGHT + data.length * BLOCK_ROW_HEIGHT + BLOCK_FOOTER_HEIGHT;
+    const count = visibleArrayCount ?? data.length;
+    return BLOCK_BASE_HEIGHT + count * BLOCK_ROW_HEIGHT + BLOCK_FOOTER_HEIGHT;
   }
   if (isRootObject(data)) {
     return BLOCK_BASE_HEIGHT + Object.keys(data).length * BLOCK_ROW_HEIGHT + BLOCK_FOOTER_HEIGHT;

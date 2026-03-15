@@ -6,8 +6,13 @@ interface MiddlePanelProps {
   state: BoardState;
   collapsedAttrLinks: ReadonlySet<string>;
   collapsedBlockIds: ReadonlySet<string>;
-  expandedArrayBlocks: ReadonlySet<string>;
+  arrayVisibleCount: ReadonlyMap<string, number>;
+  expandedArrayItems: ReadonlySet<string>;
   selectedLinkId: string | null;
+  hasSelectedBlock: boolean;
+  showRightPanel: boolean;
+  onShowRightPanel: () => void;
+  onHideRightPanel: () => void;
   onAddObjectBlock: () => void;
   onAddArrayBlock: () => void;
   onFormat: () => Promise<void> | void;
@@ -17,6 +22,7 @@ interface MiddlePanelProps {
   onSelectLink: (id: string | null) => void;
   onToggleBlockExpand: (blockId: string) => void;
   onToggleArrayExpand: (blockId: string) => void;
+  onToggleArrayItemExpand: (blockId: string, index: number) => void;
   onToggleAttrLinkCollapse: (blockId: string, attrKey: string) => void;
   onMoveBlock: (id: string, x: number, y: number) => void;
   onRenameAttrLinkKey: (

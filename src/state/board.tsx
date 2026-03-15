@@ -453,7 +453,7 @@ const setBlockPositionState = (
   x: number,
   y: number,
 ): BoardState => {
-  if (!state.positions[id]) return state;
+  if (!state.blocks[id]) return state;
   return {
     ...state,
     positions: {

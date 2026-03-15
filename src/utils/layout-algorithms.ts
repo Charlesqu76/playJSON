@@ -98,11 +98,14 @@ const buildDepthMap = (
 export const formatPositionsLeftToRight = async (
   state: BoardState,
   targetBlockIds?: ReadonlySet<string>,
+  arrayVisibleCount?: ReadonlyMap<string, number>,
 ): Promise<Record<string, { x: number; y: number }>> => {
   const ids = targetBlockIds
     ? [...targetBlockIds].filter((id) => Boolean(state.blocks[id]))
     : Object.keys(state.blocks);
   if (ids.length === 0) return {};
+
+  const ARRAY_INITIAL_VISIBLE = 5;
 
   const incoming = new Map<string, string[]>();
   for (const id of ids) {
@@ -191,11 +194,14 @@ export const formatPositionsLeftToRight = async (
     for (const id of columnIds) {
       const block = state.blocks[id];
       if (!block) continue;
+      const visibleCount = Array.isArray(block.data)
+        ? (arrayVisibleCount?.get(id) ?? ARRAY_INITIAL_VISIBLE)
+        : undefined;
       d3Positions[id] = {
         x: START_X + depth * (NODE_WIDTH + COLUMN_GAP),
         y: yCursor,
       };
-      yCursor += estimateBlockHeight(block.data) + ROW_GAP;
+      yCursor += estimateBlockHeight(block.data, visibleCount) + ROW_GAP;
     }
   }
 
@@ -220,10 +226,13 @@ export const formatPositionsLeftToRight = async (
         x: START_X + (depthById.get(id) ?? 0) * (NODE_WIDTH + COLUMN_GAP),
         y: START_Y,
       };
+      const visibleCount = Array.isArray(block.data)
+        ? (arrayVisibleCount?.get(id) ?? ARRAY_INITIAL_VISIBLE)
+        : undefined;
       return {
         id,
         width: NODE_WIDTH,
-        height: estimateBlockHeight(block.data),
+        height: estimateBlockHeight(block.data, visibleCount),
         x: d3Position.x,
         y: d3Position.y,
       };
@@ -287,11 +296,14 @@ export const formatPositionsLeftToRight = async (
     for (const id of columnIds) {
       const block = state.blocks[id];
       if (!block) continue;
+      const visibleCount = Array.isArray(block.data)
+        ? (arrayVisibleCount?.get(id) ?? ARRAY_INITIAL_VISIBLE)
+        : undefined;
       fallbackPositions[id] = {
         x: START_X + depth * (NODE_WIDTH + COLUMN_GAP),
         y: Math.round(yCursor),
       };
-      yCursor += estimateBlockHeight(block.data) + ROW_GAP;
+      yCursor += estimateBlockHeight(block.data, visibleCount) + ROW_GAP;
     }
   }
 

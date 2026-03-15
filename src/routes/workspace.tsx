@@ -1,16 +1,9 @@
 import { useMemo, useRef, useState, useEffect } from "react";
 import LeftPanel, { type SearchResult } from "../components/LeftPanel";
 import MiddlePanel from "../components/MiddlePanel";
-import RightPanel from "../components/RightPanel";
 import { Input } from "../components/ui/input";
-import {
-  useBoardActions,
-  useBoardState,
-} from "../state/board";
-import {
-  exportState,
-  importState as importBoardState,
-} from "../state/storage";
+import { useBoardActions, useBoardState } from "../state/board";
+import { exportState, importState as importBoardState } from "../state/storage";
 import type { JsonValue } from "../types/model";
 import { parseJsonText } from "../utils/json";
 import { matchesSearchQuery } from "../utils/search";
@@ -20,6 +13,7 @@ import { formatPositionsLeftToRightInWorker } from "../utils/layout-worker";
 import { expandNestedJsonIntoLinkedBlocks } from "../utils/json-blocks";
 import type { CopiedBlock } from "../utils/workspace-types";
 import { createFileRoute } from "@tanstack/react-router";
+import RightPanel from "../components/RightPanel";
 
 export const Route = createFileRoute("/workspace")({
   component: RouteComponent,
@@ -50,22 +44,24 @@ const Workspace = () => {
   const [collapsedBlockIds, setCollapsedBlockIds] = useState<Set<string>>(
     new Set(),
   );
-  const [expandedArrayBlocks, setExpandedArrayBlocks] = useState<Set<string>>(
+  const [expandedArrayItems, setExpandedArrayItems] = useState<Set<string>>(
     new Set(),
   );
+  // Track visible count per array block (default 5 items visible)
+  const [arrayVisibleCount, setArrayVisibleCount] = useState<
+    Map<string, number>
+  >(new Map());
   const [selectedLinkId, setSelectedLinkId] = useState<string | null>(null);
   const [isSearchOpen, setIsSearchOpen] = useState(false);
   const [activeSearchIndex, setActiveSearchIndex] = useState(0);
+  const [showRightPanel, setShowRightPanel] = useState(false);
   const copiedBlockRef = useRef<CopiedBlock | null>(null);
 
   const allBlocks = useMemo(() => Object.values(state.blocks), [state.blocks]);
 
   const selectedBlock = useMemo(
-    () =>
-      state.selectedBlockId
-        ? (state.blocks[state.selectedBlockId] ?? null)
-        : null,
-    [state.blocks, state.selectedBlockId],
+    () => (state.selectedBlockId ? state.blocks[state.selectedBlockId] ?? null : null),
+    [state.selectedBlockId, state.blocks],
   );
 
   const searchResults = useMemo<SearchResult[]>(() => {
@@ -159,16 +155,26 @@ const Workspace = () => {
     if (collapsedAttrLinks.size > 0) {
       const collapsedTargets = new Set<string>();
       for (const link of allLinks) {
-        if (link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`)) {
+        if (
+          link.sourceAttrKey &&
+          collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`)
+        ) {
           collapsedTargets.add(link.targetBlockId);
         }
       }
 
       const nonCollapsedIncoming = new Map<string, number>();
       for (const link of allLinks) {
-        const isCollapsed = link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`);
+        const isCollapsed =
+          link.sourceAttrKey &&
+          collapsedAttrLinks.has(
+            `${link.sourceBlockId}::${link.sourceAttrKey}`,
+          );
         if (!isCollapsed) {
-          nonCollapsedIncoming.set(link.targetBlockId, (nonCollapsedIncoming.get(link.targetBlockId) ?? 0) + 1);
+          nonCollapsedIncoming.set(
+            link.targetBlockId,
+            (nonCollapsedIncoming.get(link.targetBlockId) ?? 0) + 1,
+          );
         }
       }
 
@@ -181,16 +187,23 @@ const Workspace = () => {
       }
     }
 
-    // 3. Hide array-linked blocks with index >= 2 (only show first 2)
+    // 3. Hide array-linked blocks based on visible count (default 5)
+    const ARRAY_INITIAL_VISIBLE = 5;
     for (const link of allLinks) {
       if (!link.sourceAttrKey) continue;
       const index = Number(link.sourceAttrKey);
-      if (Number.isInteger(index) && index >= 2) {
+      const visibleCount =
+        arrayVisibleCount.get(link.sourceBlockId) ?? ARRAY_INITIAL_VISIBLE;
+      if (Number.isInteger(index) && index >= visibleCount) {
         const sourceBlock = state.blocks[link.sourceBlockId];
-        if (sourceBlock && Array.isArray(sourceBlock.data) && !expandedArrayBlocks.has(link.sourceBlockId)) {
-          if (!hiddenBlockIds.has(link.targetBlockId)) {
-            hiddenBlockIds.add(link.targetBlockId);
-            hideDescendants(link.targetBlockId, hiddenBlockIds);
+        if (sourceBlock && Array.isArray(sourceBlock.data)) {
+          // Check if this specific item is individually expanded
+          const itemKey = `${link.sourceBlockId}::${index}`;
+          if (!expandedArrayItems.has(itemKey)) {
+            if (!hiddenBlockIds.has(link.targetBlockId)) {
+              hiddenBlockIds.add(link.targetBlockId);
+              hideDescendants(link.targetBlockId, hiddenBlockIds);
+            }
           }
         }
       }
@@ -202,6 +215,7 @@ const Workspace = () => {
     const nextPositions = await formatPositionsLeftToRightInWorker(
       state,
       visibleIds,
+      arrayVisibleCount,
     );
     Object.entries(nextPositions).forEach(([id, position]) => {
       setBlockPosition(id, position.x, position.y);
@@ -214,32 +228,45 @@ const Workspace = () => {
 
   const expandCollapsedParents = (targetBlockId: string) => {
     // Build incoming link map
-    const incoming = new Map<string, Array<{ sourceBlockId: string; sourceAttrKey?: string }>>();
+    const incoming = new Map<
+      string,
+      Array<{ sourceBlockId: string; sourceAttrKey?: string }>
+    >();
     for (const link of Object.values(state.links)) {
       const next = incoming.get(link.targetBlockId) ?? [];
-      next.push({ sourceBlockId: link.sourceBlockId, sourceAttrKey: link.sourceAttrKey });
+      next.push({
+        sourceBlockId: link.sourceBlockId,
+        sourceAttrKey: link.sourceAttrKey,
+      });
       incoming.set(link.targetBlockId, next);
     }
 
     // Find all ancestors
     const visited = new Set<string>();
     const arrayBlocksToExpand = new Set<string>();
+    const arrayIndicesToExpand = new Set<string>();
     const stack = [targetBlockId];
+    const ARRAY_INITIAL_VISIBLE = 5;
     while (stack.length > 0) {
       const current = stack.pop();
       if (!current || visited.has(current)) continue;
       visited.add(current);
 
-      for (const { sourceBlockId, sourceAttrKey } of incoming.get(current) ?? []) {
+      for (const { sourceBlockId, sourceAttrKey } of incoming.get(current) ??
+        []) {
         if (!visited.has(sourceBlockId)) {
           stack.push(sourceBlockId);
         }
-        // Check if this link comes from an array index >= 2
+        // Check if this link comes from an array index >= visibleCount
         if (sourceAttrKey) {
           const index = Number(sourceAttrKey);
-          if (Number.isInteger(index) && index >= 2) {
+          const visibleCount =
+            arrayVisibleCount.get(sourceBlockId) ?? ARRAY_INITIAL_VISIBLE;
+          if (Number.isInteger(index) && index >= visibleCount) {
             const sourceBlock = state.blocks[sourceBlockId];
             if (sourceBlock && Array.isArray(sourceBlock.data)) {
+              // Track this specific index to expand
+              arrayIndicesToExpand.add(`${sourceBlockId}::${index}`);
               arrayBlocksToExpand.add(sourceBlockId);
             }
           }
@@ -273,17 +300,14 @@ const Workspace = () => {
     });
 
     // Expand array blocks to show hidden array items
-    if (arrayBlocksToExpand.size > 0) {
-      setExpandedArrayBlocks((prev) => {
+    if (arrayIndicesToExpand.size > 0) {
+      // Expand individual items
+      setExpandedArrayItems((prev) => {
         const next = new Set(prev);
-        let changed = false;
-        for (const blockId of arrayBlocksToExpand) {
-          if (!next.has(blockId)) {
-            next.add(blockId);
-            changed = true;
-          }
+        for (const key of arrayIndicesToExpand) {
+          next.add(key);
         }
-        return changed ? next : prev;
+        return next;
       });
     }
   };
@@ -318,7 +342,7 @@ const Workspace = () => {
     <div className="min-h-screen p-3  flex flex-col">
       <header className="mb-[0.7rem] grid grid-cols-[auto_minmax(320px,460px)] items-center gap-[0.85rem] max-[860px]:grid-cols-1">
         <a
-          className="[font-family:'Space_Grotesk','Avenir_Next','Segoe_UI',sans-serif] text-[1.15rem] font-bold tracking-[0.02em] text-[#2f2a25] no-underline"
+          className="font-['Space_Grotesk','Avenir_Next','Segoe_UI',sans-serif] text-[1.15rem] font-bold tracking-[0.02em] text-[#2f2a25] no-underline"
           href="/"
         >
           PlayJSON
@@ -438,8 +462,13 @@ const Workspace = () => {
           state={state}
           collapsedAttrLinks={collapsedAttrLinks}
           collapsedBlockIds={collapsedBlockIds}
-          expandedArrayBlocks={expandedArrayBlocks}
+          arrayVisibleCount={arrayVisibleCount}
+          expandedArrayItems={expandedArrayItems}
           selectedLinkId={selectedLinkId}
+          hasSelectedBlock={!!selectedBlock}
+          showRightPanel={showRightPanel}
+          onShowRightPanel={() => setShowRightPanel(true)}
+          onHideRightPanel={() => setShowRightPanel(false)}
           onAddObjectBlock={() => createBlock("Object Block", {})}
           onAddArrayBlock={() => createBlock("Array Block", [])}
           onFormat={onFormat}
@@ -450,29 +479,59 @@ const Workspace = () => {
             resetBoard();
             setCollapsedAttrLinks(new Set());
             setCollapsedBlockIds(new Set());
-            setExpandedArrayBlocks(new Set());
+            setArrayVisibleCount(new Map());
+            setExpandedArrayItems(new Set());
             setSelectedLinkId(null);
           }}
           onSelectBlock={selectBlock}
           onSelectLink={setSelectedLinkId}
           onToggleBlockExpand={(id) => {
-            setCollapsedBlockIds((prev) => {
+            // Find all linked attr keys for this block
+            const linkedAttrKeys: string[] = [];
+            for (const link of Object.values(state.links)) {
+              if (link.sourceBlockId === id && link.sourceAttrKey) {
+                linkedAttrKeys.push(link.sourceAttrKey);
+              }
+            }
+
+            // Check if any are collapsed
+            const anyCollapsed = linkedAttrKeys.some((key) =>
+              collapsedAttrLinks.has(`${id}::${key}`),
+            );
+
+            setCollapsedAttrLinks((prev) => {
               const next = new Set(prev);
-              if (next.has(id)) {
-                next.delete(id);
+              if (anyCollapsed) {
+                // Expand all - remove all from collapsed set
+                for (const key of linkedAttrKeys) {
+                  next.delete(`${id}::${key}`);
+                }
               } else {
-                next.add(id);
+                // Collapse all - add all to collapsed set
+                for (const key of linkedAttrKeys) {
+                  next.add(`${id}::${key}`);
+                }
               }
               return next;
             });
           }}
           onToggleArrayExpand={(blockId) => {
-            setExpandedArrayBlocks((prev) => {
+            // Show next 10 items
+            setArrayVisibleCount((prev) => {
+              const next = new Map(prev);
+              const current = next.get(blockId) ?? 5;
+              next.set(blockId, current + 10);
+              return next;
+            });
+          }}
+          onToggleArrayItemExpand={(blockId, index) => {
+            setExpandedArrayItems((prev) => {
+              const key = `${blockId}::${index}`;
               const next = new Set(prev);
-              if (next.has(blockId)) {
-                next.delete(blockId);
+              if (next.has(key)) {
+                next.delete(key);
               } else {
-                next.add(blockId);
+                next.add(key);
               }
               return next;
             });
@@ -504,11 +563,14 @@ const Workspace = () => {
           onUpdateData={setBlockData}
         />
       </div>
-      <RightPanel
-        selectedBlock={selectedBlock}
-        allBlocks={allBlocks}
-        links={Object.values(state.links)}
-      />
+      {showRightPanel && (
+        <RightPanel
+          selectedBlock={selectedBlock}
+          allBlocks={allBlocks}
+          links={Object.values(state.links)}
+          onClose={() => setShowRightPanel(false)}
+        />
+      )}
     </div>
   );
 };

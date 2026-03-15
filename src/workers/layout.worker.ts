@@ -9,12 +9,13 @@ import type {
 const scope = self as DedicatedWorkerGlobalScope;
 
 scope.onmessage = async (event: MessageEvent<LayoutWorkerRequest>) => {
-  const { requestId, state, targetBlockIds } = event.data;
+  const { requestId, state, targetBlockIds, arrayVisibleCount } = event.data;
 
   try {
     const positions = await formatPositionsLeftToRight(
       state,
       targetBlockIds ? new Set(targetBlockIds) : undefined,
+      arrayVisibleCount ? new Map(Object.entries(arrayVisibleCount)) : undefined,
     );
 
     const response: LayoutWorkerResponse = {

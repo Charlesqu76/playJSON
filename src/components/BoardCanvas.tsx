@@ -13,12 +13,10 @@ import {
 import "@xyflow/react/dist/style.css";
 import type { BoardState, JsonValue } from "../types/model";
 import { summarizeJson } from "../utils/json";
-import BlockNode, {
-  getAttrHandleId,
-  type ActiveAttrDrag,
-  type BlockNodeData,
-} from "./BlockNode";
+import BlockNode, { type BlockNodeData } from "./BlockNode";
 import { Button } from "./ui/button";
+import { ActiveAttrDrag } from "../types/node";
+import { getAttrHandleId } from "./BlockNode/util";
 
 const BackgroundView = Background as unknown as React.ComponentType;
 const ControlsView = Controls as unknown as React.ComponentType;
@@ -31,8 +29,13 @@ interface BoardCanvasProps {
   state: BoardState;
   collapsedAttrLinks: ReadonlySet<string>;
   collapsedBlockIds: ReadonlySet<string>;
-  expandedArrayBlocks: ReadonlySet<string>;
+  arrayVisibleCount: ReadonlyMap<string, number>;
+  expandedArrayItems: ReadonlySet<string>;
   selectedLinkId: string | null;
+  hasSelectedBlock: boolean;
+  showRightPanel: boolean;
+  onShowRightPanel: () => void;
+  onHideRightPanel: () => void;
   onAddObjectBlock: () => void;
   onAddArrayBlock: () => void;
   onFormat: () => Promise<void> | void;
@@ -42,6 +45,7 @@ interface BoardCanvasProps {
   onSelectLink: (id: string | null) => void;
   onToggleBlockExpand: (blockId: string) => void;
   onToggleArrayExpand: (blockId: string) => void;
+  onToggleArrayItemExpand: (blockId: string, index: number) => void;
   onToggleAttrLinkCollapse: (blockId: string, attrKey: string) => void;
   onMoveBlock: (id: string, x: number, y: number) => void;
   onRenameAttrLinkKey: (
@@ -76,8 +80,13 @@ const BoardCanvas = ({
   state,
   collapsedAttrLinks,
   collapsedBlockIds,
-  expandedArrayBlocks,
+  arrayVisibleCount,
+  expandedArrayItems,
   selectedLinkId,
+  hasSelectedBlock,
+  showRightPanel,
+  onShowRightPanel,
+  onHideRightPanel,
   onAddObjectBlock,
   onAddArrayBlock,
   onFormat,
@@ -86,6 +95,7 @@ const BoardCanvas = ({
   onSelectLink,
   onToggleBlockExpand,
   onToggleArrayExpand,
+  onToggleArrayItemExpand,
   onToggleAttrLinkCollapse,
   onMoveBlock,
   onRenameAttrLinkKey,
@@ -155,16 +165,26 @@ const BoardCanvas = ({
     if (collapsedAttrLinks.size > 0) {
       const collapsedTargets = new Set<string>();
       for (const link of allLinks) {
-        if (link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`)) {
+        if (
+          link.sourceAttrKey &&
+          collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`)
+        ) {
           collapsedTargets.add(link.targetBlockId);
         }
       }
 
       const nonCollapsedIncoming = new Map<string, number>();
       for (const link of allLinks) {
-        const isCollapsed = link.sourceAttrKey && collapsedAttrLinks.has(`${link.sourceBlockId}::${link.sourceAttrKey}`);
+        const isCollapsed =
+          link.sourceAttrKey &&
+          collapsedAttrLinks.has(
+            `${link.sourceBlockId}::${link.sourceAttrKey}`,
+          );
         if (!isCollapsed) {
-          nonCollapsedIncoming.set(link.targetBlockId, (nonCollapsedIncoming.get(link.targetBlockId) ?? 0) + 1);
+          nonCollapsedIncoming.set(
+            link.targetBlockId,
+            (nonCollapsedIncoming.get(link.targetBlockId) ?? 0) + 1,
+          );
         }
       }
 
@@ -177,25 +197,37 @@ const BoardCanvas = ({
       }
     }
 
-    // 3. Hide array-linked blocks with index >= 2 (only show first 2)
-    // Skip if the array block has been explicitly expanded
+    // 3. Hide array-linked blocks based on visible count (default 5)
+    const ARRAY_INITIAL_VISIBLE = 5;
     for (const link of allLinks) {
       if (!link.sourceAttrKey) continue;
       const index = Number(link.sourceAttrKey);
-      if (Number.isInteger(index) && index >= 2) {
-        // Check if source block is an array and not expanded
+      const visibleCount = arrayVisibleCount.get(link.sourceBlockId) ?? ARRAY_INITIAL_VISIBLE;
+      if (Number.isInteger(index) && index >= visibleCount) {
+        // Check if source block is an array
         const sourceBlock = state.blocks[link.sourceBlockId];
-        if (sourceBlock && Array.isArray(sourceBlock.data) && !expandedArrayBlocks.has(link.sourceBlockId)) {
-          if (!hidden.has(link.targetBlockId)) {
-            hidden.add(link.targetBlockId);
-            hideDescendants(link.targetBlockId);
+        if (sourceBlock && Array.isArray(sourceBlock.data)) {
+          // Check if this specific array item is individually expanded
+          const itemKey = `${link.sourceBlockId}::${index}`;
+          if (!expandedArrayItems.has(itemKey)) {
+            if (!hidden.has(link.targetBlockId)) {
+              hidden.add(link.targetBlockId);
+              hideDescendants(link.targetBlockId);
+            }
           }
         }
       }
     }
 
     return hidden;
-  }, [allLinks, collapsedAttrLinks, collapsedBlockIds, expandedArrayBlocks, state.blocks]);
+  }, [
+    allLinks,
+    collapsedAttrLinks,
+    collapsedBlockIds,
+    arrayVisibleCount,
+    expandedArrayItems,
+    state.blocks,
+  ]);
 
   const visibleBlockIds = useMemo(
     () => Object.keys(state.blocks).filter((id) => !hiddenBlockIds.has(id)),
@@ -218,21 +250,33 @@ const BoardCanvas = ({
     return visibleBlockIds.map((id) => {
       const block = state.blocks[id];
 
-      const hasLinkedChildren = (outgoingCount.get(block.id) ?? 0) > 0;
-
-      // Check if this array block has hidden items (linked items with index >= 2)
-      let hasHiddenArrayItems = false;
-      let hiddenArrayItemCount = 0;
-      if (Array.isArray(block.data)) {
-        for (let i = 2; i < block.data.length; i++) {
-          const link = attrLinkByKey.get(`${block.id}::${i}`);
-          if (link) {
-            hasHiddenArrayItems = true;
-            hiddenArrayItemCount++;
-          }
+      // Get all linked items for this block
+      const linkedAttrKeys: string[] = [];
+      if (block.data && typeof block.data === "object") {
+        if (Array.isArray(block.data)) {
+          block.data.forEach((_, index) => {
+            const link = attrLinkByKey.get(`${block.id}::${index}`);
+            if (link) linkedAttrKeys.push(String(index));
+          });
+        } else {
+          Object.keys(block.data).forEach((key) => {
+            const link = attrLinkByKey.get(`${block.id}::${key}`);
+            if (link) linkedAttrKeys.push(key);
+          });
         }
       }
-      const isExpandedArray = expandedArrayBlocks.has(block.id);
+
+      const hasLinkedChildren = linkedAttrKeys.length > 0;
+
+      // Check if ANY linked item is collapsed
+      const anyCollapsed = linkedAttrKeys.some((key) =>
+        collapsedAttrLinks.has(`${block.id}::${key}`),
+      );
+      const isExpanded = !anyCollapsed;
+
+      // Get visible count for this array block
+      const ARRAY_INITIAL_VISIBLE = 5;
+      const visibleCount = arrayVisibleCount.get(block.id) ?? ARRAY_INITIAL_VISIBLE;
 
       return {
         id: block.id,
@@ -241,11 +285,8 @@ const BoardCanvas = ({
         data: {
           blockId: block.id,
           isSelected: state.selectedBlockId === block.id,
-          isExpanded: !collapsedBlockIds.has(block.id),
+          isExpanded,
           hasLinkedChildren,
-          hasHiddenArrayItems,
-          hiddenArrayItemCount,
-          isExpandedArray,
           title: block.title,
           summary: summarizeJson(block.data),
           blockKind: Array.isArray(block.data)
@@ -263,7 +304,9 @@ const BoardCanvas = ({
                     link && state.blocks[link.targetBlockId]
                       ? state.blocks[link.targetBlockId].title
                       : undefined;
-                  const isCollapsed = link ? collapsedAttrLinks.has(`${block.id}::${key}`) : false;
+                  const isCollapsed = link
+                    ? collapsedAttrLinks.has(`${block.id}::${key}`)
+                    : false;
                   return {
                     key,
                     valueText: toInlineValue(value),
@@ -281,12 +324,23 @@ const BoardCanvas = ({
                   link && state.blocks[link.targetBlockId]
                     ? state.blocks[link.targetBlockId].title
                     : undefined;
-                const isCollapsed = link ? collapsedAttrLinks.has(`${block.id}::${key}`) : false;
+                // For array items >= visibleCount, check individual expansion state
+                const isIndividuallyExpanded = expandedArrayItems.has(
+                  `${block.id}::${index}`,
+                );
+                const isHiddenByArrayTruncation =
+                  index >= visibleCount && !isIndividuallyExpanded;
+                const isCollapsed = isHiddenByArrayTruncation
+                  ? true
+                  : link
+                    ? collapsedAttrLinks.has(`${block.id}::${key}`)
+                    : false;
                 return {
                   key,
                   valueText: toInlineValue(value),
                   isLinked: Boolean(link),
                   isCollapsed,
+                  isHiddenByArrayTruncation,
                   targetTitle,
                 };
               })
@@ -343,6 +397,7 @@ const BoardCanvas = ({
           onRemoveAttrLink,
           onToggleBlockExpand,
           onToggleArrayExpand,
+          onToggleArrayItemExpand,
           onToggleAttrLinkCollapse,
         } satisfies BlockNodeData,
         selected: state.selectedBlockId === block.id,
@@ -352,7 +407,8 @@ const BoardCanvas = ({
     allLinks,
     collapsedAttrLinks,
     collapsedBlockIds,
-    expandedArrayBlocks,
+    arrayVisibleCount,
+    expandedArrayItems,
     onCreateAttrLink,
     onMoveAttrToBlock,
     getActiveAttrDrag,
@@ -362,6 +418,7 @@ const BoardCanvas = ({
     onStartAttrDrag,
     onToggleBlockExpand,
     onToggleArrayExpand,
+    onToggleArrayItemExpand,
     onToggleAttrLinkCollapse,
     onUpdateData,
     state.blocks,
@@ -430,7 +487,7 @@ const BoardCanvas = ({
 
   return (
     <div className="relative h-full overflow-hidden rounded-xl border border-[#d9d0c4] bg-white">
-      <div className="absolute right-[0.6rem] top-[0.6rem] z-[6] flex flex-wrap justify-end gap-[0.45rem]">
+      <div className="absolute right-[0.6rem] top-[0.6rem] z-6 flex flex-wrap justify-end gap-[0.45rem]">
         {/* <Button
           className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
           size="sm"
@@ -440,6 +497,26 @@ const BoardCanvas = ({
           Export
         </Button> */}
 
+        {showRightPanel ? (
+          <Button
+            className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+            size="sm"
+            variant="secondary"
+            onClick={onHideRightPanel}
+          >
+            Hide Panel
+          </Button>
+        ) : (
+          <Button
+            className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
+            size="sm"
+            variant="secondary"
+            onClick={onShowRightPanel}
+            disabled={!hasSelectedBlock}
+          >
+            Show Panel
+          </Button>
+        )}
         <Button
           className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
           size="sm"

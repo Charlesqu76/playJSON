@@ -65,6 +65,7 @@ const requestLayoutFromWorker = (
   worker: Worker,
   state: BoardState,
   targetBlockIds?: ReadonlySet<string>,
+  arrayVisibleCount?: ReadonlyMap<string, number>,
 ): Promise<Record<string, { x: number; y: number }>> => {
   const requestId = `layout-${Date.now()}-${requestCount}`;
   requestCount += 1;
@@ -76,6 +77,9 @@ const requestLayoutFromWorker = (
       requestId,
       state,
       targetBlockIds: targetBlockIds ? [...targetBlockIds] : undefined,
+      arrayVisibleCount: arrayVisibleCount
+        ? Object.fromEntries(arrayVisibleCount)
+        : undefined,
     };
 
     try {
@@ -94,15 +98,16 @@ const requestLayoutFromWorker = (
 export const formatPositionsLeftToRightInWorker = async (
   state: BoardState,
   targetBlockIds?: ReadonlySet<string>,
+  arrayVisibleCount?: ReadonlyMap<string, number>,
 ): Promise<Record<string, { x: number; y: number }>> => {
   const worker = getWorker();
   if (!worker) {
-    return formatPositionsLeftToRight(state, targetBlockIds);
+    return formatPositionsLeftToRight(state, targetBlockIds, arrayVisibleCount);
   }
 
   try {
-    return await requestLayoutFromWorker(worker, state, targetBlockIds);
+    return await requestLayoutFromWorker(worker, state, targetBlockIds, arrayVisibleCount);
   } catch {
-    return formatPositionsLeftToRight(state, targetBlockIds);
+    return formatPositionsLeftToRight(state, targetBlockIds, arrayVisibleCount);
   }
 };
