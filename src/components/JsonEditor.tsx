@@ -1,9 +1,39 @@
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import type { BlockLink, JsonBlock, JsonValue } from "../types/model";
 import JsonView from "react18-json-view";
 import { Button } from "./ui/button";
 import { convertJsonToJsonSchema, convertJsonToTypeScriptType } from "../utils/json";
 import "react18-json-view/src/style.css";
+
+interface CopyButtonProps {
+  text: string;
+}
+
+const CopyButton = ({ text }: CopyButtonProps) => {
+  const [copied, setCopied] = useState(false);
+
+  const handleCopy = useCallback(async () => {
+    try {
+      await navigator.clipboard.writeText(text);
+      setCopied(true);
+      setTimeout(() => setCopied(false), 1500);
+    } catch {
+      console.error("Failed to copy");
+    }
+  }, [text]);
+
+  return (
+    <Button
+      size="sm"
+      variant="ghost"
+      onClick={handleCopy}
+      className="h-6 px-2 text-xs"
+      type="button"
+    >
+      {copied ? "Copied!" : "Copy"}
+    </Button>
+  );
+};
 
 interface JsonEditorProps {
   block: JsonBlock | null;
@@ -222,9 +252,14 @@ const JsonEditor = ({ block, allBlocks, links }: JsonEditorProps) => {
           {typeError}
         </div>
         ) : (
-        <pre className="max-h-[55vh] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem] text-[0.83rem] leading-[1.4] text-[#2f2a25]">
-          {typeText}
-        </pre>
+        <div className="relative">
+          <div className="absolute right-1 top-1 z-10">
+            <CopyButton text={typeText} />
+          </div>
+          <pre className="max-h-[55vh] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem] text-[0.83rem] leading-[1.4] text-[#2f2a25]">
+            {typeText}
+          </pre>
+        </div>
         )
       ) : schemaStatus === "loading" ? (
         <div className="text-[0.9rem] text-[#6f655d]">Generating schema...</div>
@@ -233,9 +268,14 @@ const JsonEditor = ({ block, allBlocks, links }: JsonEditorProps) => {
           {schemaError}
         </div>
       ) : (
-        <pre className="max-h-[55vh] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem] text-[0.83rem] leading-[1.4] text-[#2f2a25]">
-          {schemaText}
-        </pre>
+        <div className="relative">
+          <div className="absolute right-1 top-1 z-10">
+            <CopyButton text={schemaText} />
+          </div>
+          <pre className="max-h-[55vh] overflow-auto rounded-lg border border-[#efe7dc] bg-[#fffdf9] p-[0.6rem] text-[0.83rem] leading-[1.4] text-[#2f2a25]">
+            {schemaText}
+          </pre>
+        </div>
       )}
     </div>
   );
