@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Handle, Position, type NodeProps } from "@xyflow/react";
+import { Eye, EyeOff, Settings } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ActiveAttrDrag, AttrDragMode } from "../../types/node";
 import {
@@ -12,6 +13,7 @@ import ItemRow from "./ItemRow";
 export interface NestedValue {
   key: string;
   valueText: string;
+  rawValue: unknown;
   isLinked: boolean;
   isCollapsed: boolean;
   isHiddenByArrayTruncation?: boolean;
@@ -52,6 +54,7 @@ export interface BlockNodeData {
   onToggleArrayExpand: (blockId: string) => void;
   onToggleArrayItemExpand: (blockId: string, index: number) => void;
   onToggleAttrLinkCollapse: (blockId: string, attrKey: string) => void;
+  onShowRightPanel: () => void;
 }
 
 const parseAttrDragPayload = (raw: string): ActiveAttrDrag | null => {
@@ -128,7 +131,7 @@ const BlockNode = ({ data }: NodeProps) => {
         nodeData.blockKind === "array" && "border-[#9fc3de] bg-[#edf7ff]",
         nodeData.blockKind === "other" && "border-[#c6c6c6] bg-[#f7f7f7]",
         nodeData.isSelected &&
-          "border-[#2563eb] bg-[#f7fbff] shadow-[0_0_0_2px_rgba(37,99,235,0.2)]",
+          "border-[#2563eb] shadow-[0_0_0_2px_rgba(37,99,235,0.2)]",
       )}
       onDragOver={(event) => {
         event.preventDefault();
@@ -184,17 +187,31 @@ const BlockNode = ({ data }: NodeProps) => {
         >
           {nodeData.title}
         </div>
-        {nodeData.hasLinkedChildren ? (
+        <div className="flex min-w-0 shrink-0 items-center gap-1">
+          {nodeData.hasLinkedChildren && (
+            <button
+              className="nodrag nopan shrink-0 rounded-md border border-[#d9d0c4] bg-[#fffefb] p-1 hover:bg-[#f3ede3]"
+              onClick={() => {
+                nodeData.onToggleBlockExpand(nodeData.blockId);
+                setEditingAttr(null);
+              }}
+              title={nodeData.isExpanded ? "Hide all" : "Show all"}
+            >
+              {nodeData.isExpanded ? (
+                <EyeOff className="h-3.5 w-3.5 text-[#6b6b6b]" />
+              ) : (
+                <Eye className="h-3.5 w-3.5 text-[#6b6b6b]" />
+              )}
+            </button>
+          )}
           <button
-            className="nodrag nopan shrink-0 rounded-md border border-[#d9d0c4] bg-[#fffefb] px-[0.4rem] py-[0.18rem] text-[0.72rem] hover:bg-[#f3ede3]"
-            onClick={() => {
-              nodeData.onToggleBlockExpand(nodeData.blockId);
-              setEditingAttr(null);
-            }}
+            className="nodrag nopan shrink-0 rounded-md border border-[#d9d0c4] bg-[#fffefb] p-1 hover:bg-[#f3ede3]"
+            title="Show details"
+            onClick={nodeData.onShowRightPanel}
           >
-            {nodeData.isExpanded ? "Hide all" : "Show all"}
+            <Settings className="h-3.5 w-3.5 text-[#6b6b6b]" />
           </button>
-        ) : null}
+        </div>
       </div>
       <div
         className="mb-[0.45rem] mt-[0.2rem] whitespace-normal text-[0.85rem] text-[#61564f]"

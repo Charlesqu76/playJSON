@@ -18,25 +18,44 @@ pnpm dev
 
 ## Features
 
-**Canvas**
-- Create JSON blocks by pasting any valid JSON (objects or arrays)
-- Drag, resize, and arrange blocks freely on the board
-- Link block attributes to other blocks to model `$ref`-style references
-- Auto-layout powered by a weighted blend of D3-hierarchy, Dagre, and ELK
+### Canvas
+- [x] Create JSON blocks by pasting any valid JSON (objects or arrays)
+- [x] Support JSON with comments (JSONC format: `//` and `/* */`)
+- [x] Drag, resize, and arrange blocks freely on the board
+- [x] Link block attributes to other blocks to model `$ref`-style references
+- [x] Auto-layout powered by a weighted blend of D3-hierarchy and ELK
+- [x] Duplicate blocks with all connected subgraph (Ctrl+C / Ctrl+V)
+- [x] Delete blocks and associated links
 
-**Editing**
-- Tree editor for structured, field-by-field updates
-- Raw JSON editor for direct text editing
-- Resolved JSON preview that follows links and expands references
+### Editing
+- [x] Tree editor for structured, field-by-field updates
+- [x] Raw JSON editor for direct text editing
+- [x] Resolved JSON preview that follows links and expands references
+- [x] Generate TypeScript types from JSON
+- [x] Generate JSON Schema from JSON
+- [x] Rename object keys
+- [x] Add/delete object attributes
+- [x] Add/delete array items
+- [x] Edit primitive values (string, number, boolean, null)
+- [x] Collapse/expand nested objects and arrays
 
-**Search & Navigation**
-- Search blocks by title, key, value, or JSONPath-like query
-- Tab through blocks in alphabetical order
-- Keyboard shortcuts for delete, duplicate, and navigation
+### Linking
+- [x] Create links by dragging from attribute rows
+- [x] Move attributes between blocks via drag
+- [x] Automatic cycle detection and prevention
+- [x] Delete links with automatic cleanup
+- [x] Rename linked attribute keys
 
-**Persistence**
-- Board state auto-saved to `localStorage`
-- Export board as JSON and re-import it later
+### Search & Navigation
+- [x] Search blocks by title, key, value, or JSONPath-like query
+- [x] Tab through blocks in alphabetical order
+- [x] Keyboard shortcuts for delete, duplicate, and navigation
+- [x] Select blocks and links
+
+### Persistence
+- [x] Board state auto-saved to `localStorage`
+- [x] Export board as JSON and re-import it later
+- [x] Copy resolved JSON to clipboard
 
 ## Tech Stack
 
@@ -48,63 +67,5 @@ pnpm dev
 - **D3-hierarchy / Dagre / ELK** — auto-layout algorithms
 - **Tailwind CSS v4** + shadcn-style primitives
 
-## Routes
 
-| Route | Description |
-|---|---|
-| `/` | Landing page |
-| `/workspace` | Main editor |
 
-## Project Structure
-
-```
-src/
-  components/
-    ui/                   # Button, Card, Input, Textarea, Separator
-    BlockNode.tsx         # React Flow custom node
-    BoardCanvas.tsx       # Canvas rendering and interactions
-    LeftPanel.tsx         # Create / search / import / export
-    MiddlePanel.tsx       # Canvas + layout controls
-    RightPanel.tsx        # Block editor panel
-    TreeEditor.tsx        # Hierarchical JSON editor
-    JsonEditor.tsx        # Resolved + raw JSON preview
-  state/
-    board.tsx             # Zustand store and actions
-    storage.ts            # localStorage + import/export
-  utils/
-    json.ts               # JSON edit operations
-    json-blocks.ts        # Block-level JSON helpers
-    layout-algorithms.ts  # D3 / Dagre / ELK layout
-    search.ts             # Search and JSONPath matching
-    block-utils.ts        # Height estimation, sorting
-  hooks/
-    useKeyboardShortcuts.ts
-  types/
-    model.ts              # JsonBlock, BlockLink, BoardState, Zod schemas
-  routes/
-    __root.tsx
-    index.tsx
-    workspace.tsx
-```
-
-## Data Model
-
-```ts
-interface JsonBlock {
-  id: string;
-  title: string;
-  data: JsonValue;       // any JSON value
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface BlockLink {
-  id: string;
-  sourceBlockId: string;
-  targetBlockId: string;
-  sourceAttrKey?: string; // which attribute on the source points to target
-  label?: string;
-}
-```
-
-Board state (blocks + positions + links) is validated against a versioned Zod schema on import (`version: 1`).

@@ -310,6 +310,7 @@ const BoardCanvas = ({
                   return {
                     key,
                     valueText: toInlineValue(value),
+                    rawValue: value,
                     isLinked: Boolean(link),
                     isCollapsed,
                     targetTitle,
@@ -338,6 +339,7 @@ const BoardCanvas = ({
                 return {
                   key,
                   valueText: toInlineValue(value),
+                  rawValue: value,
                   isLinked: Boolean(link),
                   isCollapsed,
                   isHiddenByArrayTruncation,
@@ -399,6 +401,7 @@ const BoardCanvas = ({
           onToggleArrayExpand,
           onToggleArrayItemExpand,
           onToggleAttrLinkCollapse,
+          onShowRightPanel,
         } satisfies BlockNodeData,
         selected: state.selectedBlockId === block.id,
       };
@@ -420,6 +423,7 @@ const BoardCanvas = ({
     onToggleArrayExpand,
     onToggleArrayItemExpand,
     onToggleAttrLinkCollapse,
+    onShowRightPanel,
     onUpdateData,
     state.blocks,
     state.positions,
@@ -497,26 +501,6 @@ const BoardCanvas = ({
           Export
         </Button> */}
 
-        {showRightPanel ? (
-          <Button
-            className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
-            size="sm"
-            variant="secondary"
-            onClick={onHideRightPanel}
-          >
-            Hide Panel
-          </Button>
-        ) : (
-          <Button
-            className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
-            size="sm"
-            variant="secondary"
-            onClick={onShowRightPanel}
-            disabled={!hasSelectedBlock}
-          >
-            Show Panel
-          </Button>
-        )}
         <Button
           className="shadow-[0_1px_3px_rgba(15,23,42,0.16)]"
           size="sm"

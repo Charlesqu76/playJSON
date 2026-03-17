@@ -11,6 +11,7 @@ import {
   renameObjectKey,
   setByPath,
 } from '../utils/json';
+import { getCommentsBefore, type CommentInfo } from '../utils/jsonc';
 
 interface TreeEditorProps {
   value: JsonValue;
@@ -44,6 +45,29 @@ const treeButtonClass =
 const treeDangerButtonClass =
   'inline-flex items-center justify-center rounded-[10px] border border-transparent bg-[#be123c] px-[0.7rem] py-[0.35rem] text-[0.85rem] font-semibold text-white transition-colors hover:bg-[#9f1239]';
 
+const CommentRow = ({ comments }: { comments: CommentInfo[] }) => {
+  if (comments.length === 0) return null;
+
+  return (
+    <div className="flex flex-col gap-[0.15rem] py-[0.2rem]">
+      {comments.map((comment, index) => (
+        <div
+          key={index}
+          className="flex items-start gap-[0.3rem] text-[0.85rem] italic text-[#8a7f75]"
+        >
+          <span className="select-none opacity-60">
+            {comment.type === 'line' ? '//' : '/*'}
+          </span>
+          <span>{comment.text}</span>
+          <span className="select-none opacity-60">
+            {comment.type === 'block' ? '*/' : null}
+          </span>
+        </div>
+      ))}
+    </div>
+  );
+};
+
 const TreeNode = ({
   value,
   path,
@@ -72,26 +96,30 @@ const TreeNode = ({
         </div>
 
         <div className="mt-[0.4rem] grid gap-[0.35rem]">
-          {Object.entries(value).map(([key, child]) => (
-            <div key={key} className="grid gap-[0.35rem]">
-              <input
-                className={treeInputClass}
-                value={key}
-                onChange={(event) => onRename(path, key, event.target.value)}
-              />
-              <TreeNode
-                value={child}
-                path={[...path, key]}
-                label={key}
-                onPrimitiveChange={onPrimitiveChange}
-                onDelete={onDelete}
-                onRename={onRename}
-                onAddObjectKey={onAddObjectKey}
-                onAppendArrayItem={onAppendArrayItem}
-                allowDelete
-              />
-            </div>
-          ))}
+          {Object.entries(value).map(([key, child]) => {
+            const comments = getCommentsBefore(value, key);
+            return (
+              <div key={key} className="grid gap-[0.35rem]">
+                {comments.length > 0 ? <CommentRow comments={comments} /> : null}
+                <input
+                  className={treeInputClass}
+                  value={key}
+                  onChange={(event) => onRename(path, key, event.target.value)}
+                />
+                <TreeNode
+                  value={child}
+                  path={[...path, key]}
+                  label={key}
+                  onPrimitiveChange={onPrimitiveChange}
+                  onDelete={onDelete}
+                  onRename={onRename}
+                  onAddObjectKey={onAddObjectKey}
+                  onAppendArrayItem={onAppendArrayItem}
+                  allowDelete
+                />
+              </div>
+            );
+          })}
 
           <div className="grid grid-cols-[1fr_1fr_auto] gap-[0.35rem]">
             <input

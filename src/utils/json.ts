@@ -9,6 +9,7 @@ import {
   type JsonObject,
   type JsonValue,
 } from "../types/model";
+import { parse as parseJsonc } from "comment-json";
 
 export interface JsonParseError {
   message: string;
@@ -31,7 +32,8 @@ export const parseJsonText = (
   text: string,
 ): { value?: JsonValue; error?: JsonParseError } => {
   try {
-    const parsed = JSON.parse(text) as unknown;
+    // Use comment-json to support // and /* */ comments
+    const parsed = parseJsonc(text) as unknown;
     const checked = jsonValueSchema.safeParse(parsed);
     if (!checked.success) {
       return {

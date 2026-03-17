@@ -2,7 +2,7 @@ import { memo } from "react";
 import { AttrDragMode } from "../../types/node";
 import { NestedValue } from ".";
 import { cn } from "../../lib/utils";
-import { ATTR_MOVE_MIME, twoLineClampStyle } from "./const";
+import { ATTR_MOVE_MIME, twoLineClampStyle, getValueColor } from "./const";
 import CollapseButton from "./CollapseButton";
 import LinkButton from "./LinkButton";
 import { Handle, Position } from "@xyflow/react";
@@ -113,7 +113,7 @@ const ItemRow = memo(function ItemRow({
           <span className="shrink-0">: </span>
           <span
             className="min-w-0 flex-1 cursor-pointer whitespace-normal rounded-xs hover:bg-[#f4f8ff]"
-            style={twoLineClampStyle}
+            style={{ ...twoLineClampStyle, color: getValueColor(item.rawValue) }}
             onDoubleClick={() => onStartEdit("value")}
           >
             {editingAttr?.key === item.key && editingAttr.field === "value" ? (
@@ -141,7 +141,7 @@ const ItemRow = memo(function ItemRow({
       ) : (
         <span
           className="min-w-0 flex-1 whitespace-normal"
-          style={twoLineClampStyle}
+          style={{ ...twoLineClampStyle, color: getValueColor(item.rawValue) }}
         >
           {item.valueText}
         </span>
