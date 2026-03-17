@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Minus, Plus } from "lucide-react";
 import { cn } from "../../lib/utils";
 
 const CollapseButton = memo(function CollapseButton({
@@ -27,28 +28,11 @@ const CollapseButton = memo(function CollapseButton({
       title={isCollapsed ? "Show linked block" : "Hide linked block"}
       aria-label={isCollapsed ? "Show linked block" : "Hide linked block"}
     >
-      <svg
-        className="h-3 w-3"
-        viewBox="0 0 16 16"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-      >
-        {isCollapsed ? (
-          <path
-            d="M8 3v10M3 8h10"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        ) : (
-          <path
-            d="M4 8h8"
-            stroke="currentColor"
-            strokeWidth="1.5"
-            strokeLinecap="round"
-          />
-        )}
-      </svg>
+      {isCollapsed ? (
+        <Plus className="h-3 w-3" strokeWidth={2.5} />
+      ) : (
+        <Minus className="h-3 w-3" strokeWidth={2.5} />
+      )}
     </button>
   );
 });

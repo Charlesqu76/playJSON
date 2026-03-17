@@ -3,12 +3,9 @@ import { Handle, Position, type NodeProps } from "@xyflow/react";
 import { Eye, EyeOff, Settings } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ActiveAttrDrag, AttrDragMode } from "../../types/node";
-import {
-  ATTR_LINK_MIME,
-  ATTR_MOVE_MIME,
-  twoLineClampStyle,
-} from "./const";
+import { ATTR_LINK_MIME, ATTR_MOVE_MIME, twoLineClampStyle } from "./const";
 import ItemRow from "./ItemRow";
+import { parseAttrDragPayload } from "./util";
 
 export interface NestedValue {
   key: string;
@@ -57,30 +54,6 @@ export interface BlockNodeData {
   onShowRightPanel: () => void;
 }
 
-const parseAttrDragPayload = (raw: string): ActiveAttrDrag | null => {
-  try {
-    const parsed = JSON.parse(raw) as {
-      mode?: unknown;
-      sourceBlockId?: unknown;
-      sourceAttrKey?: unknown;
-    };
-    if (
-      typeof parsed.sourceBlockId !== "string" ||
-      typeof parsed.sourceAttrKey !== "string"
-    ) {
-      return null;
-    }
-    const mode: AttrDragMode = parsed.mode === "move" ? "move" : "link";
-    return {
-      mode,
-      sourceBlockId: parsed.sourceBlockId,
-      sourceAttrKey: parsed.sourceAttrKey,
-    };
-  } catch {
-    return null;
-  }
-};
-
 const BlockNode = ({ data }: NodeProps) => {
   const nodeData = data as unknown as BlockNodeData;
   const [error, setError] = useState<string | null>(null);
@@ -119,19 +92,21 @@ const BlockNode = ({ data }: NodeProps) => {
   ).filter((item) => !item.isHiddenByArrayTruncation);
 
   // Count hidden items for display
-  const hiddenCount = nodeData.blockKind === "array"
-    ? nodeData.arrayValues.filter((item) => item.isHiddenByArrayTruncation).length
-    : 0;
+  const hiddenCount =
+    nodeData.blockKind === "array"
+      ? nodeData.arrayValues.filter((item) => item.isHiddenByArrayTruncation)
+          .length
+      : 0;
 
   return (
+    // <Handle type="target" position={Position.Left} id="block-target">
     <div
       className={cn(
         "max-w-[320px] min-w-42.5 overflow-hidden rounded-xl border p-2 transition-[box-shadow,border-color,background] duration-100",
         nodeData.blockKind === "object" && "border-[#d7b691] bg-[#fff8ee]",
         nodeData.blockKind === "array" && "border-[#9fc3de] bg-[#edf7ff]",
         nodeData.blockKind === "other" && "border-[#c6c6c6] bg-[#f7f7f7]",
-        nodeData.isSelected &&
-          "border-[#2563eb] shadow-[0_0_0_2px_rgba(37,99,235,0.2)]",
+        nodeData.isSelected && "border-4",
       )}
       onDragOver={(event) => {
         event.preventDefault();
@@ -178,7 +153,7 @@ const BlockNode = ({ data }: NodeProps) => {
         type="target"
         position={Position.Left}
         id="block-target"
-        className="pointer-events-none -left-1.75! h-2.5! w-2.5! border-2! border-[#2563eb]! bg-white!"
+        className="pointer-events-none h-2.5! w-2.5! border-2! border-[#2563eb]! bg-white!"
       />
       <div className="flex min-w-0 items-center justify-between gap-[0.45rem]">
         <div
@@ -274,15 +249,14 @@ const BlockNode = ({ data }: NodeProps) => {
               />
             );
           })}
-          {nodeData.blockKind === "array" &&
-            hiddenCount > 0 && (
-              <button
-                className="nodrag nopan w-full border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] text-left font-mono text-[0.72rem] text-[#2563eb] hover:bg-[#f4f8ff]"
-                onClick={() => nodeData.onToggleArrayExpand(nodeData.blockId)}
-              >
-                + Show next 10 items
-              </button>
-            )}
+          {nodeData.blockKind === "array" && hiddenCount > 0 && (
+            <button
+              className="nodrag nopan w-full border-b border-[#f1ebe1] px-[0.35rem] py-[0.2rem] text-left font-mono text-[0.72rem] text-[#2563eb] hover:bg-[#f4f8ff]"
+              onClick={() => nodeData.onToggleArrayExpand(nodeData.blockId)}
+            >
+              + Show next 10 items
+            </button>
+          )}
         </div>
       ) : null}
 
@@ -292,6 +266,7 @@ const BlockNode = ({ data }: NodeProps) => {
         </div>
       ) : null}
     </div>
+    // </Handle>
   );
 };
 

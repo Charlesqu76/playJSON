@@ -1,11 +1,18 @@
 import { memo } from "react";
+import { Link } from "lucide-react";
 import { cn } from "../../lib/utils";
 import { ATTR_LINK_MIME } from "./const";
+import { Handle, Position } from "@xyflow/react";
 
 const toLinkPayload = (blockId: string, attrKey: string): string =>
-  JSON.stringify({ mode: "link", sourceBlockId: blockId, sourceAttrKey: attrKey });
+  JSON.stringify({
+    mode: "link",
+    sourceBlockId: blockId,
+    sourceAttrKey: attrKey,
+  });
 
 const LinkButton = memo(function LinkButton({
+  id,
   isLinked,
   targetTitle,
   blockId,
@@ -14,6 +21,7 @@ const LinkButton = memo(function LinkButton({
   onLinkDragEnd,
   onUnlink,
 }: {
+  id: string;
   isLinked: boolean;
   targetTitle?: string;
   blockId: string;
@@ -23,64 +31,56 @@ const LinkButton = memo(function LinkButton({
   onUnlink: () => void;
 }) {
   return (
-    <span
-      data-link-button
-      className={cn(
-        "nodrag nopan ml-auto inline-flex h-4 w-4 shrink-0 cursor-grab items-center justify-center rounded-full bg-[rgba(37,99,235,0.12)] text-[#2563eb]",
-        !isLinked && "bg-[rgba(138,127,118,0.15)] text-[#8a7f76]",
-      )}
-      title={
-        isLinked
-          ? `Linked to ${targetTitle ?? "target"} (drag to relink, click to unlink)`
-          : "Drag to another block to create link"
-      }
-      role="button"
-      aria-label={
-        isLinked
-          ? "Linked value. Click to unlink or drag to relink."
-          : "Drag to link value to another block."
-      }
-      draggable
-      onPointerDown={(event) => {
-        event.stopPropagation();
-      }}
-      onMouseDown={(event) => {
-        event.stopPropagation();
-      }}
-      onDragStart={(event) => {
-        event.stopPropagation();
-        onLinkDragStart();
-        event.dataTransfer.effectAllowed = "move";
-        const payload = toLinkPayload(blockId, attrKey);
-        event.dataTransfer.setData(ATTR_LINK_MIME, payload);
-        event.dataTransfer.setData("text/plain", payload);
-      }}
-      onDragEnd={() => {
-        onLinkDragEnd();
-      }}
-      onClick={(event) => {
-        event.stopPropagation();
-        if (isLinked) {
-          onUnlink();
-        }
+    <Handle
+      type="source"
+      position={Position.Right}
+      id={id}
+      className="h-4! w-4! border-none! z-10 relative! "
+      style={{
+        background: "none",
+        transform: "translate(0%, 0%)",
       }}
     >
-      <svg
-        className="h-3 w-3"
-        viewBox="0 0 24 24"
-        fill="none"
-        xmlns="http://www.w3.org/2000/svg"
-        aria-hidden="true"
+      <span
+        data-link-button
+        className={cn(
+          " transform pointer-events-none",
+          "block w-4 h-4 p-1 cursor-grab rounded-full bg-[rgba(37,99,235,0.12)] text-[#2563eb]",
+          !isLinked && "bg-[rgba(138,127,118,0.15)] text-[#8a7f76]",
+        )}
+        aria-label={
+          isLinked
+            ? "Linked value. Click to unlink or drag to relink."
+            : "Drag to link value to another block."
+        }
+        draggable
+        onPointerDown={(event) => {
+          event.stopPropagation();
+        }}
+        onMouseDown={(event) => {
+          event.stopPropagation();
+        }}
+        onDragStart={(event) => {
+          event.stopPropagation();
+          onLinkDragStart();
+          event.dataTransfer.effectAllowed = "move";
+          const payload = toLinkPayload(blockId, attrKey);
+          event.dataTransfer.setData(ATTR_LINK_MIME, payload);
+          event.dataTransfer.setData("text/plain", payload);
+        }}
+        onDragEnd={() => {
+          onLinkDragEnd();
+        }}
+        onClick={(event) => {
+          event.stopPropagation();
+          if (isLinked) {
+            onUnlink();
+          }
+        }}
       >
-        <path
-          d="M10.59 13.41a1 1 0 0 1 0-1.41l2.83-2.83a3 3 0 1 1 4.24 4.24l-1.41 1.41M13.41 10.59a1 1 0 0 1 0 1.41l-2.83 2.83a3 3 0 1 1-4.24-4.24l1.41-1.41"
-          stroke="currentColor"
-          strokeWidth="1.8"
-          strokeLinecap="round"
-          strokeLinejoin="round"
-        />
-      </svg>
-    </span>
+        <Link className="w-full h-full" strokeWidth={2} aria-hidden="true" />
+      </span>
+    </Handle>
   );
 });
 

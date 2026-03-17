@@ -7,6 +7,7 @@ import CollapseButton from "./CollapseButton";
 import LinkButton from "./LinkButton";
 import { Handle, Position } from "@xyflow/react";
 import { getAttrHandleId } from "./util";
+import { Link } from "lucide-react";
 const toDragPayload = (
   mode: AttrDragMode,
   sourceBlockId: string,
@@ -113,7 +114,10 @@ const ItemRow = memo(function ItemRow({
           <span className="shrink-0">: </span>
           <span
             className="min-w-0 flex-1 cursor-pointer whitespace-normal rounded-xs hover:bg-[#f4f8ff]"
-            style={{ ...twoLineClampStyle, color: getValueColor(item.rawValue) }}
+            style={{
+              ...twoLineClampStyle,
+              color: getValueColor(item.rawValue),
+            }}
             onDoubleClick={() => onStartEdit("value")}
           >
             {editingAttr?.key === item.key && editingAttr.field === "value" ? (
@@ -146,13 +150,14 @@ const ItemRow = memo(function ItemRow({
           {item.valueText}
         </span>
       )}
-      <div className="mr-1 shrink-0 flex items-center gap-[0.15rem]">
+      <div className="mr-1 shrink-0 flex items-center gap-[0.15rem] relative">
         <CollapseButton
           isCollapsed={item.isCollapsed}
           isLinked={item.isLinked}
           onClick={onToggleCollapse}
         />
         <LinkButton
+          id={getAttrHandleId(item.key)}
           isLinked={item.isLinked}
           targetTitle={item.targetTitle}
           blockId={blockId}
@@ -161,13 +166,19 @@ const ItemRow = memo(function ItemRow({
           onLinkDragEnd={onEndDrag}
           onUnlink={onRemoveLink}
         />
+        {/* <Handle
+          type="source"
+          position={Position.Right}
+          id={getAttrHandleId(item.key)}
+          className="h-3! w-3! border-none! z-10 relative! "
+          style={{
+            background: "none",
+            transform: "translate(0%, 0%)",
+          }}
+        >
+          <Link className="h-3 w-3 pointer-events-none" strokeWidth={2} />
+        </Handle> */}
       </div>
-      <Handle
-        type="source"
-        position={Position.Right}
-        id={getAttrHandleId(item.key)}
-        className="pointer-events-none h-2.5! w-2.5! border-2! border-[#2563eb]! bg-white!"
-      />
     </div>
   );
 });
