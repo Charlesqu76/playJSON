@@ -5,9 +5,7 @@ import { cn } from "../../lib/utils";
 import { ATTR_MOVE_MIME, twoLineClampStyle, getValueColor } from "./const";
 import CollapseButton from "./CollapseButton";
 import LinkButton from "./LinkButton";
-import { Handle, Position } from "@xyflow/react";
 import { getAttrHandleId } from "./util";
-import { Link } from "lucide-react";
 const toDragPayload = (
   mode: AttrDragMode,
   sourceBlockId: string,

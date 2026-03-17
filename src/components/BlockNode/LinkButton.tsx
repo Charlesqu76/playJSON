@@ -14,7 +14,7 @@ const toLinkPayload = (blockId: string, attrKey: string): string =>
 const LinkButton = memo(function LinkButton({
   id,
   isLinked,
-  targetTitle,
+  targetTitle: _targetTitle,
   blockId,
   attrKey,
   onLinkDragStart,
