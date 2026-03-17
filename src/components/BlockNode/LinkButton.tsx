@@ -44,8 +44,7 @@ const LinkButton = memo(function LinkButton({
       <span
         data-link-button
         className={cn(
-          " transform pointer-events-none",
-          "block w-4 h-4 p-1 cursor-grab rounded-full bg-[rgba(37,99,235,0.12)] text-[#2563eb]",
+          "transform block w-4 h-4 p-1 cursor-grab rounded-full bg-[rgba(37,99,235,0.12)] text-[#2563eb]",
           !isLinked && "bg-[rgba(138,127,118,0.15)] text-[#8a7f76]",
         )}
         aria-label={

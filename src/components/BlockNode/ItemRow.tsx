@@ -166,18 +166,6 @@ const ItemRow = memo(function ItemRow({
           onLinkDragEnd={onEndDrag}
           onUnlink={onRemoveLink}
         />
-        {/* <Handle
-          type="source"
-          position={Position.Right}
-          id={getAttrHandleId(item.key)}
-          className="h-3! w-3! border-none! z-10 relative! "
-          style={{
-            background: "none",
-            transform: "translate(0%, 0%)",
-          }}
-        >
-          <Link className="h-3 w-3 pointer-events-none" strokeWidth={2} />
-        </Handle> */}
       </div>
     </div>
   );
