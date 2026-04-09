@@ -2,7 +2,7 @@ import { useMemo, useRef, useState, useEffect } from "react";
 import LeftPanel, { type SearchResult } from "../components/LeftPanel";
 import MiddlePanel from "../components/MiddlePanel";
 import { Input } from "../components/ui/input";
-import { useBoardActions, useBoardState } from "../state/board";
+import { useBoardActions, useBoardState, boardStore } from "../state/board";
 import { exportState, importState as importBoardState } from "../state/storage";
 import type { JsonValue } from "../types/model";
 import { parseJsonText } from "../utils/json";
@@ -113,7 +113,7 @@ const Workspace = () => {
     } else {
       createBlock(blockTitle, parsed.value);
     }
-    // void onFormat();
+    void onFormat();
     return null;
   };
 
@@ -129,7 +129,9 @@ const Workspace = () => {
   };
 
   const onFormat = async (): Promise<void> => {
-    const allLinks = Object.values(state.links);
+    // Get fresh state directly from store to avoid stale closure issue
+    const freshState = boardStore.getState().state;
+    const allLinks = Object.values(freshState.links);
 
     // Build outgoing links map
     const outgoing = new Map<string, string[]>();
@@ -199,7 +201,7 @@ const Workspace = () => {
       const visibleCount =
         arrayVisibleCount.get(link.sourceBlockId) ?? ARRAY_INITIAL_VISIBLE;
       if (Number.isInteger(index) && index >= visibleCount) {
-        const sourceBlock = state.blocks[link.sourceBlockId];
+        const sourceBlock = freshState.blocks[link.sourceBlockId];
         if (sourceBlock && Array.isArray(sourceBlock.data)) {
           // Check if this specific item is individually expanded
           const itemKey = `${link.sourceBlockId}::${index}`;
@@ -214,10 +216,10 @@ const Workspace = () => {
     }
 
     const visibleIds = new Set(
-      Object.keys(state.blocks).filter((id) => !hiddenBlockIds.has(id)),
+      Object.keys(freshState.blocks).filter((id) => !hiddenBlockIds.has(id)),
     );
     const nextPositions = await formatPositionsLeftToRightInWorker(
-      state,
+      freshState,
       visibleIds,
       arrayVisibleCount,
     );
@@ -475,9 +477,11 @@ const Workspace = () => {
           onHideRightPanel={() => setShowRightPanel(false)}
           onAddObjectBlock={() => {
             createBlock("Object Block", {});
+            void onFormat();
           }}
           onAddArrayBlock={() => {
             createBlock("Array Block", []);
+            void onFormat();
           }}
           onFormat={onFormat}
           onExport={() =>
