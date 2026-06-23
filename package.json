@@ -55,10 +55,5 @@
     "typescript": "~5.7.2",
     "vite": "^6.4.3",
     "vitest": "^3.2.4"
-  },
-  "pnpm": {
-    "overrides": {
-      "esbuild": "^0.28.1"
-    }
   }
 }
